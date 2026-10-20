@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="cs" data-lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Václav Kotvalt</title>
+<meta name="description" content="Václav Kotvalt – student ekonomie a financí na IES FSV UK. Makroekonomie, finanční trhy, výzkum a články.">
+<meta name="author" content="Václav Kotvalt">
+<meta name="robots" content="index, follow">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ctext y=%22.9em%22 font-size=%2290%22%3E%F0%9F%93%88%3C/text%3E%3C/svg%3E">
+
+<!-- Náhled při sdílení odkazu (LinkedIn, Messenger, WhatsApp…) -->
+<meta property="og:type" content="profile">
+<meta property="og:title" content="Václav Kotvalt">
+<meta property="og:description" content="Student ekonomie a financí na IES FSV UK. Makroekonomie, finanční trhy, výzkum a články.">
+<meta property="og:locale" content="cs_CZ">
+<meta property="og:locale:alternate" content="en_US">
+<meta property="profile:first_name" content="Václav">
+<meta property="profile:last_name" content="Kotvalt">
+<meta name="twitter:card" content="summary">
+
+<!-- Strukturovaná data pro vyhledávače: kdo je autorem stránky -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Person",
+  "name": "Václav Kotvalt",
+  "description": "Student of economics and finance at the Institute of Economic Studies, Charles University.",
+  "email": "mailto:vaclav.kotvalt@gmail.com",
+  "affiliation": {
+    "@type": "CollegeOrUniversity",
+    "name": "Charles University",
+    "department": { "@type": "Organization", "name": "Institute of Economic Studies" }
+  },
+  "knowsAbout": ["Macroeconomics", "Financial markets", "Economics"],
+  "knowsLanguage": ["cs", "en", "de", "no"],
+  "sameAs": [
+    "https://www.linkedin.com/in/vaclavkotvalt"
+  ]
+}
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;0,6..72,500;1,6..72,300;1,6..72,400&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d1a2b;
+    --surface: #132339;
+    --line: #23364f;
+    --text: #e6ecf4;
+    --muted: #92a3ba;
+    --accent: #8ab8ff;
+    --accent-ink: #0d1a2b;
+    --curve: #8ab8ff;
+    color-scheme: dark;
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0d1a2b; --surface: #132339; --line: #23364f; --text: #e6ecf4;
+      --muted: #92a3ba; --accent: #8ab8ff; --accent-ink: #0d1a2b; --curve: #8ab8ff;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0d1a2b; --surface: #132339; --line: #23364f; --text: #e6ecf4;
+    --muted: #92a3ba; --accent: #8ab8ff; --accent-ink: #0d1a2b; --curve: #8ab8ff;
+    color-scheme: dark;
+  }
+  :root[data-theme="light"] {
+    --bg: #f3f6fa; --surface: #ffffff; --line: #d5dde8; --text: #13233a;
+    --muted: #55667e; --accent: #1f56c4; --accent-ink: #ffffff; --curve: #1f56c4;
+    color-scheme: light;
+  }
+  *, *::before, *::after { box-sizing: inherit; }
+  html { scroll-behavior: smooth; scroll-padding-top: calc(env(safe-area-inset-top, 0px) + 4.5rem); }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    font-size: 1.0625rem;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  body::before {
+    content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px);
+    z-index: 10; background: var(--bg);
+  }
+  a { color: var(--accent); text-underline-offset: 0.2em; }
+  a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
+  img, svg { max-width: 100%; }
+
+  /* Jazyk */
+  html[data-lang="cs"] .en, html[data-lang="en"] .cs { display: none !important; }
+
+  /* Horní lišta */
+  .bar {
+    position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5;
+    background: var(--bg);
+    border-bottom: 1px solid var(--line);
+  }
+  .bar-in {
+    max-width: 68rem; margin: 0 auto; padding: 0.85rem 1.25rem;
+    display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+  }
+  .mono-name { font-family: "Newsreader", Georgia, serif; font-size: 1.15rem; color: var(--text); text-decoration: none; }
+  .bar nav { display: flex; gap: 1.25rem; align-items: center; }
+  .bar nav a { color: var(--muted); text-decoration: none; font-size: 0.95rem; }
+  .bar nav a:hover { color: var(--text); }
+  .lang {
+    display: inline-flex; border: 1px solid var(--line); border-radius: 999px; overflow: hidden;
+  }
+  .lang button {
+    font: inherit; font-size: 0.85rem; padding: 0.3rem 0.7rem; border: 0; cursor: pointer;
+    background: transparent; color: var(--muted);
+  }
+  .lang button[aria-pressed="true"] { background: var(--text); color: var(--bg); }
+  @media (max-width: 640px) { .bar nav .navlink { display: none; } }
+
+  main { max-width: 68rem; margin: 0 auto; padding: 0 1.25rem; }
+
+  /* Úvod */
+  .hero { position: relative; padding: 4.5rem 0 4rem; min-height: 72vh; display: flex; flex-direction: column; justify-content: center; }
+  .hero svg.curve {
+    position: absolute; right: -1rem; bottom: 2rem; width: min(42rem, 95%); height: auto;
+    pointer-events: none; opacity: 0.9;
+  }
+  .curve path { fill: none; stroke: var(--curve); stroke-width: 2; stroke-linecap: round; }
+  .curve .grid { stroke: var(--line); stroke-width: 1; }
+  .curve circle { fill: var(--bg); stroke: var(--curve); stroke-width: 2; }
+  .curve .draw { stroke-dasharray: 900; stroke-dashoffset: 900; animation: draw 2.4s 0.3s cubic-bezier(.6,.1,.2,1) forwards; }
+  .curve .pt { opacity: 0; animation: pop 0.4s forwards; }
+  @keyframes draw { to { stroke-dashoffset: 0; } }
+  @keyframes pop { to { opacity: 1; } }
+  @media (prefers-reduced-motion: reduce) {
+    .curve .draw { animation: none; stroke-dashoffset: 0; }
+    .curve .pt { animation: none; opacity: 1; }
+    html { scroll-behavior: auto; }
+  }
+  h1 {
+    position: relative;
+    font-family: "Newsreader", Georgia, serif; font-weight: 300;
+    font-size: clamp(3.2rem, 11vw, 7.5rem); line-height: 0.95; letter-spacing: -0.02em;
+    margin: 0 0 1.75rem;
+  }
+  .lead { position: relative; max-width: 34rem; font-size: 1.2rem; color: var(--muted); margin: 0 0 2rem; }
+  .lead strong { color: var(--text); font-weight: 500; }
+  .actions { position: relative; display: flex; flex-wrap: wrap; gap: 0.75rem; }
+  .btn {
+    display: inline-block; padding: 0.7rem 1.25rem; border-radius: 6px; text-decoration: none;
+    font-weight: 500; font-size: 0.98rem; border: 1px solid var(--line); color: var(--text); background: var(--surface);
+  }
+  .btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+
+  /* Sekce */
+  section.block { padding: 4rem 0; border-top: 1px solid var(--line); display: grid; gap: 1.5rem 3rem; grid-template-columns: 1fr; }
+  @media (min-width: 860px) { section.block { grid-template-columns: 14rem 1fr; } }
+  h2 { font-family: "Newsreader", Georgia, serif; font-weight: 400; font-size: 1.9rem; line-height: 1.15; margin: 0; }
+  .prose { max-width: 40rem; }
+  .prose p { margin: 0 0 1rem; }
+
+  /* Úspěchy */
+  .wins { list-style: none; margin: 0; padding: 0; }
+  .wins li {
+    display: grid; grid-template-columns: 5.5rem 1fr; gap: 1.25rem; padding: 1.1rem 0;
+    border-bottom: 1px solid var(--line); align-items: baseline;
+  }
+  .wins li:first-child { padding-top: 0; }
+  .place { font-family: "Newsreader", Georgia, serif; font-size: 2.1rem; line-height: 1; color: var(--accent); }
+  .place small { font-size: 0.9rem; color: var(--muted); font-family: "IBM Plex Sans", system-ui, sans-serif; display: block; margin-top: 0.35rem; }
+  .what { font-weight: 500; }
+  .detail { color: var(--muted); font-size: 0.95rem; margin-top: 0.15rem; }
+  .note { margin-top: 1.5rem; color: var(--muted); font-size: 0.98rem; max-width: 40rem; }
+
+  /* Časová osa */
+  .timeline { list-style: none; margin: 0; padding: 0; }
+  .timeline li { position: relative; padding: 0 0 2rem 1.75rem; border-left: 1px solid var(--line); }
+  .timeline li:last-child { padding-bottom: 0; }
+  .timeline li::before {
+    content: ""; position: absolute; left: -5px; top: 0.5rem; width: 9px; height: 9px; border-radius: 50%;
+    background: var(--bg); border: 2px solid var(--accent);
+  }
+  .when { font-size: 0.9rem; color: var(--muted); }
+  .role { font-weight: 600; margin: 0.1rem 0 0; }
+  .org { color: var(--muted); margin: 0 0 0.4rem; }
+  .timeline p.desc { margin: 0; max-width: 38rem; }
+
+  /* Dovednosti */
+  .cols { display: grid; gap: 2rem; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); }
+  .cols h3 { font-size: 1rem; font-weight: 600; margin: 0 0 0.6rem; }
+  .cols ul { list-style: none; margin: 0; padding: 0; }
+  .cols li { padding: 0.35rem 0; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; gap: 1rem; }
+  .cols li span:last-child { color: var(--muted); }
+
+  /* Výzkum */
+  .papers { list-style: none; margin: 0; padding: 0; max-width: 40rem; }
+  .papers li { display: flex; justify-content: space-between; gap: 1rem; padding: 0.9rem 0; border-bottom: 1px solid var(--line); }
+  .papers li:first-child { border-top: 1px solid var(--line); }
+  .papers a { font-family: "Newsreader", Georgia, serif; font-size: 1.3rem; text-decoration: none; color: var(--text); }
+  .papers a:hover { color: var(--accent); text-decoration: underline; }
+  .papers li span:last-child { color: var(--muted); font-size: 0.9rem; }
+
+  /* Kontakt */
+  .contact-big {
+    font-family: "Newsreader", Georgia, serif; font-weight: 300;
+    font-size: clamp(1.6rem, 6vw, 3rem); line-height: 1.1; margin: 0 0 1.5rem; word-break: break-word;
+  }
+  .contact-big a { color: var(--text); text-decoration-color: var(--accent); text-decoration-thickness: 2px; }
+  footer { max-width: 68rem; margin: 0 auto; padding: 2rem 1.25rem 3rem; color: var(--muted); font-size: 0.9rem; border-top: 1px solid var(--line); }
+</style>
+</head>
+<body>
+
+<header class="bar">
+  <div class="bar-in">
+    <a class="mono-name" href="#top">V. Kotvalt</a>
+    <nav aria-label="Navigace">
+      <a class="navlink" href="#o-mne"><span class="cs">O mně</span><span class="en">About</span></a>
+      <a class="navlink" href="#uspechy"><span class="cs">Úspěchy</span><span class="en">Achievements</span></a>
+      <a class="navlink" href="#zkusenosti"><span class="cs">Zkušenosti</span><span class="en">Experience</span></a>
+      <a class="navlink" href="#vyzkum"><span class="cs">Výzkum</span><span class="en">Research</span></a>
+      <a class="navlink" href="#clanky"><span class="cs">Články</span><span class="en">Articles</span></a>
+      <a class="navlink" href="#kontakt"><span class="cs">Kontakt</span><span class="en">Contact</span></a>
+      <div class="lang" role="group" aria-label="Jazyk / Language">
+        <button type="button" data-set="cs" aria-pressed="true">CZ</button>
+        <button type="button" data-set="en" aria-pressed="false">EN</button>
+      </div>
+    </nav>
+  </div>
+</header>
+
+<main id="top">
+  <section class="hero">
+    <svg class="curve" viewBox="0 0 640 320" aria-hidden="true">
+      <line class="grid" x1="20" y1="300" x2="620" y2="300"/>
+      <line class="grid" x1="20" y1="20" x2="20" y2="300"/>
+      <path class="draw" d="M20 280 C 110 270, 150 250, 210 230 S 300 210, 340 170 S 430 120, 480 95 S 570 45, 620 30"/>
+      <circle class="pt" cx="210" cy="230" r="5" style="animation-delay:1.2s"/>
+      <circle class="pt" cx="340" cy="170" r="5" style="animation-delay:1.7s"/>
+      <circle class="pt" cx="480" cy="95" r="5" style="animation-delay:2.1s"/>
+      <circle class="pt" cx="620" cy="30" r="6" style="animation-delay:2.6s"/>
+    </svg>
+
+    <h1>Václav<br>Kotvalt</h1>
+    <p class="lead">
+      <span class="cs">Studuji <strong>ekonomii a finance</strong> na Institutu ekonomických studií Univerzity Karlovy. Dlouhodobě se zajímám o makroekonomii a finanční trhy.</span>
+      <span class="en">I study <strong>economics and finance</strong> at the Institute of Economic Studies, Charles University. I’ve long been interested in macroeconomics and financial markets.</span>
+    </p>
+    <div class="actions">
+      <a class="btn primary" href="mailto:vaclav.kotvalt@gmail.com"><span class="cs">Napište mi</span><span class="en">Email me</span></a>
+      <a class="btn" href="https://www.linkedin.com/in/vaclavkotvalt" target="_blank" rel="noopener">LinkedIn</a>
+    </div>
+  </section>
+
+  <section class="block" id="o-mne">
+    <h2><span class="cs">O mně</span><span class="en">About</span></h2>
+    <div class="prose">
+      <p class="cs">Díky prvnímu místu ve standardizovaném přijímacím testu mi byl na IES prominut zbytek přijímacího řízení. Vedle studia dělám vlastní makroekonomický a finanční výzkum, píšu odborné články do českých i zahraničních časopisů a newsletterů a pomáhám připravovat mezinárodní Ekonomickou olympiádu.</p>
+      <p class="cs">Jsem otevřený nabídkám stáží nebo práce na částečný úvazek v oblasti ekonomie a financí.</p>
+      <p class="cs">Mimo čísla jachtařím (mám kapitánský průkaz Coastal Yachtmaster), tancuji v tanečním klubu Vavruška a hraji na kytaru.</p>
+      <p class="en">Ranking first in the standardized admission test exempted me from the rest of the IES admission process. Alongside my studies I run my own macroeconomic and financial research, write economic articles for Czech and international journals and newsletters, and help prepare the international Economics Olympiad.</p>
+      <p class="en">I’m open to internship and part-time opportunities in economics and finance.</p>
+      <p class="en">Away from the numbers I sail (I hold a Coastal Yachtmaster certificate), dance with the Vavruška dance club and play the guitar.</p>
+    </div>
+  </section>
+
+  <section class="block" id="uspechy">
+    <h2><span class="cs">Úspěchy</span><span class="en">Achievements</span></h2>
+    <div>
+      <ul class="wins">
+        <li>
+          <div class="place">3.<small>2026</small></div>
+          <div>
+            <div class="what"><span class="cs">Ekonomická olympiáda, mezinárodní kolo</span><span class="en">Economics Olympiad, international round</span></div>
+            <div class="detail"><span class="cs">Z více než 160 000 účastníků. Zlatá medaile mezi deseti nejlepšími v ústním kole, kde jsem skončil druhý.</span><span class="en">Out of 160,000+ participants. Gold medal as a top-10 oral finalist, placing second in the oral round.</span></div>
+          </div>
+        </li>
+        <li>
+          <div class="place">1.<small>2026</small></div>
+          <div>
+            <div class="what"><span class="cs">Ekonomická olympiáda, národní kolo</span><span class="en">Economics Olympiad, national round</span></div>
+            <div class="detail"><span class="cs">Z více než 30 000 účastníků, první místo i v ústním kole.</span><span class="en">Out of 30,000+ participants, also first in the oral round.</span></div>
+          </div>
+        </li>
+        <li>
+          <div class="place">1.<small>2026</small></div>
+          <div>
+            <div class="what"><span class="cs">Maturita z matematiky (Cermat)</span><span class="en">National graduation exam in mathematics (Cermat)</span></div>
+            <div class="detail"><span class="cs">100. percentil z více než 13 000 maturantů. Z Matematiky+ 99. percentil.</span><span class="en">100th percentile among 13,000+ students; 99th percentile in Advanced Mathematics.</span></div>
+          </div>
+        </li>
+        <li>
+          <div class="place">1.<small>2026</small></div>
+          <div>
+            <div class="what"><span class="cs">Národní srovnávací zkouška z matematiky (Scio)</span><span class="en">National Comparative Exam in mathematics (Scio)</span></div>
+            <div class="detail"><span class="cs">100. percentil z více než 1 200 účastníků.</span><span class="en">100th percentile among 1,200+ participants.</span></div>
+          </div>
+        </li>
+        <li>
+          <div class="place">5/5<small>2026</small></div>
+          <div>
+            <div class="what">AP Macroeconomics, AP Microeconomics</div>
+            <div class="detail"><span class="cs">Obě zkoušky s nejvyšším hodnocením, připravoval jsem se samostudiem.</span><span class="en">Top score in both exams, prepared through self-study.</span></div>
+          </div>
+        </li>
+        <li>
+          <div class="place">3.<small>2024</small></div>
+          <div>
+            <div class="what">Matematický klokan</div>
+            <div class="detail"><span class="cs">Z více než 16 000 účastníků, druhé místo v Praze.</span><span class="en">Out of 16,000+ participants, second in Prague.</span></div>
+          </div>
+        </li>
+        <li>
+          <div class="place">4.<small>2025</small></div>
+          <div>
+            <div class="what"><span class="cs">Purple Comet, národní kolo</span><span class="en">Purple Comet, national round</span></div>
+            <div class="detail"><span class="cs">Týmová matematická soutěž, přes 100 týmů.</span><span class="en">Team mathematics contest with 100+ teams.</span></div>
+          </div>
+        </li>
+      </ul>
+      <p class="note">
+        <span class="cs">Jako jeden z nejlepších studentů v Česku jsem byl pozván do Kanceláře prezidenta republiky na diskusi o potřebách studentů a o tom, jak je podporovat.</span>
+        <span class="en">As one of the top students in the Czech Republic, I was invited to the Office of the President to discuss students’ needs and how they could be supported.</span>
+      </p>
+    </div>
+  </section>
+
+  <section class="block" id="zkusenosti">
+    <h2><span class="cs">Zkušenosti</span><span class="en">Experience</span></h2>
+    <ol class="timeline">
+      <li>
+        <div class="when"><span class="cs">Září 2026 – dosud</span><span class="en">September 2026 – present</span></div>
+        <p class="role">Regional Coordinator</p>
+        <p class="org">The Confluence</p>
+        <p class="desc"><span class="cs">Regionální koordinátor a autor ekonomických článků v nezávislém mezinárodním časopise.</span><span class="en">Regional coordinator and economics writer at an independent international journal.</span></p>
+      </li>
+      <li>
+        <div class="when"><span class="cs">2026 – dosud, na dálku</span><span class="en">2026 – present, remote</span></div>
+        <p class="role">Test Master</p>
+        <p class="org"><span class="cs">Ekonomická olympiáda</span><span class="en">Economics Olympiad</span></p>
+        <p class="desc"><span class="cs">Připravuji a kontroluji soutěžní materiály pro mezinárodní kola, spravuji a ověřuji data a výsledky v Excelu a řeším provozní otázky s národními organizátory.</span><span class="en">I prepare and quality-check test materials for international rounds, manage and validate competition data and results in Excel, and work with national organisers on operational issues.</span></p>
+      </li>
+      <li>
+        <div class="when">2024 – 2025</div>
+        <p class="role"><span class="cs">Lektor matematiky</span><span class="en">Mathematics tutor</span></p>
+        <p class="org">Náhradní rodinná péče s.r.o.</p>
+        <p class="desc"><span class="cs">Doučoval jsem žáky matematiku k přijímacím zkouškám na střední školy.</span><span class="en">Tutored pupils in mathematics for their high school entrance exams.</span></p>
+      </li>
+      <li>
+        <div class="when">2023 – 2024</div>
+        <p class="role">AI developer</p>
+        <p class="org">Trilimi s.r.o.</p>
+        <p class="desc"><span class="cs">Trénoval jsem AI model ve spolupráci s odbornými nadřízenými a kontroloval práci podřízeného na trénovacích datech.</span><span class="en">Trained an AI model together with senior colleagues and reviewed a team member’s work on training material.</span></p>
+      </li>
+      <li>
+        <div class="when">2023 – 2024</div>
+        <p class="role"><span class="cs">Programátor webu</span><span class="en">Website programmer</span></p>
+        <p class="org">Veterinární klinika Rudná</p>
+        <p class="desc"><span class="cs">Psal jsem nové webové stránky v HTML a CSS.</span><span class="en">Built new web pages in HTML and CSS.</span></p>
+      </li>
+    </ol>
+  </section>
+
+  <section class="block" id="vzdelani">
+    <h2><span class="cs">Vzdělání</span><span class="en">Education</span></h2>
+    <ol class="timeline">
+      <li>
+        <div class="when"><span class="cs">2026 – dosud</span><span class="en">2026 – present</span></div>
+        <p class="role"><span class="cs">Ekonomie a finance, Bc.</span><span class="en">Economics and Finance, BSc</span></p>
+        <p class="org"><span class="cs">Institut ekonomických studií FSV UK</span><span class="en">Institute of Economic Studies, Charles University</span></p>
+      </li>
+      <li>
+        <div class="when">2018 – 2026</div>
+        <p class="role">Gymnázium Nad Alejí</p>
+        <p class="desc"><span class="cs">Maturita s vyznamenáním (čeština, angličtina, němčina, matematika, Matematika+). Samostudiem složené zkoušky AP Macroeconomics a AP Microeconomics, obě na 5/5.</span><span class="en">Graduated with straight As (Czech, English, German, Mathematics, Advanced Mathematics). Self-studied and passed AP Macroeconomics and AP Microeconomics, both with 5/5.</span></p>
+      </li>
+    </ol>
+  </section>
+
+  <section class="block" id="vyzkum">
+    <h2><span class="cs">Výzkum</span><span class="en">Research</span></h2>
+    <div>
+      <p class="prose" style="margin:0 0 1.5rem"><span class="cs">Dělám vlastní makroekonomický a finanční výzkum, výsledky ověřuji simulacemi a backtesty a shrnuji je do pracovních studií.</span><span class="en">I run my own macroeconomic and financial research, test the results with simulations and backtests, and summarise them in working papers.</span></p>
+      <ul class="papers">
+        <li><a href="https://doi.org/10.5281/zenodo.21628662" target="_blank" rel="noopener">A Probabilistic Macroeconomic Regime Framework for Portfolio Allocation and Risk Management</a><span>Zenodo, 2026</span></li>
+        <li><a href="https://doi.org/10.5281/zenodo.21671048" target="_blank" rel="noopener">Macro Outlook: Economy, Positioning and the Risk of a Regime Shift</a><span>Zenodo, 2026</span></li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="block" id="clanky">
+    <h2><span class="cs">Články</span><span class="en">Articles</span></h2>
+    <ul class="papers">
+      <li><a href="https://www.the-confluence.org/articles/the-shock-that-cannot-spread" target="_blank" rel="noopener">The Shock That Cannot Spread</a><span>The Confluence, 2026</span></li>
+      <li><a href="https://drive.google.com/file/d/1T28sXAGUvWH63hNzpfr8NvCLqeqEF5A_/view?usp=sharing" target="_blank" rel="noopener">Why Inflation Is Not a Problem</a><span>Raging Bull, 2026</span></li>
+      <!-- Sem přidej další článek -->
+    </ul>
+  </section>
+
+  <section class="block" id="dovednosti">
+    <h2><span class="cs">Jazyky a dovednosti</span><span class="en">Languages and skills</span></h2>
+    <div class="cols">
+      <div>
+        <h3><span class="cs">Jazyky</span><span class="en">Languages</span></h3>
+        <ul>
+          <li><span><span class="cs">Čeština</span><span class="en">Czech</span></span><span>C2</span></li>
+          <li><span><span class="cs">Angličtina</span><span class="en">English</span></span><span>C1</span></li>
+          <li><span><span class="cs">Němčina</span><span class="en">German</span></span><span>B2</span></li>
+          <li><span><span class="cs">Norština</span><span class="en">Norwegian</span></span><span>A2</span></li>
+        </ul>
+      </div>
+      <div>
+        <h3><span class="cs">Práce</span><span class="en">Work</span></h3>
+        <ul>
+          <li><span>Excel, PowerPoint</span></li>
+          <li><span>HTML, CSS</span></li>
+          <li><span><span class="cs">Simulace a backtesty</span><span class="en">Simulations and backtests</span></span></li>
+          <li><span><span class="cs">Práce s AI</span><span class="en">Working with AI</span></span></li>
+        </ul>
+      </div>
+      <div>
+        <h3><span class="cs">Průkazy</span><span class="en">Certificates</span></h3>
+        <ul>
+          <li><span>Coastal Yachtmaster</span></li>
+          <li><span>Short Range Certificate (SRC)</span></li>
+          <li><span><span class="cs">Řidičský průkaz</span><span class="en">Driving licence</span></span></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" id="kontakt">
+    <h2><span class="cs">Kontakt</span><span class="en">Contact</span></h2>
+    <div>
+      <p class="contact-big"><a href="mailto:vaclav.kotvalt@gmail.com">vaclav.kotvalt@gmail.com</a></p>
+      <div class="actions">
+        <a class="btn" href="https://www.linkedin.com/in/vaclavkotvalt" target="_blank" rel="noopener">LinkedIn</a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>© 2026 Václav Kotvalt</footer>
+
+<script>
+  (function () {
+    var root = document.documentElement;
+    var buttons = document.querySelectorAll('.lang button');
+    function setLang(l) {
+      root.setAttribute('data-lang', l);
+      root.setAttribute('lang', l);
+      buttons.forEach(function (b) { b.setAttribute('aria-pressed', b.dataset.set === l ? 'true' : 'false'); });
+      try { localStorage.setItem('lang', l); } catch (e) {}
+    }
+    var saved = null;
+    try { saved = localStorage.getItem('lang'); } catch (e) {}
+    var initial = saved || ((navigator.language || 'cs').toLowerCase().indexOf('cs') === 0 ? 'cs' : 'en');
+    setLang(initial);
+    buttons.forEach(function (b) { b.addEventListener('click', function () { setLang(b.dataset.set); }); });
+  })();
+</script>
+</body>
+</html>
