@@ -36,6 +36,7 @@ RAW = {
     "BAA": "mean",        # firemní dluhopisy Baa
     "WTISPLC": "mean",    # ropa WTI
     "UMCSENT": "mean",    # spotřebitelský sentiment, Michiganská univerzita (od 1952)
+    "USALOLITOAASTSAM": "mean",  # OECD předstihový ukazatel (CLI) pro USA, 100 = dlouhodobý trend (od 1955)
     "USREC": "max",       # recese podle NBER (0/1)
 }
 
@@ -78,10 +79,13 @@ def fetch(series_id):
 SP500_CSV = "https://raw.githubusercontent.com/datasets/s-and-p-500/main/data/data.csv"
 
 
-def fetch_sp500():
+def fetch_shiller():
+    """Vrátí (S&P 500, dlouhodobá úroková sazba) jako [(YYYY-MM-DD, hodnota)]; nuly jsou chybějící údaje."""
     print("Stahuji S&P 500", flush=True)
     rows = list(csv.DictReader(io.StringIO(get(SP500_CSV))))
-    return [(r["Date"], float(r["SP500"])) for r in rows if r.get("SP500") not in (None, "", "0", "0.0")]
+    def col(name):
+        return [(r["Date"], float(r[name])) for r in rows if r.get(name) not in (None, "") and float(r[name]) != 0]
+    return col("SP500"), col("Long Interest Rate")
 
 
 # Ocenění trhu (měsíčně od 1871, aktuální odhady) – tabulky z multpl.com
@@ -186,7 +190,9 @@ def main():
     def d4(sid, k):
         return diff(val(sid, k), val(sid, lag(k, 4)))
 
-    sp = optional("S&P 500", lambda: to_quarterly(fetch_sp500(), "mean"))
+    shiller = optional("S&P 500", fetch_shiller)
+    sp = to_quarterly(shiller[0], "mean") if shiller else None
+    long_rate = to_quarterly(shiller[1], "mean") if shiller else {}
     extra = {
         "SP500": sp,
         "EY": optional("Earnings yield", lambda: to_quarterly(fetch_multpl("s-p-500-earnings-yield"), "mean")),
@@ -216,6 +222,7 @@ def main():
         "cape":      ("Shillerovo P/E (CAPE)", "×", lambda k: val("CAPE", k)),
         "sent_umich": ("Spotřebitelský sentiment (Univ. of Michigan)", "index", lambda k: val("UMCSENT", k)),
         "sent_aaii": ("Sentiment investorů AAII (býci − medvědi)", "p. b.", lambda k: val("AAII", k)),
+        "oecd_cli":  ("Předstihový ukazatel OECD (CLI)", "index", lambda k: val("USALOLITOAASTSAM", k)),
     }
     source_of = {"sp_yoy": "SP500", "ey": "EY", "cape": "CAPE", "sent_aaii": "AAII"}
     indicators = {i: v for i, v in indicators.items() if source_of.get(i, "GDPC1") in q}
@@ -239,6 +246,14 @@ def main():
             "name": "S&P 500",
             "source": "Robert Shiller / datasets/s-and-p-500",
             "values": [None if sp.get(k) is None else round(sp[k], 2) for k in keys],
+        }
+    # Výnos 10Y pro graf: FRED GS10 (od 1953), dřívější kvartály doplní Shillerova dlouhodobá sazba
+    us10y = [val("GS10", k) if val("GS10", k) is not None else long_rate.get(k) for k in keys]
+    if any(v is not None for v in us10y):
+        data["us10y"] = {
+            "name": "US10Y",
+            "source": "FRED GS10; před 1953 R. Shiller",
+            "values": [clean(v) for v in us10y],
         }
     OUT.write_text(json.dumps(data, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
     print(f"{OUT}: {data['quarters'][0]}–{data['quarters'][-1]}, {len(indicators)} ukazatelů")
