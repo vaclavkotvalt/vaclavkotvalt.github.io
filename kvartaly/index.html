@@ -62,14 +62,31 @@
   .picker { text-align: center; padding: 2rem 1rem 2.25rem; margin-bottom: 1rem; }
   .picker-label { margin: 0 0 1rem; color: var(--muted); font-size: 0.85rem; letter-spacing: 0.12em; text-transform: uppercase; }
   .picker-row { display: flex; justify-content: center; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
-  .picker select#qy {
+  .ysel { position: relative; }
+  #yBtn {
+    font: inherit; color: var(--text); border: 1px solid var(--line);
     width: auto; font-size: 2.4rem; font-weight: 500; padding: 0.35rem 2.6rem 0.35rem 1.1rem; border-radius: 12px;
     background: var(--surface); appearance: none; -webkit-appearance: none; cursor: pointer;
     background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%), linear-gradient(135deg, var(--muted) 50%, transparent 50%);
     background-position: right 1.2rem center, right 0.85rem center; background-size: 0.4rem 0.4rem; background-repeat: no-repeat;
     transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
   }
-  .picker select#qy:hover { background-color: #1a2d47; border-color: var(--muted); }
+  #yBtn:hover, #yBtn[aria-expanded="true"] { background-color: #1a2d47; border-color: var(--muted); }
+  .ypop {
+    position: absolute; z-index: 20; top: calc(100% + 8px); left: 50%; width: min(22rem, calc(100vw - 32px));
+    max-height: 19rem; overflow-y: auto; padding: 0.5rem; border-radius: 12px;
+    background: var(--surface); border: 1px solid var(--line); box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+    display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px;
+    opacity: 0; visibility: hidden; transform: translate(-50%, -6px) scale(0.98); transform-origin: top center;
+    transition: opacity 0.18s ease, transform 0.18s ease, visibility 0s linear 0.18s;
+  }
+  .ypop.open { opacity: 1; visibility: visible; transform: translate(-50%, 0) scale(1); transition: opacity 0.18s ease, transform 0.18s ease, visibility 0s; }
+  .ypop button {
+    font: inherit; font-size: 1rem; font-weight: 500; padding: 0.5rem 0; border: 0; border-radius: 8px;
+    background: transparent; color: var(--muted); cursor: pointer; transition: background-color 0.15s ease, color 0.15s ease;
+  }
+  .ypop button:hover, .ypop button:focus-visible { background: rgba(138, 184, 255, 0.1); color: var(--text); outline: none; }
+  .ypop button[aria-selected="true"] { background: var(--accent); color: var(--accent-ink); }
   .seg { display: inline-flex; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 4px; gap: 4px; }
   .seg button {
     font: inherit; font-size: 1.5rem; font-weight: 500; min-width: 3.6rem; padding: 0.45rem 0.6rem; border: 0; border-radius: 9px;
@@ -96,7 +113,7 @@
   button.lnk:hover { color: var(--text); }
   button.lnk { transition: color 0.2s ease, border-color 0.2s ease; }
   @media (prefers-reduced-motion: reduce) {
-    .picker select#qy, .seg button, .step, button.lnk { transition: none; }
+    #yBtn, .seg button, .step, button.lnk, .ypop, .ypop.open, .ypop button { transition: none; }
   }
 
   .snap { display: grid; gap: 0.5rem 1rem; grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr)); margin-top: 0.75rem; }
@@ -151,10 +168,10 @@
     .summary { grid-template-columns: 1fr 1fr; gap: 0.6rem; }
     .tile .v { font-size: 1.3rem; }
     .bar .back-long { display: none; }
-    .picker select#qy { font-size: 1.9rem; }
+    #yBtn { font-size: 1.9rem; }
     .seg button { font-size: 1.2rem; min-width: 3.2rem; }
     /* na mobilu: ‹ rok › nahoře, Q1–Q4 pod tím */
-    #qPrev { order: 1; } #qy { order: 2; } #qNext { order: 3; }
+    #qPrev { order: 1; } .ysel { order: 2; } #qNext { order: 3; }
     .picker-row .br { display: block; order: 4; flex-basis: 100%; height: 0; }
     .seg { order: 5; }
   }
@@ -204,7 +221,11 @@
       <p class="picker-label" id="pickLabel"><span class="cs">Vyberte kvartál</span><span class="en">Choose a quarter</span></p>
       <div class="picker-row">
         <button type="button" class="step" id="qPrev" data-cs-label="Předchozí kvartál" data-en-label="Previous quarter">‹</button>
-        <select id="qy" data-cs-label="Rok" data-en-label="Year"></select>
+        <select id="qy" hidden></select>
+        <div class="ysel">
+          <button type="button" id="yBtn" aria-haspopup="listbox" aria-expanded="false" aria-controls="yPop" data-cs-label="Rok" data-en-label="Year"></button>
+          <div class="ypop" id="yPop" role="listbox" tabindex="-1" data-cs-label="Rok" data-en-label="Year"></div>
+        </div>
         <span class="br" aria-hidden="true"></span>
         <div class="seg" id="qq" role="group" data-cs-label="Čtvrtletí" data-en-label="Quarter">
           <button type="button" data-q="1">Q1</button><button type="button" data-q="2">Q2</button><button type="button" data-q="3">Q3</button><button type="button" data-q="4">Q4</button>
@@ -401,6 +422,8 @@
     renderInds();
     const years = [...new Set(D.quarters.map(q => q.slice(0, 4)))].reverse();
     for (const y of years) $('qy').add(new Option(y, y));
+    $('yPop').innerHTML = years.map(y => `<button type="button" role="option" data-y="${y}" tabindex="-1">${y}</button>`).join('');
+    setupYearMenu();
     readHash();
     syncChecks();
 
@@ -442,6 +465,8 @@
   function syncPicker(t) {
     const y = D.quarters[t].slice(0, 4), q = D.quarters[t].slice(5);
     $('qy').value = y;
+    $('yBtn').textContent = y;
+    $('yPop').querySelectorAll('button').forEach(b => b.setAttribute('aria-selected', String(b.dataset.y === y)));
     $('qq').querySelectorAll('button').forEach(b => {
       b.disabled = !D.quarters.includes(y + 'Q' + b.dataset.q);
       b.setAttribute('aria-pressed', String(b.dataset.q === q));
@@ -458,6 +483,38 @@
   function renderInds() {
     $('inds').innerHTML = D.indicators.map(ind =>
       `<label class="check"><input type="checkbox" value="${ind.id}"${sel.has(ind.id) ? ' checked' : ''}><span>${iname(ind)} <span class="muted small">(${firstYear(ind)}–)</span></span></label>`).join('');
+  }
+  // Vlastní rozbalovací výběr roku (nativní <select> nejde animovat ani stylovat)
+  function setupYearMenu() {
+    const btn = $('yBtn'), pop = $('yPop'), COLS = 5;
+    const items = () => [...pop.querySelectorAll('button')];
+    const isOpen = () => pop.classList.contains('open');
+    const open = () => {
+      pop.classList.add('open'); btn.setAttribute('aria-expanded', 'true');
+      const cur = pop.querySelector('[aria-selected="true"]') || items()[0];
+      pop.scrollTop = cur.offsetTop - pop.clientHeight / 2 + cur.offsetHeight / 2;
+      cur.focus({ preventScroll: true });
+    };
+    const close = (focusBtn) => {
+      if (!isOpen()) return;
+      pop.classList.remove('open'); btn.setAttribute('aria-expanded', 'false');
+      if (focusBtn) btn.focus();
+    };
+    const choose = (y) => { close(true); if (y !== $('qy').value) { $('qy').value = y; $('qy').dispatchEvent(new Event('change')); } };
+    btn.addEventListener('click', () => isOpen() ? close(false) : open());
+    btn.addEventListener('keydown', e => { if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); open(); } });
+    pop.addEventListener('click', e => { const b = e.target.closest('button[data-y]'); if (b) choose(b.dataset.y); });
+    pop.addEventListener('keydown', e => {
+      const list = items(), i = list.indexOf(document.activeElement);
+      const move = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -COLS, ArrowDown: COLS, Home: -Infinity, End: Infinity }[e.key];
+      if (move !== undefined) {
+        e.preventDefault();
+        const j = Math.max(0, Math.min(list.length - 1, isFinite(move) ? i + move : (move < 0 ? 0 : list.length - 1)));
+        list[j].focus();
+      } else if (e.key === 'Escape') { e.preventDefault(); close(true); }
+      else if (e.key === 'Tab') close(false);
+    });
+    document.addEventListener('pointerdown', e => { if (isOpen() && !e.target.closest('.ysel')) close(false); });
   }
   function firstYear(ind) { const i = ind.values.findIndex(v => v != null); return D.quarters[i].slice(0, 4); }
   function syncChecks() {
