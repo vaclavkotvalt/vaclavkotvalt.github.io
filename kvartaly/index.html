@@ -69,7 +69,7 @@
     background: var(--surface); appearance: none; -webkit-appearance: none; cursor: pointer;
     background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%), linear-gradient(135deg, var(--muted) 50%, transparent 50%);
     background-position: right 1.2rem center, right 0.85rem center; background-size: 0.4rem 0.4rem; background-repeat: no-repeat;
-    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+    transition: background-color 0.4s ease, border-color 0.4s ease, color 0.4s ease;
   }
   #yBtn:hover, #yBtn[aria-expanded="true"] { background-color: #1a2d47; border-color: var(--muted); }
   .ypop {
@@ -83,7 +83,7 @@
   .ypop.open { opacity: 1; visibility: visible; transform: translate(-50%, 0) scale(1); transition: opacity 0.18s ease, transform 0.18s ease, visibility 0s; }
   .ypop button {
     font: inherit; font-size: 1rem; font-weight: 500; padding: 0.5rem 0; border: 0; border-radius: 8px;
-    background: transparent; color: var(--muted); cursor: pointer; transition: background-color 0.15s ease, color 0.15s ease;
+    background: transparent; color: var(--muted); cursor: pointer; transition: background-color 0.3s ease, color 0.3s ease;
   }
   .ypop button:hover, .ypop button:focus-visible { background: rgba(138, 184, 255, 0.1); color: var(--text); outline: none; }
   .ypop button[aria-selected="true"] { background: var(--accent); color: var(--accent-ink); }
@@ -91,7 +91,7 @@
   .seg button {
     font: inherit; font-size: 1.5rem; font-weight: 500; min-width: 3.6rem; padding: 0.45rem 0.6rem; border: 0; border-radius: 9px;
     background: transparent; color: var(--muted); cursor: pointer;
-    transition: background-color 0.2s ease, color 0.2s ease, opacity 0.2s ease;
+    transition: background-color 0.4s ease, color 0.4s ease, opacity 0.4s ease;
   }
   .seg button:hover:not(:disabled) { color: var(--text); background: rgba(138, 184, 255, 0.08); }
   .seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
@@ -99,7 +99,7 @@
   .step {
     font: inherit; font-size: 1.8rem; line-height: 1; width: 3rem; height: 3rem; border-radius: 50%;
     border: 1px solid var(--line); background: transparent; color: var(--muted); cursor: pointer;
-    transition: color 0.2s ease, border-color 0.2s ease, background-color 0.2s ease, opacity 0.2s ease;
+    transition: color 0.4s ease, border-color 0.4s ease, background-color 0.4s ease, opacity 0.4s ease;
   }
   .step:hover:not(:disabled) { color: var(--text); border-color: var(--muted); }
   .step:disabled { opacity: 0.3; cursor: default; }
@@ -111,7 +111,7 @@
   .ind-tools { margin-top: 0.75rem; display: flex; gap: 0.5rem; flex-wrap: wrap; }
   button.lnk { font: inherit; font-size: 0.85rem; background: transparent; border: 1px solid var(--line); color: var(--muted); border-radius: 999px; padding: 0.2rem 0.75rem; cursor: pointer; }
   button.lnk:hover { color: var(--text); }
-  button.lnk { transition: color 0.2s ease, border-color 0.2s ease; }
+  button.lnk { transition: color 0.4s ease, border-color 0.4s ease; }
   @media (prefers-reduced-motion: reduce) {
     #yBtn, .seg button, .step, button.lnk, .ypop, .ypop.open, .ypop button { transition: none; }
   }
