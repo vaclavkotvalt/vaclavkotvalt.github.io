@@ -293,7 +293,7 @@
     <section class="method cs" aria-labelledby="mH">
       <h2 id="mH" style="color:var(--text)">Jak to funguje</h2>
       <ol>
-        <li><strong>Data.</strong> Čtvrtletní data za USA z databáze <a href="https://fred.stlouisfed.org/" target="_blank" rel="noopener">FRED</a> (Federal Reserve Bank of St. Louis), od roku 1947. Měsíční řady jsou zprůměrované do čtvrtletí. Index S&amp;P 500 pochází z dat <a href="https://shillerdata.com/" target="_blank" rel="noopener">Roberta Shillera</a> a slouží jen pro graf, do výpočtu podobnosti nevstupuje. Data se automaticky aktualizují každý týden.</li>
+        <li><strong>Data.</strong> Čtvrtletní data za USA z databáze <a href="https://fred.stlouisfed.org/" target="_blank" rel="noopener">FRED</a> (Federal Reserve Bank of St. Louis), od roku 1947. Měsíční řady jsou zprůměrované do čtvrtletí. Index S&amp;P 500 pochází z dat <a href="https://shillerdata.com/" target="_blank" rel="noopener">Roberta Shillera</a>, výnos ze zisků (E/P) a CAPE z <a href="https://www.multpl.com/" target="_blank" rel="noopener">multpl.com</a>, sentiment investorů z průzkumu <a href="https://www.aaii.com/sentimentsurvey" target="_blank" rel="noopener">AAII</a> (od roku 1987) a spotřebitelský sentiment Michiganské univerzity z FREDu (od roku 1952). Data se automaticky aktualizují každý týden.</li>
         <li><strong>Standardizace.</strong> Každý ukazatel se převede na z-skóre (odchylka od dlouhodobého průměru v násobcích směrodatné odchylky), aby se daly sčítat inflace v procentech i spready v procentních bodech.</li>
         <li><strong>Okno.</strong> Porovnává se nejen samotný kvartál, ale celá trajektorie za zvolené okno – tím se zachytí i trend (např. „inflace roste, nezaměstnanost klesá“). V režimu „jen tvar“ se od každé řady v okně odečte její průměr, takže rozhoduje směr vývoje, ne úroveň.</li>
         <li><strong>Vzdálenost.</strong> Pro každý kandidátní kvartál se spočítá euklidovská vzdálenost z-skóre (odmocnina průměru čtverců rozdílů) přes všechny ukazatele a kvartály v okně, které jsou k dispozici pro oba. Podobnost = 100 × e<sup>−vzdálenost</sup>, tedy 100 % je shoda.</li>
@@ -305,7 +305,7 @@
     <section class="method en" aria-labelledby="mHen">
       <h2 id="mHen" style="color:var(--text)">How it works</h2>
       <ol>
-        <li><strong>Data.</strong> Quarterly US data from the <a href="https://fred.stlouisfed.org/" target="_blank" rel="noopener">FRED</a> database (Federal Reserve Bank of St. Louis), since 1947. Monthly series are averaged into quarters. The S&amp;P 500 index comes from <a href="https://shillerdata.com/" target="_blank" rel="noopener">Robert Shiller’s</a> data and is used only for the chart, not for the similarity calculation. The data update automatically every week.</li>
+        <li><strong>Data.</strong> Quarterly US data from the <a href="https://fred.stlouisfed.org/" target="_blank" rel="noopener">FRED</a> database (Federal Reserve Bank of St. Louis), since 1947. Monthly series are averaged into quarters. The S&amp;P 500 index comes from <a href="https://shillerdata.com/" target="_blank" rel="noopener">Robert Shiller’s</a> data, the earnings yield (E/P) and CAPE from <a href="https://www.multpl.com/" target="_blank" rel="noopener">multpl.com</a>, investor sentiment from the <a href="https://www.aaii.com/sentimentsurvey" target="_blank" rel="noopener">AAII</a> survey (since 1987) and consumer sentiment from the University of Michigan via FRED (since 1952). The data update automatically every week.</li>
         <li><strong>Standardisation.</strong> Each indicator is converted to a z-score (deviation from its long-run mean in standard deviations), so that inflation in percent and spreads in percentage points can be combined.</li>
         <li><strong>Window.</strong> Not just the quarter itself is compared but the whole path over the chosen window, which also captures the trend (e.g. “inflation rising, unemployment falling”). In “shape only” mode each series has its window mean subtracted, so the direction of change matters, not the level.</li>
         <li><strong>Distance.</strong> For each candidate quarter, the Euclidean distance of z-scores (root mean square of the differences) is computed over all indicators and window quarters available for both. Similarity = 100 × e<sup>−distance</sup>, so 100 % is a perfect match.</li>
@@ -331,6 +331,8 @@
     unrate_d4: 'Change in unemployment (y/y)', pay_yoy: 'Employment – payrolls (y/y)', tb3: 'Short-term rate (3M T-bill)',
     tb3_d4: 'Change in short-term rate (y/y)', real_rate: 'Real short-term rate (3M − inflation)', gs10: '10-year Treasury yield',
     term: 'Yield curve slope (10Y − 3M)', credit: 'Credit spread (Baa − Aaa)', oil_yoy: 'WTI oil price (y/y)',
+    sp_yoy: 'S&P 500 return (y/y)', ey: 'S&P 500 earnings yield (E/P)', cape: 'Shiller P/E (CAPE)',
+    sent_umich: 'Consumer sentiment (Univ. of Michigan)', sent_aaii: 'AAII investor sentiment (bulls − bears)',
   };
   const iname = (ind) => LANG === 'en' ? EN_NAMES[ind.id] || ind.name : ind.name;
   const iunit = (ind) => LANG === 'en' && ind.unit === 'p. b.' ? 'pp' : ind.unit;
@@ -341,10 +343,11 @@
   // horizont pro sloupec „Recese do X let“ (v letech, nastavuje se v Dalším nastavení)
   const recYears = () => +$('rh').value;
   const recLabel = (y) => LANG === 'en' ? (y === 1 ? '1 year' : `${y} years`) : (y === 1 ? '1 roku' : `${y} let`);
-  const DEFAULT = ['gdp_yoy', 'ip_yoy', 'cpi_yoy', 'unrate', 'unrate_d4', 'pay_yoy', 'tb3', 'term', 'credit', 'oil_yoy'];
+  const DEFAULT = ['gdp_yoy', 'ip_yoy', 'cpi_yoy', 'unrate', 'unrate_d4', 'pay_yoy', 'tb3', 'term', 'credit', 'oil_yoy',
+    'sp_yoy', 'ey', 'sent_umich'];
   const PRESETS = {
-    real: ['gdp_yoy', 'gdp_qoq', 'inv_yoy', 'ip_yoy', 'cpi_yoy', 'unrate', 'unrate_d4', 'pay_yoy'],
-    fin: ['tb3', 'tb3_d4', 'real_rate', 'gs10', 'term', 'credit', 'oil_yoy'],
+    real: ['gdp_yoy', 'gdp_qoq', 'inv_yoy', 'ip_yoy', 'cpi_yoy', 'unrate', 'unrate_d4', 'pay_yoy', 'sent_umich'],
+    fin: ['tb3', 'tb3_d4', 'real_rate', 'gs10', 'term', 'credit', 'oil_yoy', 'sp_yoy', 'ey', 'cape', 'sent_aaii'],
   };
   const $ = (id) => document.getElementById(id);
   const fmt = (v, d = 1) => v == null || !isFinite(v) ? '–' : v.toLocaleString(L('cs-CZ', 'en-US'), { minimumFractionDigits: d, maximumFractionDigits: d });
@@ -416,7 +419,7 @@
     });
     document.querySelectorAll('[data-preset]').forEach(b => b.addEventListener('click', () => {
       const p = b.dataset.preset;
-      sel = new Set(p === 'all' ? Object.keys(IND) : p === 'default' ? DEFAULT : PRESETS[p]);
+      sel = new Set((p === 'all' ? Object.keys(IND) : p === 'default' ? DEFAULT : PRESETS[p]).filter(id => IND[id]));
       syncChecks(); update();
     }));
     ['w', 'ex', 'n', 'ep', 'shape', 'rh'].forEach(id => $(id).addEventListener('change', update));
@@ -473,7 +476,8 @@
   }
   function writeHash() {
     const p = new URLSearchParams({ q: D.quarters[+$('q').value], w: $('w').value });
-    const isDef = sel.size === DEFAULT.length && DEFAULT.every(id => sel.has(id));
+    const def = DEFAULT.filter(id => IND[id]);
+    const isDef = sel.size === def.length && def.every(id => sel.has(id));
     if (!isDef) p.set('i', [...sel].join(','));
     if ($('shape').checked) p.set('shape', '1');
     if ($('rh').value !== '2') p.set('r', $('rh').value);

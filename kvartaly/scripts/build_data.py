@@ -11,6 +11,7 @@ import io
 import json
 import math
 import os
+import re
 import time
 import urllib.request
 from datetime import datetime, timezone
@@ -33,6 +34,7 @@ RAW = {
     "AAA": "mean",        # firemní dluhopisy Aaa
     "BAA": "mean",        # firemní dluhopisy Baa
     "WTISPLC": "mean",    # ropa WTI
+    "UMCSENT": "mean",    # spotřebitelský sentiment, Michiganská univerzita (od 1952)
     "USREC": "max",       # recese podle NBER (0/1)
 }
 
@@ -81,6 +83,67 @@ def fetch_sp500():
     return [(r["Date"], float(r["SP500"])) for r in rows if r.get("SP500") not in (None, "", "0", "0.0")]
 
 
+# Ocenění trhu (měsíčně od 1871, aktuální odhady) – tabulky z multpl.com
+MULTPL = "https://www.multpl.com/{}/table/by-month"
+MONTHS = {m: i for i, m in enumerate(["Jan", "Feb", "Mar", "Apr", "May", "Jun",
+                                       "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"], 1)}
+
+
+def fetch_multpl(slug):
+    print(f"Stahuji multpl.com/{slug}", flush=True)
+    html = get(MULTPL.format(slug))
+    out = []
+    for mon, year, val in re.findall(r"<td>\s*(\w{3})\s+\d+,\s+(\d{4})\s*</td>\s*<td>(.*?)</td>", html, re.S):
+        num = re.search(r"-?\d+(?:\.\d+)?", re.sub(r"<[^>]+>", "", val))
+        if mon in MONTHS and num:
+            out.append((f"{year}-{MONTHS[mon]:02d}-01", float(num.group())))
+    if len(out) < 100:
+        raise ValueError(f"neočekávaný formát tabulky ({len(out)} řádků)")
+    return out
+
+
+# Sentiment investorů AAII (týdně od 1987), veřejný soubor .xls
+AAII_XLS = "https://www.aaii.com/files/surveys/sentiment.xls"
+
+
+def fetch_aaii():
+    """Vrátí [(YYYY-MM-DD, býci − medvědi v p. b.)]."""
+    import xlrd  # instaluje se ve workflow
+    print("Stahuji AAII sentiment", flush=True)
+    req = urllib.request.Request(AAII_XLS, headers=HEADERS)
+    with urllib.request.urlopen(req, timeout=60) as r:
+        book = xlrd.open_workbook(file_contents=r.read())
+    sh = book.sheet_by_index(0)
+    head = col_bull = col_bear = None
+    for i in range(min(sh.nrows, 20)):
+        row = [str(c).strip().lower() for c in sh.row_values(i)]
+        if "bullish" in row and "bearish" in row:
+            head, col_bull, col_bear = i, row.index("bullish"), row.index("bearish")
+            break
+    if head is None:
+        raise ValueError("v souboru AAII chybí sloupce Bullish/Bearish")
+    out = []
+    for i in range(head + 1, sh.nrows):
+        d, bull, bear = sh.cell(i, 0), sh.cell(i, col_bull).value, sh.cell(i, col_bear).value
+        if d.ctype != xlrd.XL_CELL_DATE or not isinstance(bull, float) or not isinstance(bear, float):
+            continue
+        y, m, dd = xlrd.xldate_as_tuple(d.value, book.datemode)[:3]
+        scale = 100 if abs(bull) <= 1 and abs(bear) <= 1 else 1  # podíly vs. procenta
+        out.append((f"{y}-{m:02d}-{dd:02d}", (bull - bear) * scale))
+    if len(out) < 100:
+        raise ValueError(f"neočekávaný formát souboru AAII ({len(out)} řádků)")
+    return out
+
+
+def optional(name, fn):
+    """Doplňkové zdroje mimo FRED: při výpadku se ukazatel vynechá, zbytek dat se uloží."""
+    try:
+        return fn()
+    except Exception as e:
+        print(f"{name} se nepodařilo stáhnout: {e}", flush=True)
+        return None
+
+
 def to_quarterly(obs, how):
     buckets = {}
     for date, value in obs:
@@ -121,6 +184,15 @@ def main():
     def d4(sid, k):
         return diff(val(sid, k), val(sid, lag(k, 4)))
 
+    sp = optional("S&P 500", lambda: to_quarterly(fetch_sp500(), "mean"))
+    extra = {
+        "SP500": sp,
+        "EY": optional("Earnings yield", lambda: to_quarterly(fetch_multpl("s-p-500-earnings-yield"), "mean")),
+        "CAPE": optional("CAPE", lambda: to_quarterly(fetch_multpl("shiller-pe"), "mean")),
+        "AAII": optional("AAII", lambda: to_quarterly(fetch_aaii(), "mean")),
+    }
+    q.update({k: v for k, v in extra.items() if v})
+
     indicators = {
         "gdp_yoy":   ("Růst reálného HDP (r/r)", "%", lambda k: yoy("GDPC1", k)),
         "gdp_qoq":   ("Růst reálného HDP (q/q, anualizovaně)", "%", lambda k: qoq_ann("GDPC1", k)),
@@ -137,13 +209,14 @@ def main():
         "term":      ("Sklon výnosové křivky (10Y − 3M)", "p. b.", lambda k: diff(val("GS10", k), val("TB3MS", k))),
         "credit":    ("Kreditní spread (Baa − Aaa)", "p. b.", lambda k: diff(val("BAA", k), val("AAA", k))),
         "oil_yoy":   ("Cena ropy WTI (r/r)", "%", lambda k: yoy("WTISPLC", k)),
+        "sp_yoy":    ("Výnos S&P 500 (r/r)", "%", lambda k: yoy("SP500", k)),
+        "ey":        ("Výnos ze zisků S&P 500 (E/P)", "%", lambda k: val("EY", k)),
+        "cape":      ("Shillerovo P/E (CAPE)", "×", lambda k: val("CAPE", k)),
+        "sent_umich": ("Spotřebitelský sentiment (Univ. of Michigan)", "index", lambda k: val("UMCSENT", k)),
+        "sent_aaii": ("Sentiment investorů AAII (býci − medvědi)", "p. b.", lambda k: val("AAII", k)),
     }
-
-    try:
-        sp = to_quarterly(fetch_sp500(), "mean")
-    except Exception as e:  # graf S&P je doplněk, bez něj se stránka obejde
-        print(f"S&P 500 se nepodařilo stáhnout: {e}", flush=True)
-        sp = None
+    source_of = {"sp_yoy": "SP500", "ey": "EY", "cape": "CAPE", "sent_aaii": "AAII"}
+    indicators = {i: v for i, v in indicators.items() if source_of.get(i, "GDPC1") in q}
 
     def clean(x):
         return None if x is None or not math.isfinite(x) else round(x, 3)
