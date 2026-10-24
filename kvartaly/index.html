@@ -57,8 +57,35 @@
   }
   .check { display: flex; gap: 0.5rem; align-items: flex-start; font-size: 0.9rem; cursor: pointer; }
   .check input { margin-top: 0.25rem; accent-color: var(--accent); }
-  details.ind { margin-top: 1rem; border-top: 1px solid var(--line); padding-top: 0.75rem; }
-  details.ind summary { cursor: pointer; color: var(--muted); font-size: 0.9rem; }
+  .ind { margin-top: 1rem; border-top: 1px solid var(--line); padding-top: 0.75rem; }
+
+  .picker { text-align: center; padding: 2rem 1rem 2.25rem; margin-bottom: 1rem; }
+  .picker-label { margin: 0 0 1rem; color: var(--muted); font-size: 0.85rem; letter-spacing: 0.12em; text-transform: uppercase; }
+  .picker-row { display: flex; justify-content: center; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+  .picker select#qy {
+    width: auto; font-size: 2.4rem; font-weight: 500; padding: 0.35rem 2.6rem 0.35rem 1.1rem; border-radius: 12px;
+    background: var(--surface); appearance: none; -webkit-appearance: none; cursor: pointer;
+    background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%), linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+    background-position: right 1.2rem center, right 0.85rem center; background-size: 0.4rem 0.4rem; background-repeat: no-repeat;
+  }
+  .seg { display: inline-flex; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 4px; gap: 4px; }
+  .seg button {
+    font: inherit; font-size: 1.5rem; font-weight: 500; min-width: 3.6rem; padding: 0.45rem 0.6rem; border: 0; border-radius: 9px;
+    background: transparent; color: var(--muted); cursor: pointer;
+  }
+  .seg button:hover:not(:disabled) { color: var(--text); background: rgba(138, 184, 255, 0.08); }
+  .seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
+  .seg button:disabled { opacity: 0.3; cursor: default; }
+  .step {
+    font: inherit; font-size: 1.8rem; line-height: 1; width: 3rem; height: 3rem; border-radius: 50%;
+    border: 1px solid var(--line); background: transparent; color: var(--muted); cursor: pointer;
+  }
+  .step:hover:not(:disabled) { color: var(--text); border-color: var(--muted); }
+  .step:disabled { opacity: 0.3; cursor: default; }
+  .picker-row .br { display: none; }
+  #qLatest { margin-top: 1rem; }
+  details.more > summary { cursor: pointer; font-weight: 500; list-style-position: inside; }
+  details.more[open] > summary { margin-bottom: 1rem; }
   .ind-grid { display: grid; gap: 0.4rem 1.25rem; grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr)); margin-top: 0.75rem; }
   .ind-tools { margin-top: 0.75rem; display: flex; gap: 0.5rem; flex-wrap: wrap; }
   button.lnk { font: inherit; font-size: 0.85rem; background: transparent; border: 1px solid var(--line); color: var(--muted); border-radius: 999px; padding: 0.2rem 0.75rem; cursor: pointer; }
@@ -116,6 +143,12 @@
     .summary { grid-template-columns: 1fr 1fr; gap: 0.6rem; }
     .tile .v { font-size: 1.3rem; }
     .bar .back-long { display: none; }
+    .picker select#qy { font-size: 1.9rem; }
+    .seg button { font-size: 1.2rem; min-width: 3.2rem; }
+    /* na mobilu: ‹ rok › nahoře, Q1–Q4 pod tím */
+    #qPrev { order: 1; } #qy { order: 2; } #qNext { order: 3; }
+    .picker-row .br { display: block; order: 4; flex-basis: 100%; height: 0; }
+    .seg { order: 5; }
   }
   #status { color: var(--muted); }
   footer { max-width: 72rem; margin: 0 auto; padding: 1.5rem 16px 3rem; border-top: 1px solid var(--line); color: var(--muted); font-size: 0.85rem; }
@@ -134,11 +167,24 @@
   <p id="status">Načítám data…</p>
 
   <div id="app" hidden>
-    <section class="panel" aria-label="Nastavení">
+    <section class="picker" aria-label="Výběr kvartálu">
+      <select id="q" hidden></select>
+      <p class="picker-label" id="pickLabel">Vyberte kvartál</p>
+      <div class="picker-row">
+        <button type="button" class="step" id="qPrev" aria-label="Předchozí kvartál">‹</button>
+        <select id="qy" aria-labelledby="pickLabel" aria-label="Rok"></select>
+        <span class="br" aria-hidden="true"></span>
+        <div class="seg" id="qq" role="group" aria-label="Čtvrtletí">
+          <button type="button" data-q="1">Q1</button><button type="button" data-q="2">Q2</button><button type="button" data-q="3">Q3</button><button type="button" data-q="4">Q4</button>
+        </div>
+        <button type="button" class="step" id="qNext" aria-label="Další kvartál">›</button>
+      </div>
+      <button type="button" class="lnk" id="qLatest">Nejnovější kvartál</button>
+    </section>
+
+    <details class="panel more">
+      <summary>Další nastavení <span class="muted small">– okno, počet výsledků, ukazatele…</span></summary>
       <div class="controls">
-        <label class="f">Kvartál
-          <select id="q"></select>
-        </label>
         <label class="f">Porovnávané okno
           <select id="w">
             <option value="1">jen samotný kvartál</option>
@@ -160,8 +206,8 @@
         <label class="check"><input type="checkbox" id="ep" checked><span>Z každé epizody jen nejlepší kvartál <span class="muted small">(sousední kvartály se nezahltí výsledky)</span></span></label>
         <label class="check"><input type="checkbox" id="shape"><span>Porovnávat jen tvar vývoje <span class="muted small">(bez úrovní, jen změny uvnitř okna)</span></span></label>
       </div>
-      <details class="ind">
-        <summary>Ukazatele (<span id="indCount"></span>)</summary>
+      <div class="ind">
+        <p class="muted small" style="margin:0">Ukazatele (<span id="indCount"></span>)</p>
         <div class="ind-grid" id="inds"></div>
         <div class="ind-tools">
           <button class="lnk" type="button" data-preset="default">Výchozí výběr</button>
@@ -169,13 +215,8 @@
           <button class="lnk" type="button" data-preset="real">Jen reálná ekonomika</button>
           <button class="lnk" type="button" data-preset="fin">Jen sazby a trhy</button>
         </div>
-      </details>
-    </section>
-
-    <section class="panel" aria-labelledby="snapH">
-      <h2 id="snapH">Vybraný kvartál: <span id="qLabel"></span></h2>
-      <div class="snap num" id="snap"></div>
-    </section>
+      </div>
+    </details>
 
     <section class="panel" aria-labelledby="resH">
       <h2 id="resH">Nejpodobnější kvartály</h2>
@@ -188,11 +229,16 @@
             <th class="r">Růst HDP r/r</th><th class="r">Inflace</th><th class="r">Nezaměst.</th>
             <th class="r" title="Růst reálného HDP r/r o 4 kvartály později">HDP za rok</th>
             <th class="r" title="Změna nezaměstnanosti během následujících 4 kvartálů">Δ nezam. za rok</th>
-            <th>Recese do roka</th>
+            <th title="Začala nebo trvala recese (NBER) během následujících 8 kvartálů?">Recese do 2 let</th>
           </tr></thead>
           <tbody id="rows"></tbody>
         </table>
       </div>
+    </section>
+
+    <section class="panel" aria-labelledby="snapH">
+      <h2 id="snapH">Vybraný kvartál: <span id="qLabel"></span></h2>
+      <div class="snap num" id="snap"></div>
     </section>
 
     <section class="panel" aria-labelledby="cmpH">
@@ -228,6 +274,7 @@
 
 <script>
 (() => {
+  const REC_H = 8; // horizont pro „recese do 2 let“ (kvartály)
   const DEFAULT = ['gdp_yoy', 'ip_yoy', 'cpi_yoy', 'unrate', 'unrate_d4', 'pay_yoy', 'tb3', 'term', 'credit', 'oil_yoy'];
   const PRESETS = {
     real: ['gdp_yoy', 'gdp_qoq', 'inv_yoy', 'ip_yoy', 'cpi_yoy', 'unrate', 'unrate_d4', 'pay_yoy'],
@@ -264,8 +311,26 @@
       l.innerHTML = `<input type="checkbox" value="${ind.id}"><span>${ind.name} <span class="muted small">(${firstYear(ind)}–)</span></span>`;
       ig.appendChild(l);
     }
+    const years = [...new Set(D.quarters.map(q => q.slice(0, 4)))].reverse();
+    for (const y of years) $('qy').add(new Option(y, y));
     readHash();
     syncChecks();
+
+    // Velký výběr kvartálu: rok + Q1–Q4 + šipky; stav drží skrytý #q (index do D.quarters)
+    const setQ = (i) => { if (i < 0 || i >= T) return; $('q').value = i; update(); };
+    $('qy').addEventListener('change', () => {
+      const y = $('qy').value, cur = D.quarters[+$('q').value].slice(5);
+      let i = D.quarters.indexOf(y + 'Q' + cur);
+      if (i < 0) i = D.quarters.findLastIndex(q => q.startsWith(y));
+      setQ(i);
+    });
+    $('qq').addEventListener('click', e => {
+      const b = e.target.closest('button[data-q]');
+      if (b && !b.disabled) setQ(D.quarters.indexOf($('qy').value + 'Q' + b.dataset.q));
+    });
+    $('qPrev').addEventListener('click', () => setQ(+$('q').value - 1));
+    $('qNext').addEventListener('click', () => setQ(+$('q').value + 1));
+    $('qLatest').addEventListener('click', () => setQ(T - 1));
 
     ig.addEventListener('change', e => {
       if (e.target.checked) sel.add(e.target.value); else sel.delete(e.target.value);
@@ -277,7 +342,7 @@
       sel = new Set(p === 'all' ? Object.keys(IND) : p === 'default' ? DEFAULT : PRESETS[p]);
       syncChecks(); update();
     }));
-    ['q', 'w', 'ex', 'n', 'ep', 'shape'].forEach(id => $(id).addEventListener('change', update));
+    ['w', 'ex', 'n', 'ep', 'shape'].forEach(id => $(id).addEventListener('change', update));
     window.addEventListener('hashchange', () => { if (readHash()) { syncChecks(); update(false); } });
 
     $('status').hidden = true;
@@ -286,6 +351,17 @@
     update(false);
   }
 
+  function syncPicker(t) {
+    const y = D.quarters[t].slice(0, 4), q = D.quarters[t].slice(5);
+    $('qy').value = y;
+    $('qq').querySelectorAll('button').forEach(b => {
+      b.disabled = !D.quarters.includes(y + 'Q' + b.dataset.q);
+      b.setAttribute('aria-pressed', String(b.dataset.q === q));
+    });
+    $('qPrev').disabled = t === 0;
+    $('qNext').disabled = t === T - 1;
+    $('qLatest').hidden = t === T - 1;
+  }
   function firstYear(ind) { const i = ind.values.findIndex(v => v != null); return D.quarters[i].slice(0, 4); }
   function syncChecks() {
     document.querySelectorAll('#inds input').forEach(c => { c.checked = sel.has(c.value); });
@@ -357,6 +433,7 @@
     const ex = Math.max(0, +$('ex').value || 0), N = +$('n').value, ep = $('ep').checked;
     const ids = [...sel];
     syncChecks();
+    syncPicker(t);
     if (hash) writeHash();
 
     $('qLabel').textContent = D.quarters[t].replace('Q', ' Q') + (D.recession[t] ? ' (recese)' : '');
@@ -397,8 +474,9 @@
   function outcome(c) {
     const g = IND.gdp_yoy.values, u = IND.unrate.values;
     const f = c + 4 < T;
+    // recese během následujících 2 let; bez celého horizontu víme jen „ano“
     let rec = null;
-    if (c + 1 < T) { rec = 0; for (let k = 1; k <= 4 && c + k < T; k++) rec = rec || D.recession[c + k]; if (!rec && !f) rec = null; }
+    if (c + 1 < T) { rec = 0; for (let k = 1; k <= REC_H && c + k < T; k++) rec = rec || D.recession[c + k]; if (!rec && c + REC_H >= T) rec = null; }
     return {
       gdp: f ? g[c + 4] : null,
       du: f && u[c + 4] != null && u[c] != null ? u[c + 4] - u[c] : null,
@@ -413,7 +491,7 @@
     const recN = recs.filter(x => x.rec).length;
     $('summary').innerHTML = picked.length ? `
       <div class="tile"><div class="v">${fmt(picked[0].sim, 0)} %</div><div class="k">podobnost nejbližšího analogu (${D.quarters[picked[0].c].replace('Q', ' Q')})</div></div>
-      <div class="tile"><div class="v">${recs.length ? `${recN} z ${recs.length}` : '–'}</div><div class="k">analogů, po kterých do roka začala nebo trvala recese</div></div>
+      <div class="tile"><div class="v">${recs.length ? `${recN} z ${recs.length}` : '–'}</div><div class="k">analogů, po kterých do 2 let začala nebo trvala recese</div></div>
       <div class="tile"><div class="v">${fmt(avg(o.map(x => x.gdp)))} %</div><div class="k">průměrný růst HDP r/r o rok později</div></div>
       <div class="tile"><div class="v">${sgn(avg(o.map(x => x.du)))} p. b.</div><div class="k">průměrná změna nezaměstnanosti během roku</div></div>` : '';
   }
@@ -423,7 +501,7 @@
       const o = outcome(p.c), q = D.quarters[p.c];
       return `<tr data-c="${p.c}" tabindex="0">
         <td class="muted">${i + 1}</td>
-        <td>${q.replace('Q', ' Q')} ${D.recession[p.c] ? '<span class="tag rec">recese</span>' : ''}</td>
+        <td>${q.replace('Q', ' Q')}</td>
         <td><span class="simbar"><i style="width:${p.sim.toFixed(1)}%"></i></span>${fmt(p.sim, 0)} %</td>
         <td class="r">${fmt(IND.gdp_yoy.values[p.c])} %</td>
         <td class="r">${fmt(IND.cpi_yoy.values[p.c])} %</td>
