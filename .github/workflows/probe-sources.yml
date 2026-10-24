@@ -1,0 +1,20 @@
+name: Dočasná kontrola zdrojů dat
+on:
+  push:
+    branches: [claude/quarterly-macroeconomic-similarity-pa7n02]
+    paths: [".github/workflows/probe-sources.yml"]
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - env:
+          K: ${{ secrets.FRED_API_KEY }}
+        run: |
+          for s in USALOLITOAASTSAM USALOLITONOSTSAM USALOLITOTRGYSAM OECDLOLITOAASTSAM; do
+            echo "== $s"
+            curl -sS -m 30 "https://api.stlouisfed.org/fred/series?series_id=$s&api_key=$K&file_type=json" | python3 -c "import sys,json; d=json.load(sys.stdin); print([(x.get('title'), x.get('observation_start'), x.get('observation_end'), x.get('last_updated')) for x in d.get('seriess',[])] or d)"
+          done
+          echo "== OECD SDMX"
+          curl -sS -m 60 -o /tmp/oecd.csv -w "%{http_code} %{size_download}B\n" -H "Accept: application/vnd.sdmx.data+csv; charset=utf-8" \
+            "https://sdmx.oecd.org/public/rest/data/OECD.SDD.STES,DSD_STES@DF_CLI,/USA.M.LI...AA...H?startPeriod=1950-01&dimensionAtObservation=AllDimensions" || true
+          head -3 /tmp/oecd.csv; echo ...; tail -3 /tmp/oecd.csv; wc -l /tmp/oecd.csv
