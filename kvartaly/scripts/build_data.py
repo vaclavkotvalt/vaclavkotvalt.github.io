@@ -71,6 +71,16 @@ def fetch(series_id):
     return [(date, float(value)) for date, value in rows if value not in ("", ".")]
 
 
+# S&P 500 (měsíční průměry denních uzávěrek, data R. Shillera) – jen pro graf, ne pro podobnost
+SP500_CSV = "https://raw.githubusercontent.com/datasets/s-and-p-500/main/data/data.csv"
+
+
+def fetch_sp500():
+    print("Stahuji S&P 500", flush=True)
+    rows = list(csv.DictReader(io.StringIO(get(SP500_CSV))))
+    return [(r["Date"], float(r["SP500"])) for r in rows if r.get("SP500") not in (None, "", "0", "0.0")]
+
+
 def to_quarterly(obs, how):
     buckets = {}
     for date, value in obs:
@@ -129,6 +139,12 @@ def main():
         "oil_yoy":   ("Cena ropy WTI (r/r)", "%", lambda k: yoy("WTISPLC", k)),
     }
 
+    try:
+        sp = to_quarterly(fetch_sp500(), "mean")
+    except Exception as e:  # graf S&P je doplněk, bez něj se stránka obejde
+        print(f"S&P 500 se nepodařilo stáhnout: {e}", flush=True)
+        sp = None
+
     def clean(x):
         return None if x is None or not math.isfinite(x) else round(x, 3)
 
@@ -143,6 +159,12 @@ def main():
             for iid, (name, unit, f) in indicators.items()
         ],
     }
+    if sp:
+        data["sp500"] = {
+            "name": "S&P 500",
+            "source": "Robert Shiller / datasets/s-and-p-500",
+            "values": [None if sp.get(k) is None else round(sp[k], 2) for k in keys],
+        }
     OUT.write_text(json.dumps(data, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
     print(f"{OUT}: {data['quarters'][0]}–{data['quarters'][-1]}, {len(indicators)} ukazatelů")
 

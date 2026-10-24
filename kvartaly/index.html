@@ -229,7 +229,7 @@
             <th class="r">Růst HDP r/r</th><th class="r">Inflace</th><th class="r">Nezaměst.</th>
             <th class="r" title="Růst reálného HDP r/r o 4 kvartály později">HDP za rok</th>
             <th class="r" title="Změna nezaměstnanosti během následujících 4 kvartálů">Δ nezam. za rok</th>
-            <th title="Začala nebo trvala recese (NBER) během následujících 8 kvartálů?">Recese do 2 let</th>
+            <th title="Začala nebo trvala recese (podle NBER) během následujících 8 kvartálů?">Recese do 2 let</th>
           </tr></thead>
           <tbody id="rows"></tbody>
         </table>
@@ -241,6 +241,12 @@
       <div class="snap num" id="snap"></div>
     </section>
 
+    <section class="panel" id="spSec" aria-labelledby="spH" hidden>
+      <h2 id="spH">S&amp;P 500 a podobné kvartály</h2>
+      <p class="muted small">Index S&amp;P 500 (čtvrtletní průměr, logaritmická osa). Tečky jsou nejpodobnější kvartály, svislá čára vybraný kvartál. Šedé pásy jsou recese (podle NBER). Kliknutím zvolíte kvartál ke srovnání.</p>
+      <div class="chart" id="spChart"></div>
+    </section>
+
     <section class="panel" aria-labelledby="cmpH">
       <h2 id="cmpH">Srovnání: <span id="cmpLabel"></span></h2>
       <p class="muted small">Osa x ukazuje kvartály relativně k vybranému (0). Šedý pás je porovnávané okno, vpravo od nuly je to, co následovalo. Analog vyberete kliknutím do tabulky.</p>
@@ -250,14 +256,14 @@
 
     <section class="panel" aria-labelledby="tlH">
       <h2 id="tlH">Podobnost napříč historií</h2>
-      <p class="muted small">Jak moc se vybranému kvartálu podobá každý kvartál v databázi. Šedé pásy jsou recese (NBER). Kliknutím zvolíte kvartál ke srovnání.</p>
+      <p class="muted small">Jak moc se vybranému kvartálu podobá každý kvartál v databázi. Šedé pásy jsou recese (podle NBER). Kliknutím zvolíte kvartál ke srovnání.</p>
       <div class="chart" id="timeline"></div>
     </section>
 
     <section class="method" aria-labelledby="mH">
       <h2 id="mH" style="color:var(--text)">Jak to funguje</h2>
       <ol>
-        <li><strong>Data.</strong> Čtvrtletní data za USA z databáze <a href="https://fred.stlouisfed.org/" target="_blank" rel="noopener">FRED</a> (Federal Reserve Bank of St. Louis), od roku 1947. Měsíční řady jsou zprůměrované do čtvrtletí. Data se automaticky aktualizují každý týden.</li>
+        <li><strong>Data.</strong> Čtvrtletní data za USA z databáze <a href="https://fred.stlouisfed.org/" target="_blank" rel="noopener">FRED</a> (Federal Reserve Bank of St. Louis), od roku 1947. Měsíční řady jsou zprůměrované do čtvrtletí. Index S&amp;P 500 pochází z dat <a href="https://shillerdata.com/" target="_blank" rel="noopener">Roberta Shillera</a> a slouží jen pro graf, do výpočtu podobnosti nevstupuje. Data se automaticky aktualizují každý týden.</li>
         <li><strong>Standardizace.</strong> Každý ukazatel se převede na z-skóre (odchylka od dlouhodobého průměru v násobcích směrodatné odchylky), aby se daly sčítat inflace v procentech i spready v procentních bodech.</li>
         <li><strong>Okno.</strong> Porovnává se nejen samotný kvartál, ale celá trajektorie za zvolené okno – tím se zachytí i trend (např. „inflace roste, nezaměstnanost klesá“). V režimu „jen tvar“ se od každé řady v okně odečte její průměr, takže rozhoduje směr vývoje, ne úroveň.</li>
         <li><strong>Vzdálenost.</strong> Pro každý kandidátní kvartál se spočítá euklidovská vzdálenost z-skóre (odmocnina průměru čtverců rozdílů) přes všechny ukazatele a kvartály v okně, které jsou k dispozici pro oba. Podobnost = 100 × e<sup>−vzdálenost</sup>, tedy 100 % je shoda.</li>
@@ -347,7 +353,7 @@
 
     $('status').hidden = true;
     $('app').hidden = false;
-    $('srcNote').textContent = `Zdroj: ${D.source}. Data za ${D.country}, ${D.quarters[0].replace('Q', ' Q')} – ${D.quarters[T - 1].replace('Q', ' Q')}, aktualizováno ${new Date(D.updated).toLocaleDateString('cs-CZ')}.`;
+    $('srcNote').textContent = `Zdroj: ${D.source}. Data za ${D.country}, ${D.quarters[0].replace('Q', ' Q')} – ${D.quarters[T - 1].replace('Q', ' Q')}, aktualizováno ${new Date(D.updated).toLocaleDateString('cs-CZ')}.` + (D.sp500 ? ' S&P 500: Robert Shiller.' : '');
     update(false);
   }
 
@@ -459,10 +465,9 @@
     renderSummary(picked);
     renderRows(picked);
     analog = picked.length ? picked[0].c : null;
-    markSel();
-    renderCompare();
-    renderTimeline();
+    refreshAnalog();
   }
+  function refreshAnalog() { markSel(); renderCompare(); renderSp(); renderTimeline(); }
 
   function renderSnap(t) {
     $('snap').innerHTML = [...sel].map(id => {
@@ -512,7 +517,7 @@
       </tr>`;
     }).join('') || '<tr><td colspan="9" class="muted">Žádný srovnatelný kvartál.</td></tr>';
     $('rows').querySelectorAll('tr[data-c]').forEach(tr => {
-      const go = () => { analog = +tr.dataset.c; markSel(); renderCompare(); renderTimeline(); };
+      const go = () => { analog = +tr.dataset.c; refreshAnalog(); };
       tr.addEventListener('click', go);
       tr.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } });
     });
@@ -605,11 +610,75 @@
     }
   }
 
+  const chartWidth = (box) => Math.max(300, Math.min(1000, box.clientWidth || 1000));
+  let resizeT;
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeT);
+    resizeT = setTimeout(() => { if (lastScores) { renderSp(); renderTimeline(); } }, 150);
+  });
+
+  // Graf S&P 500 (log. osa) s tečkami u nejpodobnějších kvartálů
+  function renderSp() {
+    const box = $('spChart');
+    box.innerHTML = '';
+    const sp = D.sp500 && D.sp500.values;
+    $('spSec').hidden = !sp;
+    if (!sp) return;
+    const { t, res, picked, ex } = lastScores;
+    const Wd = chartWidth(box), H = Wd < 600 ? 240 : 260, m = { l: 48, r: 10, t: 10, b: 24 };
+    const ok = sp.filter(v => v != null && v > 0);
+    const lo = Math.log10(Math.min(...ok)) - 0.05, hi = Math.log10(Math.max(...ok)) + 0.05;
+    const X = i => m.l + i / (T - 1) * (Wd - m.l - m.r);
+    const Y = v => m.t + (1 - (Math.log10(v) - lo) / (hi - lo)) * (H - m.t - m.b);
+    const svg = el('svg', { viewBox: `0 0 ${Wd} ${H}`, role: 'img', 'aria-label': 'Index S&P 500 s vyznačenými nejpodobnějšími kvartály' }, box);
+    for (let i = 0; i < T; i++) if (D.recession[i]) el('rect', { x: X(i) - (Wd - m.l - m.r) / T / 2, y: m.t, width: (Wd - m.l - m.r) / T + 0.5, height: H - m.t - m.b, fill: 'var(--rec)' }, svg);
+    let ticks = [];
+    for (let e = Math.floor(lo); e <= Math.ceil(hi); e++) for (const k of [1, 2, 5]) { const v = k * 10 ** e; if (Math.log10(v) >= lo && Math.log10(v) <= hi) ticks.push(v); }
+    if (ticks.length > 8) ticks = ticks.filter(v => /^1/.test(String(v)) || /^5/.test(String(v)));
+    for (const tk of ticks) {
+      el('line', { x1: m.l, x2: Wd - m.r, y1: Y(tk), y2: Y(tk), stroke: 'var(--grid)' }, svg);
+      el('text', { x: m.l - 6, y: Y(tk) + 3.5, 'text-anchor': 'end' }, svg).textContent = tk.toLocaleString('cs-CZ');
+    }
+    const y0 = +D.quarters[0].slice(0, 4), y1 = +D.quarters[T - 1].slice(0, 4);
+    const step = Wd < 600 ? 20 : 10;
+    for (let y = Math.ceil(y0 / step) * step; y <= y1; y += step) {
+      const i = D.quarters.indexOf(y + 'Q1');
+      if (i >= 0) el('text', { x: X(i), y: H - 6, 'text-anchor': 'middle' }, svg).textContent = y;
+    }
+    el('path', { d: path(sp.map((v, i) => v == null || v <= 0 ? null : [X(i), Y(v)])), fill: 'none', stroke: 'var(--accent)', 'stroke-width': 1.5, 'stroke-linejoin': 'round' }, svg);
+    el('line', { x1: X(t), x2: X(t), y1: m.t, y2: H - m.b, stroke: 'var(--s-target)', 'stroke-width': 2 }, svg);
+    el('text', { x: X(t) + (t > T * 0.85 ? -6 : 6), y: m.t + 12, 'text-anchor': t > T * 0.85 ? 'end' : 'start', style: 'fill:var(--text)' }, svg).textContent = D.quarters[t].replace('Q', ' Q');
+    for (const p of picked) {
+      if (sp[p.c] == null) continue;
+      el('circle', { cx: X(p.c), cy: Y(sp[p.c]), r: p.c === analog ? 6 : 4.5, fill: p.c === analog ? 'var(--s-analog)' : 'var(--accent)', stroke: 'var(--surface)', 'stroke-width': 2 }, svg);
+    }
+    const cross = el('line', { y1: m.t, y2: H - m.b, stroke: 'var(--muted)', 'stroke-opacity': 0.7, visibility: 'hidden' }, svg);
+    const dot = el('circle', { r: 4, fill: 'var(--accent)', stroke: 'var(--surface)', 'stroke-width': 2, visibility: 'hidden' }, svg);
+    const tip = document.createElement('div'); tip.className = 'tip'; box.appendChild(tip);
+    const hit = el('rect', { x: m.l, y: 0, width: Wd - m.l - m.r, height: H, fill: 'transparent', style: 'cursor:pointer' }, svg);
+    const idxAt = (ev) => { const r = svg.getBoundingClientRect(); const px = (ev.clientX - r.left) / r.width * Wd; return Math.max(0, Math.min(T - 1, Math.round((px - m.l) / (Wd - m.l - m.r) * (T - 1)))); };
+    hit.addEventListener('pointermove', ev => {
+      const i = idxAt(ev), v = sp[i], r = res[i], okSim = r && Math.abs(i - t) > ex;
+      cross.setAttribute('x1', X(i)); cross.setAttribute('x2', X(i)); cross.setAttribute('visibility', 'visible');
+      if (v != null) { dot.setAttribute('cx', X(i)); dot.setAttribute('cy', Y(v)); dot.setAttribute('visibility', 'visible'); } else dot.setAttribute('visibility', 'hidden');
+      tip.innerHTML = `<b>${D.quarters[i].replace('Q', ' Q')}</b>${D.recession[i] ? ' · recese' : ''}<br>S&amp;P 500: ${fmt(v, 0)}${okSim ? '<br>podobnost ' + fmt(r.sim, 0) + ' %' : i === t ? '<br>vybraný kvartál' : ''}`;
+      tip.style.display = 'block';
+      const rr = svg.getBoundingClientRect(), left = X(i) / Wd * rr.width;
+      tip.style.left = (left > rr.width / 2 ? left - tip.offsetWidth - 10 : left + 10) + 'px';
+      tip.style.top = '0.5rem';
+    });
+    hit.addEventListener('pointerleave', () => { tip.style.display = 'none'; cross.setAttribute('visibility', 'hidden'); dot.setAttribute('visibility', 'hidden'); });
+    hit.addEventListener('click', ev => {
+      const i = idxAt(ev);
+      if (res[i] && Math.abs(i - t) > ex) { analog = i; refreshAnalog(); }
+    });
+  }
+
   function renderTimeline() {
     const box = $('timeline');
     box.innerHTML = '';
     const { t, res, picked, ex } = lastScores;
-    const Wd = 1000, H = 220, m = { l: 36, r: 10, t: 10, b: 24 };
+    const Wd = chartWidth(box), H = 220, m = { l: 36, r: 10, t: 10, b: 24 };
     const X = i => m.l + i / (T - 1) * (Wd - m.l - m.r);
     const Y = y => m.t + (1 - y / 100) * (H - m.t - m.b);
     const svg = el('svg', { viewBox: `0 0 ${Wd} ${H}`, role: 'img', 'aria-label': 'Podobnost vybraného kvartálu s ostatními kvartály v čase' }, box);
@@ -619,7 +688,8 @@
       el('text', { x: m.l - 6, y: Y(tk) + 3.5, 'text-anchor': 'end' }, svg).textContent = tk + ' %';
     }
     const y0 = +D.quarters[0].slice(0, 4), y1 = +D.quarters[T - 1].slice(0, 4);
-    for (let y = Math.ceil(y0 / 10) * 10; y <= y1; y += 10) {
+    const step = Wd < 600 ? 20 : 10;
+    for (let y = Math.ceil(y0 / step) * step; y <= y1; y += step) {
       const i = D.quarters.indexOf(y + 'Q1');
       if (i >= 0) el('text', { x: X(i), y: H - 6, 'text-anchor': 'middle' }, svg).textContent = y;
     }
@@ -648,7 +718,7 @@
     hit.addEventListener('pointerleave', () => { tip.style.display = 'none'; cross.setAttribute('visibility', 'hidden'); dot.setAttribute('visibility', 'hidden'); });
     hit.addEventListener('click', ev => {
       const i = idxAt(ev);
-      if (res[i] && Math.abs(i - t) > ex) { analog = i; markSel(); renderCompare(); renderTimeline(); }
+      if (res[i] && Math.abs(i - t) > ex) { analog = i; refreshAnalog(); }
     });
   }
 })();
