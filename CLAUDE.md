@@ -5,6 +5,9 @@ Statický web na GitHub Pages (větev `main`), bez build kroku.
 - `index.html` – hlavní stránka (CZ/EN přepínač přes `.cs` / `.en`)
 - `kvartaly/` – nástroj Podobné kvartály; data `kvartaly/data.json` generuje
   `.github/workflows/update-macro-data.yml` přes FRED API (secret `FRED_API_KEY`)
+- Obě stránky jsou dvojjazyčné (CZ/EN, sdílený klíč `lang` v localStorage). Statický text
+  přes `<span class="cs">…</span><span class="en">…</span>`, v `kvartaly/` dynamický text přes
+  `L('česky', 'English')`. Každý nový text přidávej v obou jazycích.
 
 ## Písma
 - Velké nadpisy stránek (`h1`, např. „Václav Kotvalt“, „Podobné kvartály“): **Newsreader** – `var(--font-heading)`.
