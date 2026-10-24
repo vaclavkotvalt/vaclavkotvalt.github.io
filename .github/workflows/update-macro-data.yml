@@ -24,6 +24,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      - name: Nainstalovat čtečku .xls (AAII)
+        run: pip install xlrd==2.0.1
       - name: Stáhnout data z FRED
         env:
           FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
