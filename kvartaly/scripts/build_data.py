@@ -2,12 +2,15 @@
 
 Spouští se v GitHub Actions (.github/workflows/update-macro-data.yml), lze ho ale pustit
 i lokálně: `python kvartaly/scripts/build_data.py`. Používá jen standardní knihovnu.
+Pokud je nastavená proměnná prostředí FRED_API_KEY (zdarma na fredaccount.stlouisfed.org),
+použije se oficiální FRED API, které je spolehlivější než stahování CSV z webu.
 """
 
 import csv
 import io
 import json
 import math
+import os
 import time
 import urllib.request
 from datetime import datetime, timezone
@@ -34,25 +37,38 @@ RAW = {
 }
 
 
-def fetch(series_id, tries=4):
+FRED_API = ("https://api.stlouisfed.org/fred/series/observations"
+            "?series_id={}&api_key={}&file_type=json")
+API_KEY = os.environ.get("FRED_API_KEY", "").strip()
+HEADERS = {
+    "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36",
+    "Accept": "text/csv,text/plain,application/json;q=0.9,*/*;q=0.8",
+    "Accept-Language": "en-US,en;q=0.9",
+}
+
+
+def get(url, tries=3, timeout=30):
     for attempt in range(tries):
         try:
-            req = urllib.request.Request(FRED_CSV.format(series_id), headers={"User-Agent": "Mozilla/5.0"})
-            with urllib.request.urlopen(req, timeout=60) as r:
-                text = r.read().decode("utf-8")
-            break
-        except Exception:
+            req = urllib.request.Request(url, headers=HEADERS)
+            with urllib.request.urlopen(req, timeout=timeout) as r:
+                return r.read().decode("utf-8")
+        except Exception as e:
+            print(f"  pokus {attempt + 1}/{tries} selhal: {e}", flush=True)
             if attempt == tries - 1:
                 raise
             time.sleep(2 ** (attempt + 1))
-    rows = csv.reader(io.StringIO(text))
-    next(rows)  # hlavička (DATE / observation_date, ID)
-    out = []
-    for date, value in rows:
-        if value in ("", "."):
-            continue
-        out.append((date, float(value)))
-    return out
+
+
+def fetch(series_id):
+    """Vrátí [(YYYY-MM-DD, hodnota)]. S FRED_API_KEY používá oficiální API, jinak CSV z webu."""
+    print(f"Stahuji {series_id}", flush=True)
+    if API_KEY:
+        obs = json.loads(get(FRED_API.format(series_id, API_KEY)))["observations"]
+        rows = [(o["date"], o["value"]) for o in obs]
+    else:
+        rows = list(csv.reader(io.StringIO(get(FRED_CSV.format(series_id)))))[1:]  # bez hlavičky
+    return [(date, float(value)) for date, value in rows if value not in ("", ".")]
 
 
 def to_quarterly(obs, how):

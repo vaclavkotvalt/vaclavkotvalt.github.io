@@ -24,7 +24,17 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      - name: Diagnostika dostupnosti FRED
+        continue-on-error: true
+        run: |
+          for u in "https://fred.stlouisfed.org/graph/fredgraph.csv?id=GDPC1" \
+                   "https://api.stlouisfed.org/fred/series/observations?series_id=GDPC1" \
+                   "https://www.stlouisfed.org/-/media/project/frbstl/stlouisfed/research/fred-md/quarterly/current.csv"; do
+            curl -sS -o /dev/null -m 25 -A "Mozilla/5.0" -w "%{http_code} %{time_total}s  $u\n" "$u" || echo "selhalo: $u"
+          done
       - name: Stáhnout data z FRED
+        env:
+          FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
         run: python kvartaly/scripts/build_data.py
       - name: Uložit změny
         run: |
