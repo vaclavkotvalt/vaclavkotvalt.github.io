@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Podobné kvartály</title>
+<meta name="description" content="Vyberte čtvrtletí z historie a najděte nejpodobnější kvartály podle makroekonomických dat – úrovní i trendů růstu, inflace, nezaměstnanosti, sazeb a spreadů.">
+<meta name="author" content="Václav Kotvalt">
+<link rel="canonical" href="https://vaclavkotvalt.cz/kvartaly/">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ctext y=%22.9em%22 font-size=%2290%22%3E%F0%9F%93%88%3C/text%3E%3C/svg%3E">
+<meta property="og:title" content="Podobné kvartály – Václav Kotvalt">
+<meta property="og:description" content="Který kvartál v historii se nejvíc podobá tomu, který vás zajímá?">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,300;6..72,400&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d1a2b; --surface: #132339; --line: #23364f; --grid: #1c2e45; --text: #e6ecf4;
+    --muted: #92a3ba; --accent: #8ab8ff; --accent-ink: #0d1a2b;
+    --s-target: #5b93ea; --s-analog: #d4752a; --rec: rgba(146, 163, 186, 0.13);
+    color-scheme: dark;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) { color-scheme: dark; }
+  }
+  :root[data-theme="dark"] { color-scheme: dark; }
+  *, *::before, *::after { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font-family: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    font-size: 1rem; line-height: 1.55; -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--accent); text-underline-offset: 0.2em; }
+  a:focus-visible, button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .bar { position: sticky; top: 0; z-index: 5; background: var(--bg); border-bottom: 1px solid var(--line); }
+  .bar-in { max-width: 72rem; margin: 0 auto; padding: 0.85rem 16px; display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
+  .bar a { color: var(--muted); text-decoration: none; font-size: 0.95rem; }
+  .bar a:hover { color: var(--text); }
+  .bar .name { font-family: "Newsreader", Georgia, serif; font-size: 1.15rem; color: var(--text); }
+  main { max-width: 72rem; margin: 0 auto; padding: 0 16px 4rem; }
+  h1 { font-family: "Newsreader", Georgia, serif; font-weight: 300; font-size: clamp(2.3rem, 7vw, 4rem); line-height: 1; letter-spacing: -0.02em; margin: 3rem 0 1rem; }
+  h2 { font-family: "Newsreader", Georgia, serif; font-weight: 400; font-size: 1.6rem; margin: 0 0 0.25rem; }
+  .lead { color: var(--muted); max-width: 44rem; font-size: 1.1rem; margin: 0 0 2rem; }
+  .muted { color: var(--muted); }
+  .small { font-size: 0.875rem; }
+  .num { font-variant-numeric: tabular-nums; }
+
+  .panel { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 1.25rem; margin-bottom: 1.5rem; }
+  .controls { display: grid; gap: 1rem 1.5rem; grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr)); align-items: end; }
+  label.f { display: flex; flex-direction: column; gap: 0.3rem; font-size: 0.85rem; color: var(--muted); }
+  select, input[type="number"] {
+    font: inherit; font-size: 1rem; color: var(--text); background: var(--bg);
+    border: 1px solid var(--line); border-radius: 6px; padding: 0.5rem 0.6rem; width: 100%;
+  }
+  .check { display: flex; gap: 0.5rem; align-items: flex-start; font-size: 0.9rem; cursor: pointer; }
+  .check input { margin-top: 0.25rem; accent-color: var(--accent); }
+  details.ind { margin-top: 1rem; border-top: 1px solid var(--line); padding-top: 0.75rem; }
+  details.ind summary { cursor: pointer; color: var(--muted); font-size: 0.9rem; }
+  .ind-grid { display: grid; gap: 0.4rem 1.25rem; grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr)); margin-top: 0.75rem; }
+  .ind-tools { margin-top: 0.75rem; display: flex; gap: 0.5rem; flex-wrap: wrap; }
+  button.lnk { font: inherit; font-size: 0.85rem; background: transparent; border: 1px solid var(--line); color: var(--muted); border-radius: 999px; padding: 0.2rem 0.75rem; cursor: pointer; }
+  button.lnk:hover { color: var(--text); }
+
+  .snap { display: grid; gap: 0.5rem 1rem; grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr)); margin-top: 0.75rem; }
+  .snap div { border-left: 2px solid var(--line); padding-left: 0.6rem; }
+  .snap .v { font-size: 1.15rem; font-weight: 500; }
+  .snap .k { font-size: 0.8rem; color: var(--muted); }
+
+  .summary { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr)); margin: 0.75rem 0 1.25rem; }
+  .tile { border: 1px solid var(--line); border-radius: 8px; padding: 0.75rem 0.9rem; }
+  .tile .v { font-size: 1.6rem; font-weight: 500; line-height: 1.2; }
+  .tile .k { font-size: 0.8rem; color: var(--muted); }
+
+  .tbl-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.92rem; }
+  th, td { text-align: left; padding: 0.55rem 0.6rem; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  th { color: var(--muted); font-weight: 500; font-size: 0.8rem; }
+  td.r, th.r { text-align: right; }
+  tbody tr { cursor: pointer; }
+  tbody tr:hover { background: rgba(138, 184, 255, 0.06); }
+  tbody tr.sel { background: rgba(138, 184, 255, 0.12); }
+  .simbar { display: inline-block; width: 5rem; height: 6px; background: var(--line); border-radius: 3px; vertical-align: middle; margin-right: 0.5rem; overflow: hidden; }
+  .simbar i { display: block; height: 100%; background: var(--accent); border-radius: 3px; }
+  .tag { display: inline-block; font-size: 0.75rem; padding: 0.05rem 0.45rem; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); }
+  .tag.rec { border-color: #8a5a3a; color: #e8b48a; }
+
+  .legend { display: flex; gap: 1.25rem; flex-wrap: wrap; font-size: 0.85rem; color: var(--muted); margin: 0.5rem 0 0.75rem; }
+  .legend span { display: inline-flex; align-items: center; gap: 0.4rem; }
+  .sw { width: 18px; height: 0; border-top: 2px solid; display: inline-block; }
+  .sw.t { border-color: var(--s-target); }
+  .sw.a { border-color: var(--s-analog); border-top-style: dashed; }
+  .sw.r { width: 12px; height: 12px; border: 0; background: var(--rec); outline: 1px solid var(--line); }
+  .multiples { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fill, minmax(min(100%, 20rem), 1fr)); }
+  .chart { position: relative; }
+  .chart h3 { font-size: 0.9rem; font-weight: 500; margin: 0 0 0.25rem; }
+  .chart h3 .u { color: var(--muted); font-weight: 400; }
+  .chart svg { display: block; width: 100%; height: auto; overflow: visible; }
+  svg text { fill: var(--muted); font-size: 11px; font-family: inherit; }
+  .tip {
+    position: absolute; pointer-events: none; z-index: 3; background: var(--bg); border: 1px solid var(--line);
+    border-radius: 6px; padding: 0.4rem 0.55rem; font-size: 0.8rem; line-height: 1.4; white-space: nowrap; display: none;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.35);
+  }
+  .tip b { font-weight: 500; }
+  .tip .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 0.35rem; }
+
+  .method { max-width: 46rem; color: var(--muted); }
+  .method p, .method li { margin: 0 0 0.6rem; }
+  .method strong { color: var(--text); font-weight: 500; }
+  @media (max-width: 560px) {
+    .panel { padding: 1rem 0.85rem; }
+    .snap { grid-template-columns: 1fr 1fr; }
+    .summary { grid-template-columns: 1fr 1fr; gap: 0.6rem; }
+    .tile .v { font-size: 1.3rem; }
+    .bar .back-long { display: none; }
+  }
+  #status { color: var(--muted); }
+  footer { max-width: 72rem; margin: 0 auto; padding: 1.5rem 16px 3rem; border-top: 1px solid var(--line); color: var(--muted); font-size: 0.85rem; }
+</style>
+</head>
+<body>
+<header class="bar"><div class="bar-in">
+  <a class="name" href="/">Václav Kotvalt</a>
+  <a href="/">← Zpět<span class="back-long"> na hlavní stránku</span></a>
+</div></header>
+
+<main>
+  <h1>Podobné kvartály</h1>
+  <p class="lead">Vyberte čtvrtletí z historie a nástroj najde kvartály, které se mu nejvíc podobaly – podle úrovní i trendů růstu, inflace, trhu práce, úrokových sazeb a spreadů. A ukáže, co po nich následovalo.</p>
+
+  <p id="status">Načítám data…</p>
+
+  <div id="app" hidden>
+    <section class="panel" aria-label="Nastavení">
+      <div class="controls">
+        <label class="f">Kvartál
+          <select id="q"></select>
+        </label>
+        <label class="f">Porovnávané okno
+          <select id="w">
+            <option value="1">jen samotný kvartál</option>
+            <option value="4" selected>poslední 4 kvartály (rok)</option>
+            <option value="8">posledních 8 kvartálů (2 roky)</option>
+            <option value="12">posledních 12 kvartálů (3 roky)</option>
+          </select>
+        </label>
+        <label class="f">Vyloučit okolí (± kvartálů)
+          <input id="ex" type="number" min="0" max="40" value="8">
+        </label>
+        <label class="f">Počet výsledků
+          <select id="n">
+            <option>5</option><option selected>10</option><option>20</option>
+          </select>
+        </label>
+      </div>
+      <div class="controls" style="margin-top:1rem">
+        <label class="check"><input type="checkbox" id="ep" checked><span>Z každé epizody jen nejlepší kvartál <span class="muted small">(sousední kvartály se nezahltí výsledky)</span></span></label>
+        <label class="check"><input type="checkbox" id="shape"><span>Porovnávat jen tvar vývoje <span class="muted small">(bez úrovní, jen změny uvnitř okna)</span></span></label>
+      </div>
+      <details class="ind">
+        <summary>Ukazatele (<span id="indCount"></span>)</summary>
+        <div class="ind-grid" id="inds"></div>
+        <div class="ind-tools">
+          <button class="lnk" type="button" data-preset="default">Výchozí výběr</button>
+          <button class="lnk" type="button" data-preset="all">Vše</button>
+          <button class="lnk" type="button" data-preset="real">Jen reálná ekonomika</button>
+          <button class="lnk" type="button" data-preset="fin">Jen sazby a trhy</button>
+        </div>
+      </details>
+    </section>
+
+    <section class="panel" aria-labelledby="snapH">
+      <h2 id="snapH">Vybraný kvartál: <span id="qLabel"></span></h2>
+      <div class="snap num" id="snap"></div>
+    </section>
+
+    <section class="panel" aria-labelledby="resH">
+      <h2 id="resH">Nejpodobnější kvartály</h2>
+      <p class="muted small" id="resNote"></p>
+      <div class="summary num" id="summary"></div>
+      <div class="tbl-wrap">
+        <table class="num">
+          <thead><tr>
+            <th>#</th><th>Kvartál</th><th>Podobnost</th>
+            <th class="r">Růst HDP r/r</th><th class="r">Inflace</th><th class="r">Nezaměst.</th>
+            <th class="r" title="Růst reálného HDP r/r o 4 kvartály později">HDP za rok</th>
+            <th class="r" title="Změna nezaměstnanosti během následujících 4 kvartálů">Δ nezam. za rok</th>
+            <th>Recese do roka</th>
+          </tr></thead>
+          <tbody id="rows"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="panel" aria-labelledby="cmpH">
+      <h2 id="cmpH">Srovnání: <span id="cmpLabel"></span></h2>
+      <p class="muted small">Osa x ukazuje kvartály relativně k vybranému (0). Šedý pás je porovnávané okno, vpravo od nuly je to, co následovalo. Analog vyberete kliknutím do tabulky.</p>
+      <div class="legend" id="cmpLegend"></div>
+      <div class="multiples" id="multiples"></div>
+    </section>
+
+    <section class="panel" aria-labelledby="tlH">
+      <h2 id="tlH">Podobnost napříč historií</h2>
+      <p class="muted small">Jak moc se vybranému kvartálu podobá každý kvartál v databázi. Šedé pásy jsou recese (NBER). Kliknutím zvolíte kvartál ke srovnání.</p>
+      <div class="chart" id="timeline"></div>
+    </section>
+
+    <section class="method" aria-labelledby="mH">
+      <h2 id="mH" style="color:var(--text)">Jak to funguje</h2>
+      <ol>
+        <li><strong>Data.</strong> Čtvrtletní data za USA z databáze <a href="https://fred.stlouisfed.org/" target="_blank" rel="noopener">FRED</a> (Federal Reserve Bank of St. Louis), od roku 1947. Měsíční řady jsou zprůměrované do čtvrtletí. Data se automaticky aktualizují každý týden.</li>
+        <li><strong>Standardizace.</strong> Každý ukazatel se převede na z-skóre (odchylka od dlouhodobého průměru v násobcích směrodatné odchylky), aby se daly sčítat inflace v procentech i spready v procentních bodech.</li>
+        <li><strong>Okno.</strong> Porovnává se nejen samotný kvartál, ale celá trajektorie za zvolené okno – tím se zachytí i trend (např. „inflace roste, nezaměstnanost klesá“). V režimu „jen tvar“ se od každé řady v okně odečte její průměr, takže rozhoduje směr vývoje, ne úroveň.</li>
+        <li><strong>Vzdálenost.</strong> Pro každý kandidátní kvartál se spočítá euklidovská vzdálenost z-skóre (odmocnina průměru čtverců rozdílů) přes všechny ukazatele a kvartály v okně, které jsou k dispozici pro oba. Podobnost = 100 × e<sup>−vzdálenost</sup>, tedy 100 % je shoda.</li>
+        <li><strong>Okolí.</strong> Sousední kvartály se vylučují, protože by triviálně vyhrávaly. Ve starších obdobích chybí některé řady (např. 10letý výnos až od roku 1953) – porovnání pak běží jen přes dostupné ukazatele a kandidáti, kterým chybí víc než 40 % údajů, se vynechají.</li>
+      </ol>
+      <p>Historická podobnost není předpověď: pomáhá najít období, ze kterých se dá poučit, ne říct, co přijde.</p>
+    </section>
+  </div>
+</main>
+
+<footer>
+  <span id="srcNote">Zdroj: FRED, Federal Reserve Bank of St. Louis.</span>
+</footer>
+
+<script>
+(() => {
+  const DEFAULT = ['gdp_yoy', 'ip_yoy', 'cpi_yoy', 'unrate', 'unrate_d4', 'pay_yoy', 'tb3', 'term', 'credit', 'oil_yoy'];
+  const PRESETS = {
+    real: ['gdp_yoy', 'gdp_qoq', 'inv_yoy', 'ip_yoy', 'cpi_yoy', 'unrate', 'unrate_d4', 'pay_yoy'],
+    fin: ['tb3', 'tb3_d4', 'real_rate', 'gs10', 'term', 'credit', 'oil_yoy'],
+  };
+  const $ = (id) => document.getElementById(id);
+  const fmt = (v, d = 1) => v == null || !isFinite(v) ? '–' : v.toLocaleString('cs-CZ', { minimumFractionDigits: d, maximumFractionDigits: d });
+  const sgn = (v, d = 1) => v == null ? '–' : (v > 0 ? '+' : '') + fmt(v, d);
+
+  let D, IND = {}, Z = {}, T = 0, sel = new Set(DEFAULT), lastScores = null, analog = null;
+
+  fetch('data.json', { cache: 'no-cache' })
+    .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
+    .then(init)
+    .catch(() => { $('status').textContent = 'Data se nepodařilo načíst. Zkuste stránku obnovit později.'; });
+
+  function init(data) {
+    D = data; T = D.quarters.length;
+    for (const ind of D.indicators) {
+      IND[ind.id] = ind;
+      const v = ind.values.filter(x => x != null);
+      const m = v.reduce((a, b) => a + b, 0) / v.length;
+      const sd = Math.sqrt(v.reduce((a, b) => a + (b - m) ** 2, 0) / (v.length - 1)) || 1;
+      Z[ind.id] = ind.values.map(x => x == null ? null : (x - m) / sd);
+    }
+    sel = new Set(DEFAULT.filter(id => IND[id]));
+
+    const qs = $('q');
+    for (let i = T - 1; i >= 0; i--) qs.add(new Option(D.quarters[i].replace('Q', ' Q'), i));
+    const ig = $('inds');
+    for (const ind of D.indicators) {
+      const l = document.createElement('label');
+      l.className = 'check';
+      l.innerHTML = `<input type="checkbox" value="${ind.id}"><span>${ind.name} <span class="muted small">(${firstYear(ind)}–)</span></span>`;
+      ig.appendChild(l);
+    }
+    readHash();
+    syncChecks();
+
+    ig.addEventListener('change', e => {
+      if (e.target.checked) sel.add(e.target.value); else sel.delete(e.target.value);
+      if (!sel.size) { sel.add(e.target.value); e.target.checked = true; }
+      update();
+    });
+    document.querySelectorAll('[data-preset]').forEach(b => b.addEventListener('click', () => {
+      const p = b.dataset.preset;
+      sel = new Set(p === 'all' ? Object.keys(IND) : p === 'default' ? DEFAULT : PRESETS[p]);
+      syncChecks(); update();
+    }));
+    ['q', 'w', 'ex', 'n', 'ep', 'shape'].forEach(id => $(id).addEventListener('change', update));
+    window.addEventListener('hashchange', () => { if (readHash()) { syncChecks(); update(false); } });
+
+    $('status').hidden = true;
+    $('app').hidden = false;
+    $('srcNote').textContent = `Zdroj: ${D.source}. Data za ${D.country}, ${D.quarters[0].replace('Q', ' Q')} – ${D.quarters[T - 1].replace('Q', ' Q')}, aktualizováno ${new Date(D.updated).toLocaleDateString('cs-CZ')}.`;
+    update(false);
+  }
+
+  function firstYear(ind) { const i = ind.values.findIndex(v => v != null); return D.quarters[i].slice(0, 4); }
+  function syncChecks() {
+    document.querySelectorAll('#inds input').forEach(c => { c.checked = sel.has(c.value); });
+    $('indCount').textContent = `vybráno ${sel.size} z ${D.indicators.length}`;
+  }
+
+  function readHash() {
+    const h = new URLSearchParams(location.hash.slice(1));
+    let changed = false;
+    if (h.get('q')) {
+      const i = D.quarters.indexOf(h.get('q').toUpperCase());
+      if (i >= 0 && String(i) !== $('q').value) { $('q').value = i; changed = true; }
+    } else if (!$('q').dataset.init) { $('q').value = T - 1; }
+    $('q').dataset.init = 1;
+    if (h.get('w') && [...$('w').options].some(o => o.value === h.get('w'))) { $('w').value = h.get('w'); changed = true; }
+    if (h.get('i')) {
+      const s = h.get('i').split(',').filter(id => IND[id]);
+      if (s.length) { sel = new Set(s); changed = true; }
+    }
+    if (h.has('shape')) { $('shape').checked = h.get('shape') === '1'; changed = true; }
+    return changed;
+  }
+  function writeHash() {
+    const p = new URLSearchParams({ q: D.quarters[+$('q').value], w: $('w').value });
+    const isDef = sel.size === DEFAULT.length && DEFAULT.every(id => sel.has(id));
+    if (!isDef) p.set('i', [...sel].join(','));
+    if ($('shape').checked) p.set('shape', '1');
+    history.replaceState(null, '', '#' + p.toString());
+  }
+
+  // Vektor z-skóre přes okno (k = 0 je samotný kvartál, k = 1 předchozí…)
+  function windowVec(t, ids, W, shape) {
+    const out = [];
+    for (const id of ids) {
+      const z = Z[id], col = [];
+      for (let k = 0; k < W; k++) col.push(t - k >= 0 ? z[t - k] : null);
+      if (shape) {
+        const ok = col.filter(v => v != null);
+        const m = ok.length ? ok.reduce((a, b) => a + b, 0) / ok.length : 0;
+        for (let k = 0; k < W; k++) out.push(col[k] == null || ok.length < 2 ? null : col[k] - m);
+      } else out.push(...col);
+    }
+    return out;
+  }
+
+  function score(t, ids, W, shape) {
+    const tv = windowVec(t, ids, W, shape);
+    const avail = tv.filter(v => v != null).length;
+    const res = new Array(T).fill(null);
+    if (!avail) return { res, avail };
+    for (let c = W - 1; c < T; c++) {
+      const cv = windowVec(c, ids, W, shape);
+      let s = 0, n = 0;
+      for (let j = 0; j < tv.length; j++) {
+        if (tv[j] == null || cv[j] == null) continue;
+        s += (tv[j] - cv[j]) ** 2; n++;
+      }
+      if (n >= Math.max(1, 0.6 * avail)) {
+        const d = Math.sqrt(s / n);
+        res[c] = { d, sim: 100 * Math.exp(-d) };
+      }
+    }
+    return { res, avail };
+  }
+
+  function update(hash = true) {
+    const t = +$('q').value, W = +$('w').value;
+    const shape = $('shape').checked && W > 1;
+    const ex = Math.max(0, +$('ex').value || 0), N = +$('n').value, ep = $('ep').checked;
+    const ids = [...sel];
+    syncChecks();
+    if (hash) writeHash();
+
+    $('qLabel').textContent = D.quarters[t].replace('Q', ' Q') + (D.recession[t] ? ' (recese)' : '');
+    renderSnap(t);
+
+    const { res, avail } = score(t, ids, W, shape);
+    const cands = [];
+    res.forEach((r, c) => { if (r && Math.abs(c - t) > ex) cands.push({ c, ...r }); });
+    cands.sort((a, b) => a.d - b.d);
+    const picked = [];
+    for (const k of cands) {
+      if (picked.length >= N) break;
+      if (ep && picked.some(p => Math.abs(p.c - k.c) <= 4)) continue;
+      picked.push(k);
+    }
+    lastScores = { t, res, picked, ex };
+
+    const missing = ids.filter(id => Z[id][t] == null).map(id => IND[id].name);
+    $('resNote').textContent = (avail ? '' : 'Pro tento kvartál nejsou vybrané ukazatele k dispozici. ')
+      + (missing.length ? `V tomto kvartálu chybí: ${missing.join(', ')}. ` : '')
+      + `Porovnáno ${cands.length} kvartálů přes ${ids.length} ukazatelů` + (W > 1 ? ` a okno ${W} kvartálů` : '') + (shape ? ' (jen tvar)' : '') + '.';
+
+    renderSummary(picked);
+    renderRows(picked);
+    analog = picked.length ? picked[0].c : null;
+    markSel();
+    renderCompare();
+    renderTimeline();
+  }
+
+  function renderSnap(t) {
+    $('snap').innerHTML = [...sel].map(id => {
+      const ind = IND[id], v = ind.values[t], z = Z[id][t];
+      return `<div><div class="v">${fmt(v)} <span class="small muted">${ind.unit}</span></div><div class="k">${ind.name}${z == null ? '' : ` · z = ${sgn(z, 1)}`}</div></div>`;
+    }).join('');
+  }
+
+  function outcome(c) {
+    const g = IND.gdp_yoy.values, u = IND.unrate.values;
+    const f = c + 4 < T;
+    let rec = null;
+    if (c + 1 < T) { rec = 0; for (let k = 1; k <= 4 && c + k < T; k++) rec = rec || D.recession[c + k]; if (!rec && !f) rec = null; }
+    return {
+      gdp: f ? g[c + 4] : null,
+      du: f && u[c + 4] != null && u[c] != null ? u[c + 4] - u[c] : null,
+      rec,
+    };
+  }
+
+  function renderSummary(picked) {
+    const o = picked.map(p => outcome(p.c));
+    const avg = (a) => { const v = a.filter(x => x != null); return v.length ? v.reduce((s, x) => s + x, 0) / v.length : null; };
+    const recs = o.filter(x => x.rec != null);
+    const recN = recs.filter(x => x.rec).length;
+    $('summary').innerHTML = picked.length ? `
+      <div class="tile"><div class="v">${fmt(picked[0].sim, 0)} %</div><div class="k">podobnost nejbližšího analogu (${D.quarters[picked[0].c].replace('Q', ' Q')})</div></div>
+      <div class="tile"><div class="v">${recs.length ? `${recN} z ${recs.length}` : '–'}</div><div class="k">analogů, po kterých do roka začala nebo trvala recese</div></div>
+      <div class="tile"><div class="v">${fmt(avg(o.map(x => x.gdp)))} %</div><div class="k">průměrný růst HDP r/r o rok později</div></div>
+      <div class="tile"><div class="v">${sgn(avg(o.map(x => x.du)))} p. b.</div><div class="k">průměrná změna nezaměstnanosti během roku</div></div>` : '';
+  }
+
+  function renderRows(picked) {
+    $('rows').innerHTML = picked.map((p, i) => {
+      const o = outcome(p.c), q = D.quarters[p.c];
+      return `<tr data-c="${p.c}" tabindex="0">
+        <td class="muted">${i + 1}</td>
+        <td>${q.replace('Q', ' Q')} ${D.recession[p.c] ? '<span class="tag rec">recese</span>' : ''}</td>
+        <td><span class="simbar"><i style="width:${p.sim.toFixed(1)}%"></i></span>${fmt(p.sim, 0)} %</td>
+        <td class="r">${fmt(IND.gdp_yoy.values[p.c])} %</td>
+        <td class="r">${fmt(IND.cpi_yoy.values[p.c])} %</td>
+        <td class="r">${fmt(IND.unrate.values[p.c])} %</td>
+        <td class="r">${o.gdp == null ? '–' : fmt(o.gdp) + ' %'}</td>
+        <td class="r">${o.du == null ? '–' : sgn(o.du) + ' p. b.'}</td>
+        <td>${o.rec == null ? '<span class="muted">zatím nevíme</span>' : o.rec ? '<span class="tag rec">ano</span>' : '<span class="tag">ne</span>'}</td>
+      </tr>`;
+    }).join('') || '<tr><td colspan="9" class="muted">Žádný srovnatelný kvartál.</td></tr>';
+    $('rows').querySelectorAll('tr[data-c]').forEach(tr => {
+      const go = () => { analog = +tr.dataset.c; markSel(); renderCompare(); renderTimeline(); };
+      tr.addEventListener('click', go);
+      tr.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } });
+    });
+  }
+  function markSel() { $('rows').querySelectorAll('tr[data-c]').forEach(tr => tr.classList.toggle('sel', +tr.dataset.c === analog)); }
+
+  // ---------- grafy (ručně kreslené SVG) ----------
+  const NS = 'http://www.w3.org/2000/svg';
+  const el = (name, attrs = {}, parent) => {
+    const e = document.createElementNS(NS, name);
+    for (const k in attrs) e.setAttribute(k, attrs[k]);
+    if (parent) parent.appendChild(e);
+    return e;
+  };
+  function niceTicks(lo, hi, n = 4) {
+    const span = hi - lo || 1, step0 = span / n, mag = 10 ** Math.floor(Math.log10(step0));
+    const step = [1, 2, 2.5, 5, 10].map(m => m * mag).find(s => span / s <= n) || 10 * mag;
+    const out = [];
+    for (let v = Math.ceil(lo / step) * step; v <= hi + 1e-9; v += step) out.push(+v.toFixed(10));
+    return out;
+  }
+  function path(pts) {
+    let d = '', pen = false;
+    for (const p of pts) { if (p == null) { pen = false; continue; } d += (pen ? 'L' : 'M') + p[0].toFixed(1) + ',' + p[1].toFixed(1); pen = true; }
+    return d;
+  }
+
+  function renderCompare() {
+    const box = $('multiples');
+    box.innerHTML = '';
+    const t = lastScores.t, a = analog, W = +$('w').value;
+    $('cmpLabel').textContent = a == null ? '–' : `${D.quarters[t].replace('Q', ' Q')} vs. ${D.quarters[a].replace('Q', ' Q')}`;
+    $('cmpLegend').innerHTML = a == null ? '' : `<span><i class="sw t"></i>${D.quarters[t].replace('Q', ' Q')} (vybraný)</span><span><i class="sw a"></i>${D.quarters[a].replace('Q', ' Q')} (analog)</span>`;
+    if (a == null) return;
+    const before = Math.max(8, W + 2), after = 8;
+    const xs = []; for (let o = -before; o <= after; o++) xs.push(o);
+    for (const id of sel) {
+      const ind = IND[id], v = ind.values;
+      const get = (base, o) => { const i = base + o; return i >= 0 && i < T ? v[i] : null; };
+      const tv = xs.map(o => get(t, o)), av = xs.map(o => get(a, o));
+      const all = tv.concat(av).filter(x => x != null);
+      const wrap = document.createElement('div');
+      wrap.className = 'chart';
+      wrap.innerHTML = `<h3>${ind.name} <span class="u">(${ind.unit})</span></h3>`;
+      box.appendChild(wrap);
+      if (!all.length) { wrap.insertAdjacentHTML('beforeend', '<p class="muted small">Pro tato období nejsou data.</p>'); continue; }
+      let lo = Math.min(...all), hi = Math.max(...all);
+      if (lo > 0 && ind.unit === '%' && lo < hi * 0.4) lo = 0;
+      const pad = (hi - lo) * 0.08 || 1; lo -= pad; hi += pad;
+      const Wd = 340, H = 170, m = { l: 34, r: 8, t: 8, b: 20 };
+      const X = o => m.l + (o + before) / (before + after) * (Wd - m.l - m.r);
+      const Y = y => m.t + (1 - (y - lo) / (hi - lo)) * (H - m.t - m.b);
+      const svg = el('svg', { viewBox: `0 0 ${Wd} ${H}`, role: 'img', 'aria-label': `${ind.name}: srovnání vybraného kvartálu a analogu` }, wrap);
+      el('rect', { x: X(-(W - 1)) - (W === 1 ? 4 : 0), y: m.t, width: Math.max(8, X(0) - X(-(W - 1))) , height: H - m.t - m.b, fill: 'var(--rec)' }, svg);
+      for (const tk of niceTicks(lo, hi)) {
+        el('line', { x1: m.l, x2: Wd - m.r, y1: Y(tk), y2: Y(tk), stroke: tk === 0 ? 'var(--muted)' : 'var(--grid)', 'stroke-width': 1, 'stroke-opacity': tk === 0 ? 0.5 : 1 }, svg);
+        el('text', { x: m.l - 5, y: Y(tk) + 3.5, 'text-anchor': 'end' }, svg).textContent = fmt(tk, Math.abs(tk) < 10 && tk % 1 ? 1 : 0);
+      }
+      for (const o of [-before, -4, 0, 4, after]) {
+        if (o < -before) continue;
+        el('text', { x: X(o), y: H - 5, 'text-anchor': 'middle' }, svg).textContent = o > 0 ? '+' + o : o;
+      }
+      el('line', { x1: X(0), x2: X(0), y1: m.t, y2: H - m.b, stroke: 'var(--muted)', 'stroke-dasharray': '2 3', 'stroke-opacity': 0.6 }, svg);
+      el('path', { d: path(xs.map((o, i) => av[i] == null ? null : [X(o), Y(av[i])])), fill: 'none', stroke: 'var(--s-analog)', 'stroke-width': 2, 'stroke-dasharray': '5 3', 'stroke-linejoin': 'round' }, svg);
+      el('path', { d: path(xs.map((o, i) => tv[i] == null ? null : [X(o), Y(tv[i])])), fill: 'none', stroke: 'var(--s-target)', 'stroke-width': 2, 'stroke-linejoin': 'round' }, svg);
+      const cross = el('line', { y1: m.t, y2: H - m.b, stroke: 'var(--muted)', 'stroke-opacity': 0.7, visibility: 'hidden' }, svg);
+      const dT = el('circle', { r: 4, fill: 'var(--s-target)', stroke: 'var(--surface)', 'stroke-width': 2, visibility: 'hidden' }, svg);
+      const dA = el('circle', { r: 4, fill: 'var(--s-analog)', stroke: 'var(--surface)', 'stroke-width': 2, visibility: 'hidden' }, svg);
+      const tip = document.createElement('div'); tip.className = 'tip'; wrap.appendChild(tip);
+      const hit = el('rect', { x: m.l, y: 0, width: Wd - m.l - m.r, height: H, fill: 'transparent' }, svg);
+      const move = (ev) => {
+        const r = svg.getBoundingClientRect();
+        const px = (ev.clientX - r.left) / r.width * Wd;
+        const i = Math.max(0, Math.min(xs.length - 1, Math.round((px - m.l) / (Wd - m.l - m.r) * (before + after))));
+        const o = xs[i];
+        cross.setAttribute('x1', X(o)); cross.setAttribute('x2', X(o)); cross.setAttribute('visibility', 'visible');
+        [[dT, tv[i]], [dA, av[i]]].forEach(([d, val]) => {
+          if (val == null) d.setAttribute('visibility', 'hidden');
+          else { d.setAttribute('cx', X(o)); d.setAttribute('cy', Y(val)); d.setAttribute('visibility', 'visible'); }
+        });
+        const qt = t + o >= 0 && t + o < T ? D.quarters[t + o] : '–', qa = a + o >= 0 && a + o < T ? D.quarters[a + o] : '–';
+        tip.innerHTML = `<b>${o > 0 ? '+' + o : o} kv.</b><br><span class="dot" style="background:var(--s-target)"></span>${qt.replace('Q', ' Q')}: ${fmt(tv[i], 2)}<br><span class="dot" style="background:var(--s-analog)"></span>${qa.replace('Q', ' Q')}: ${fmt(av[i], 2)}`;
+        tip.style.display = 'block';
+        const left = X(o) / Wd * r.width;
+        tip.style.left = (left > r.width / 2 ? left - tip.offsetWidth - 10 : left + 10) + 'px';
+        tip.style.top = '1.8rem';
+      };
+      hit.addEventListener('pointermove', move);
+      hit.addEventListener('pointerleave', () => { tip.style.display = 'none'; [cross, dT, dA].forEach(x => x.setAttribute('visibility', 'hidden')); });
+    }
+  }
+
+  function renderTimeline() {
+    const box = $('timeline');
+    box.innerHTML = '';
+    const { t, res, picked, ex } = lastScores;
+    const Wd = 1000, H = 220, m = { l: 36, r: 10, t: 10, b: 24 };
+    const X = i => m.l + i / (T - 1) * (Wd - m.l - m.r);
+    const Y = y => m.t + (1 - y / 100) * (H - m.t - m.b);
+    const svg = el('svg', { viewBox: `0 0 ${Wd} ${H}`, role: 'img', 'aria-label': 'Podobnost vybraného kvartálu s ostatními kvartály v čase' }, box);
+    for (let i = 0; i < T; i++) if (D.recession[i]) el('rect', { x: X(i) - (Wd - m.l - m.r) / T / 2, y: m.t, width: (Wd - m.l - m.r) / T + 0.5, height: H - m.t - m.b, fill: 'var(--rec)' }, svg);
+    for (const tk of [0, 25, 50, 75, 100]) {
+      el('line', { x1: m.l, x2: Wd - m.r, y1: Y(tk), y2: Y(tk), stroke: 'var(--grid)' }, svg);
+      el('text', { x: m.l - 6, y: Y(tk) + 3.5, 'text-anchor': 'end' }, svg).textContent = tk + ' %';
+    }
+    const y0 = +D.quarters[0].slice(0, 4), y1 = +D.quarters[T - 1].slice(0, 4);
+    for (let y = Math.ceil(y0 / 10) * 10; y <= y1; y += 10) {
+      const i = D.quarters.indexOf(y + 'Q1');
+      if (i >= 0) el('text', { x: X(i), y: H - 6, 'text-anchor': 'middle' }, svg).textContent = y;
+    }
+    el('rect', { x: X(Math.max(0, t - ex)), y: m.t, width: Math.max(2, X(Math.min(T - 1, t + ex)) - X(Math.max(0, t - ex))), height: H - m.t - m.b, fill: 'var(--s-target)', 'fill-opacity': 0.12 }, svg);
+    el('path', { d: path(res.map((r, i) => r && Math.abs(i - t) > ex ? [X(i), Y(r.sim)] : null)), fill: 'none', stroke: 'var(--accent)', 'stroke-width': 1.5, 'stroke-linejoin': 'round' }, svg);
+    el('line', { x1: X(t), x2: X(t), y1: m.t, y2: H - m.b, stroke: 'var(--s-target)', 'stroke-width': 2 }, svg);
+    el('text', { x: X(t) + (t > T * 0.85 ? -6 : 6), y: m.t + 12, 'text-anchor': t > T * 0.85 ? 'end' : 'start', style: 'fill:var(--text)' }, svg).textContent = D.quarters[t].replace('Q', ' Q');
+    for (const p of picked) {
+      el('circle', { cx: X(p.c), cy: Y(p.sim), r: p.c === analog ? 6 : 4.5, fill: p.c === analog ? 'var(--s-analog)' : 'var(--accent)', stroke: 'var(--surface)', 'stroke-width': 2 }, svg);
+    }
+    const cross = el('line', { y1: m.t, y2: H - m.b, stroke: 'var(--muted)', 'stroke-opacity': 0.7, visibility: 'hidden' }, svg);
+    const dot = el('circle', { r: 4, fill: 'var(--accent)', stroke: 'var(--surface)', 'stroke-width': 2, visibility: 'hidden' }, svg);
+    const tip = document.createElement('div'); tip.className = 'tip'; box.appendChild(tip);
+    const hit = el('rect', { x: m.l, y: 0, width: Wd - m.l - m.r, height: H, fill: 'transparent', style: 'cursor:pointer' }, svg);
+    const idxAt = (ev) => { const r = svg.getBoundingClientRect(); const px = (ev.clientX - r.left) / r.width * Wd; return Math.max(0, Math.min(T - 1, Math.round((px - m.l) / (Wd - m.l - m.r) * (T - 1)))); };
+    hit.addEventListener('pointermove', ev => {
+      const i = idxAt(ev), r = res[i], ok = r && Math.abs(i - t) > ex;
+      cross.setAttribute('x1', X(i)); cross.setAttribute('x2', X(i)); cross.setAttribute('visibility', 'visible');
+      if (ok) { dot.setAttribute('cx', X(i)); dot.setAttribute('cy', Y(r.sim)); dot.setAttribute('visibility', 'visible'); } else dot.setAttribute('visibility', 'hidden');
+      tip.innerHTML = `<b>${D.quarters[i].replace('Q', ' Q')}</b>${D.recession[i] ? ' · recese' : ''}<br>${ok ? 'podobnost ' + fmt(r.sim, 0) + ' %' : i === t ? 'vybraný kvartál' : Math.abs(i - t) <= ex ? 'vyloučené okolí' : 'nedostatek dat'}`;
+      tip.style.display = 'block';
+      const rr = svg.getBoundingClientRect(), left = X(i) / Wd * rr.width;
+      tip.style.left = (left > rr.width / 2 ? left - tip.offsetWidth - 10 : left + 10) + 'px';
+      tip.style.top = '0.5rem';
+    });
+    hit.addEventListener('pointerleave', () => { tip.style.display = 'none'; cross.setAttribute('visibility', 'hidden'); dot.setAttribute('visibility', 'hidden'); });
+    hit.addEventListener('click', ev => {
+      const i = idxAt(ev);
+      if (res[i] && Math.abs(i - t) > ex) { analog = i; markSel(); renderCompare(); renderTimeline(); }
+    });
+  }
+})();
+</script>
+</body>
+</html>

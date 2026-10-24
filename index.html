@@ -205,6 +205,9 @@
   .papers a { font-family: "Newsreader", Georgia, serif; font-size: 1.3rem; text-decoration: none; color: var(--text); }
   .papers a:hover { color: var(--accent); text-decoration: underline; }
   .papers li span:last-child { color: var(--muted); font-size: 0.9rem; }
+  .papers li.proj { flex-direction: column; gap: 0.3rem; }
+  .papers li.proj a span { color: inherit; font-size: inherit; }
+  .papers .desc { margin: 0; color: var(--muted); font-size: 0.95rem; }
 
   /* Kontakt */
   .contact-big {
@@ -226,6 +229,7 @@
       <a class="navlink" href="#zkusenosti"><span class="cs">Zkušenosti</span><span class="en">Experience</span></a>
       <a class="navlink" href="#vyzkum"><span class="cs">Výzkum</span><span class="en">Research</span></a>
       <a class="navlink" href="#clanky"><span class="cs">Články</span><span class="en">Articles</span></a>
+      <a class="navlink" href="#projekty"><span class="cs">Projekty</span><span class="en">Projects</span></a>
       <a class="navlink" href="#kontakt"><span class="cs">Kontakt</span><span class="en">Contact</span></a>
       <div class="lang" role="group" aria-label="Jazyk / Language">
         <button type="button" data-set="cs" aria-pressed="true">CZ</button>
@@ -401,6 +405,19 @@
       <li><a href="https://drive.google.com/file/d/1T28sXAGUvWH63hNzpfr8NvCLqeqEF5A_/view?usp=sharing" target="_blank" rel="noopener">Why Inflation Is Not a Problem</a><span>Raging Bull, 2026</span></li>
       <!-- Sem přidej další článek -->
     </ul>
+  </section>
+
+  <section class="block" id="projekty">
+    <h2><span class="cs">Projekty</span><span class="en">Projects</span></h2>
+    <div>
+      <ul class="papers">
+        <li class="proj">
+          <a href="/kvartaly/"><span class="cs">Podobné kvartály</span><span class="en">Similar Quarters</span></a>
+          <p class="desc"><span class="cs">Interaktivní nástroj: vyberete čtvrtletí a najde nejpodobnější období v historii USA podle makroekonomických dat – a ukáže, co po nich následovalo.</span><span class="en">Interactive tool: pick a quarter and it finds the most similar periods in US history based on macroeconomic data – and shows what came next (in Czech).</span></p>
+        </li>
+        <!-- Sem přidej další projekt -->
+      </ul>
+    </div>
   </section>
 
   <section class="block" id="dovednosti">
