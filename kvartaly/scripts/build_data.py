@@ -7,6 +7,7 @@ použije se oficiální FRED API, které je spolehlivější než stahování CS
 """
 
 import csv
+import html as html_lib
 import io
 import json
 import math
@@ -94,7 +95,8 @@ def fetch_multpl(slug):
     html = get(MULTPL.format(slug))
     out = []
     for mon, year, val in re.findall(r"<td>\s*(\w{3})\s+\d+,\s+(\d{4})\s*</td>\s*<td>(.*?)</td>", html, re.S):
-        num = re.search(r"-?\d+(?:\.\d+)?", re.sub(r"<[^>]+>", "", val))
+        # nejdřív zrušit HTML entity (multpl používá např. &#x2002; jako mezeru), pak značky
+        num = re.search(r"-?\d+(?:\.\d+)?", re.sub(r"<[^>]+>", "", html_lib.unescape(val)))
         if mon in MONTHS and num:
             out.append((f"{year}-{MONTHS[mon]:02d}-01", float(num.group())))
     if len(out) < 100:
