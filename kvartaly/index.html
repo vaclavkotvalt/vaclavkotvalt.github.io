@@ -67,11 +67,14 @@
     background: var(--surface); appearance: none; -webkit-appearance: none; cursor: pointer;
     background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%), linear-gradient(135deg, var(--muted) 50%, transparent 50%);
     background-position: right 1.2rem center, right 0.85rem center; background-size: 0.4rem 0.4rem; background-repeat: no-repeat;
+    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
   }
+  .picker select#qy:hover { background-color: #1a2d47; border-color: var(--muted); }
   .seg { display: inline-flex; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 4px; gap: 4px; }
   .seg button {
     font: inherit; font-size: 1.5rem; font-weight: 500; min-width: 3.6rem; padding: 0.45rem 0.6rem; border: 0; border-radius: 9px;
     background: transparent; color: var(--muted); cursor: pointer;
+    transition: background-color 0.2s ease, color 0.2s ease, opacity 0.2s ease;
   }
   .seg button:hover:not(:disabled) { color: var(--text); background: rgba(138, 184, 255, 0.08); }
   .seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
@@ -79,6 +82,7 @@
   .step {
     font: inherit; font-size: 1.8rem; line-height: 1; width: 3rem; height: 3rem; border-radius: 50%;
     border: 1px solid var(--line); background: transparent; color: var(--muted); cursor: pointer;
+    transition: color 0.2s ease, border-color 0.2s ease, background-color 0.2s ease, opacity 0.2s ease;
   }
   .step:hover:not(:disabled) { color: var(--text); border-color: var(--muted); }
   .step:disabled { opacity: 0.3; cursor: default; }
@@ -90,6 +94,10 @@
   .ind-tools { margin-top: 0.75rem; display: flex; gap: 0.5rem; flex-wrap: wrap; }
   button.lnk { font: inherit; font-size: 0.85rem; background: transparent; border: 1px solid var(--line); color: var(--muted); border-radius: 999px; padding: 0.2rem 0.75rem; cursor: pointer; }
   button.lnk:hover { color: var(--text); }
+  button.lnk { transition: color 0.2s ease, border-color 0.2s ease; }
+  @media (prefers-reduced-motion: reduce) {
+    .picker select#qy, .seg button, .step, button.lnk { transition: none; }
+  }
 
   .snap { display: grid; gap: 0.5rem 1rem; grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr)); margin-top: 0.75rem; }
   .snap div { border-left: 2px solid var(--line); padding-left: 0.6rem; }
