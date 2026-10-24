@@ -201,6 +201,12 @@
             <option>5</option><option selected>10</option><option>20</option>
           </select>
         </label>
+        <label class="f">Recese do (sloupec v tabulce)
+          <select id="rh">
+            <option value="1">1 roku</option><option value="2" selected>2 let</option>
+            <option value="3">3 let</option><option value="4">4 let</option><option value="5">5 let</option>
+          </select>
+        </label>
       </div>
       <div class="controls" style="margin-top:1rem">
         <label class="check"><input type="checkbox" id="ep" checked><span>Z každé epizody jen nejlepší kvartál <span class="muted small">(sousední kvartály se nezahltí výsledky)</span></span></label>
@@ -229,7 +235,7 @@
             <th class="r">Růst HDP r/r</th><th class="r">Inflace</th><th class="r">Nezaměst.</th>
             <th class="r" title="Růst reálného HDP r/r o 4 kvartály později">HDP za rok</th>
             <th class="r" title="Změna nezaměstnanosti během následujících 4 kvartálů">Δ nezam. za rok</th>
-            <th title="Začala nebo trvala recese (podle NBER) během následujících 8 kvartálů?">Recese do 2 let</th>
+            <th id="recTh">Recese do 2 let</th>
           </tr></thead>
           <tbody id="rows"></tbody>
         </table>
@@ -280,7 +286,9 @@
 
 <script>
 (() => {
-  const REC_H = 8; // horizont pro „recese do 2 let“ (kvartály)
+  // horizont pro sloupec „Recese do X let“ (v letech, nastavuje se v Dalším nastavení)
+  const recYears = () => +$('rh').value;
+  const recLabel = (y) => y === 1 ? '1 roku' : `${y} let`;
   const DEFAULT = ['gdp_yoy', 'ip_yoy', 'cpi_yoy', 'unrate', 'unrate_d4', 'pay_yoy', 'tb3', 'term', 'credit', 'oil_yoy'];
   const PRESETS = {
     real: ['gdp_yoy', 'gdp_qoq', 'inv_yoy', 'ip_yoy', 'cpi_yoy', 'unrate', 'unrate_d4', 'pay_yoy'],
@@ -348,7 +356,7 @@
       sel = new Set(p === 'all' ? Object.keys(IND) : p === 'default' ? DEFAULT : PRESETS[p]);
       syncChecks(); update();
     }));
-    ['w', 'ex', 'n', 'ep', 'shape'].forEach(id => $(id).addEventListener('change', update));
+    ['w', 'ex', 'n', 'ep', 'shape', 'rh'].forEach(id => $(id).addEventListener('change', update));
     window.addEventListener('hashchange', () => { if (readHash()) { syncChecks(); update(false); } });
 
     $('status').hidden = true;
@@ -388,6 +396,7 @@
       if (s.length) { sel = new Set(s); changed = true; }
     }
     if (h.has('shape')) { $('shape').checked = h.get('shape') === '1'; changed = true; }
+    if (h.get('r') && [...$('rh').options].some(o => o.value === h.get('r'))) { $('rh').value = h.get('r'); changed = true; }
     return changed;
   }
   function writeHash() {
@@ -395,6 +404,7 @@
     const isDef = sel.size === DEFAULT.length && DEFAULT.every(id => sel.has(id));
     if (!isDef) p.set('i', [...sel].join(','));
     if ($('shape').checked) p.set('shape', '1');
+    if ($('rh').value !== '2') p.set('r', $('rh').value);
     history.replaceState(null, '', '#' + p.toString());
   }
 
@@ -479,9 +489,10 @@
   function outcome(c) {
     const g = IND.gdp_yoy.values, u = IND.unrate.values;
     const f = c + 4 < T;
-    // recese během následujících 2 let; bez celého horizontu víme jen „ano“
+    // recese během následujících X let; bez celého horizontu víme jen „ano“
+    const H = 4 * recYears();
     let rec = null;
-    if (c + 1 < T) { rec = 0; for (let k = 1; k <= REC_H && c + k < T; k++) rec = rec || D.recession[c + k]; if (!rec && c + REC_H >= T) rec = null; }
+    if (c + 1 < T) { rec = 0; for (let k = 1; k <= H && c + k < T; k++) rec = rec || D.recession[c + k]; if (!rec && c + H >= T) rec = null; }
     return {
       gdp: f ? g[c + 4] : null,
       du: f && u[c + 4] != null && u[c] != null ? u[c + 4] - u[c] : null,
@@ -490,13 +501,16 @@
   }
 
   function renderSummary(picked) {
+    const ry = recYears();
+    $('recTh').textContent = `Recese do ${recLabel(ry)}`;
+    $('recTh').title = `Začala nebo trvala recese (podle NBER) během následujících ${4 * ry} kvartálů?`;
     const o = picked.map(p => outcome(p.c));
     const avg = (a) => { const v = a.filter(x => x != null); return v.length ? v.reduce((s, x) => s + x, 0) / v.length : null; };
     const recs = o.filter(x => x.rec != null);
     const recN = recs.filter(x => x.rec).length;
     $('summary').innerHTML = picked.length ? `
       <div class="tile"><div class="v">${fmt(picked[0].sim, 0)} %</div><div class="k">podobnost nejbližšího analogu (${D.quarters[picked[0].c].replace('Q', ' Q')})</div></div>
-      <div class="tile"><div class="v">${recs.length ? `${recN} z ${recs.length}` : '–'}</div><div class="k">analogů, po kterých do 2 let začala nebo trvala recese</div></div>
+      <div class="tile"><div class="v">${recs.length ? `${recN} z ${recs.length}` : '–'}</div><div class="k">analogů, po kterých do ${recLabel(recYears())} začala nebo trvala recese</div></div>
       <div class="tile"><div class="v">${fmt(avg(o.map(x => x.gdp)))} %</div><div class="k">průměrný růst HDP r/r o rok později</div></div>
       <div class="tile"><div class="v">${sgn(avg(o.map(x => x.du)))} p. b.</div><div class="k">průměrná změna nezaměstnanosti během roku</div></div>` : '';
   }
