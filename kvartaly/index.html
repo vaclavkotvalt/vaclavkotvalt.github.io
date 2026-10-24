@@ -372,8 +372,8 @@
   // horizont pro sloupec „Recese do X let“ (v letech, nastavuje se v Dalším nastavení)
   const recYears = () => +$('rh').value;
   const recLabel = (y) => LANG === 'en' ? (y === 1 ? '1 year' : `${y} years`) : (y === 1 ? '1 roku' : `${y} let`);
-  const DEFAULT = ['gdp_yoy', 'ip_yoy', 'cpi_yoy', 'unrate', 'unrate_d4', 'pay_yoy', 'tb3', 'term', 'credit', 'oil_yoy',
-    'sp_yoy', 'ey'];
+  const DEFAULT = ['gdp_yoy', 'ip_yoy', 'cpi_yoy', 'unrate', 'unrate_d4', 'pay_yoy', 'tb3', 'tb3_d4', 'term', 'credit', 'oil_yoy',
+    'sp_yoy', 'ey', 'sent_aaii'];
   const PRESETS = {
     real: ['gdp_yoy', 'gdp_qoq', 'inv_yoy', 'ip_yoy', 'cpi_yoy', 'unrate', 'unrate_d4', 'pay_yoy', 'sent_umich'],
     fin: ['tb3', 'tb3_d4', 'real_rate', 'gs10', 'term', 'credit', 'oil_yoy', 'sp_yoy', 'ey', 'cape', 'sent_aaii'],
