@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="cs" data-lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Rebalancování portfolií</title>
+<meta name="description" content="Nástroj pro portfolio manažera: kdo potřebuje rebalancovat, co koupit a prodat, kolik to stojí na daních a poplatcích a kdy se vyplatí počkat.">
+<meta name="author" content="Václav Kotvalt">
+<link rel="canonical" href="https://vaclavkotvalt.cz/rebalancing/">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ctext y=%22.9em%22 font-size=%2290%22%3E%E2%9A%96%EF%B8%8F%3C/text%3E%3C/svg%3E">
+<meta property="og:title" content="Rebalancování portfolií – Václav Kotvalt">
+<meta property="og:description" content="Kdo potřebuje zásah, co obchodovat a kdy se vyplatí počkat.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,300;6..72,400&family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    /* Písma: velké nadpisy stránek (h1) patkové, veškerý ostatní text Montserrat */
+    --font-heading: "Newsreader", Georgia, serif;
+    --font-text: "Montserrat", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --bg: #0d1a2b; --surface: #132339; --line: #23364f; --text: #e6ecf4;
+    --muted: #92a3ba; --accent: #8ab8ff; --accent-ink: #0d1a2b;
+    --now: #d4752a; --band: rgba(138, 184, 255, 0.16);
+    --st-act: #f0a35e; --st-wait: #8ab8ff; --st-ok: #6fcf97;
+    color-scheme: dark;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) { color-scheme: dark; }
+  }
+  :root[data-theme="dark"] { color-scheme: dark; }
+  *, *::before, *::after { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font-family: var(--font-text);
+    font-size: 1rem; line-height: 1.55; -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--accent); text-underline-offset: 0.2em; }
+  a:focus-visible, button:focus-visible, select:focus-visible, input:focus-visible, tr:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .bar { position: sticky; top: 0; z-index: 5; background: var(--bg); border-bottom: 1px solid var(--line); }
+  .bar-in { max-width: 72rem; margin: 0 auto; padding: 0.85rem 16px; display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
+  .bar a { color: var(--muted); text-decoration: none; font-size: 0.95rem; }
+  .bar a:hover { color: var(--text); }
+  .bar .name { font-family: var(--font-text); font-size: 1.15rem; color: var(--text); }
+  .bar-right { display: flex; align-items: center; gap: 1rem; }
+  .lang { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; overflow: hidden; }
+  .lang button { font: inherit; font-size: 0.85rem; padding: 0.3rem 0.7rem; border: 0; cursor: pointer; background: transparent; color: var(--muted); }
+  .lang button[aria-pressed="true"] { background: var(--text); color: var(--bg); }
+  html[data-lang="cs"] .en, html[data-lang="en"] .cs { display: none !important; }
+
+  main { max-width: 72rem; margin: 0 auto; padding: 0 16px 4rem; }
+  h1 { font-family: var(--font-heading); font-weight: 300; font-size: clamp(2.3rem, 7vw, 4rem); line-height: 1; letter-spacing: -0.02em; margin: 3rem 0 1rem; }
+  h2 { font-family: var(--font-text); font-weight: 400; font-size: 1.6rem; margin: 0 0 0.25rem; }
+  h3 { font-size: 1rem; font-weight: 600; margin: 1.5rem 0 0.5rem; }
+  .lead { color: var(--muted); max-width: 46rem; font-size: 1.1rem; margin: 0 0 2rem; }
+  .muted { color: var(--muted); }
+  .small { font-size: 0.875rem; }
+  .num { font-variant-numeric: tabular-nums; }
+
+  .panel { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 1.25rem; margin-bottom: 1.5rem; }
+  .toolbar { display: flex; flex-wrap: wrap; gap: 0.75rem 1.25rem; align-items: end; }
+  label.f { display: flex; flex-direction: column; gap: 0.3rem; font-size: 0.85rem; color: var(--muted); }
+  select, input[type="number"], input[type="date"] {
+    font: inherit; font-size: 1rem; color: var(--text); background: var(--bg);
+    border: 1px solid var(--line); border-radius: 6px; padding: 0.45rem 0.6rem; width: 100%;
+  }
+  .btn {
+    font: inherit; font-size: 0.92rem; font-weight: 500; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer;
+    border: 1px solid var(--line); color: var(--text); background: var(--bg); transition: border-color 0.3s ease;
+  }
+  .btn:hover { border-color: var(--muted); }
+  .btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  .src { flex: 1 1 14rem; font-size: 0.85rem; color: var(--muted); align-self: center; }
+  details.more { margin-top: 1rem; border-top: 1px solid var(--line); padding-top: 0.75rem; }
+  details.more > summary { cursor: pointer; font-weight: 500; }
+  details.more[open] > summary { margin-bottom: 1rem; }
+  .controls { display: grid; gap: 1rem 1.25rem; grid-template-columns: repeat(auto-fill, minmax(12.5rem, 1fr)); align-items: end; }
+
+  .summary { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(10.5rem, 1fr)); margin: 0.75rem 0 1.25rem; }
+  .tile { border: 1px solid var(--line); border-radius: 8px; padding: 0.75rem 0.9rem; }
+  .tile .v { font-size: 1.5rem; font-weight: 500; line-height: 1.2; }
+  .tile .k { font-size: 0.8rem; color: var(--muted); }
+
+  .tbl-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+  th, td { text-align: left; padding: 0.55rem 0.6rem; border-bottom: 1px solid var(--line); white-space: nowrap; vertical-align: top; }
+  th { color: var(--muted); font-weight: 500; font-size: 0.8rem; }
+  td.r, th.r { text-align: right; }
+  td.wrap { white-space: normal; min-width: 14rem; }
+  #clients tbody tr { cursor: pointer; }
+  #clients tbody tr:hover { background: rgba(138, 184, 255, 0.06); }
+  #clients tbody tr.sel { background: rgba(138, 184, 255, 0.12); }
+  tfoot td { font-weight: 500; border-bottom: 0; }
+
+  .chip { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.8rem; font-weight: 500; padding: 0.1rem 0.55rem; border-radius: 999px; border: 1px solid currentColor; }
+  .chip.act { color: var(--st-act); } .chip.wait { color: var(--st-wait); } .chip.ok { color: var(--st-ok); }
+  .side-buy { color: var(--st-ok); } .side-sell { color: var(--st-act); }
+  .tag { display: inline-block; font-size: 0.75rem; padding: 0.05rem 0.45rem; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); }
+  .tag.ex { border-color: #2f6b4a; color: var(--st-ok); }
+  .tag.soon { border-color: #2d4f80; color: var(--st-wait); }
+
+  .dhead { display: flex; flex-wrap: wrap; gap: 0.5rem 1rem; align-items: baseline; }
+  .reco { margin: 1rem 0 0; padding: 0; list-style: none; max-width: 52rem; }
+  .reco li { padding: 0.45rem 0 0.45rem 1.4rem; position: relative; }
+  .reco li::before { content: "›"; position: absolute; left: 0.3rem; color: var(--accent); }
+  .reco li.warn::before { content: "!"; color: var(--st-act); font-weight: 600; }
+  .note { border-left: 2px solid var(--line); padding-left: 0.75rem; color: var(--muted); font-size: 0.9rem; margin: 0.75rem 0 0; }
+
+  .legend { display: flex; gap: 1.25rem; flex-wrap: wrap; font-size: 0.85rem; color: var(--muted); margin: 0.25rem 0 0.5rem; }
+  .legend span { display: inline-flex; align-items: center; gap: 0.4rem; }
+  .sw { display: inline-block; width: 12px; height: 12px; border-radius: 50%; }
+  .sw.now { background: var(--now); }
+  .sw.after { border: 2px solid var(--accent); }
+  .sw.band { width: 18px; height: 10px; border-radius: 3px; background: var(--band); }
+  .sw.tgt { width: 2px; height: 14px; border-radius: 0; background: var(--text); }
+  .chart { position: relative; }
+  .chart svg { display: block; width: 100%; height: auto; overflow: visible; }
+  svg text { fill: var(--muted); font-size: 12px; font-family: var(--font-text); }
+  svg text.lab { fill: var(--text); font-weight: 500; }
+  .tip {
+    position: absolute; pointer-events: none; z-index: 3; background: var(--bg); border: 1px solid var(--line);
+    border-radius: 6px; padding: 0.4rem 0.55rem; font-size: 0.8rem; line-height: 1.45; white-space: nowrap; display: none;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.35);
+  }
+  .grid2 { display: grid; gap: 0 2rem; grid-template-columns: 1fr; }
+  .grid2 > div { min-width: 0; }
+  @media (min-width: 900px) { .grid2 { grid-template-columns: 1fr 1fr; } }
+
+  .method { color: var(--muted); }
+  .method > div { max-width: 48rem; }
+  .method p, .method li { margin: 0 0 0.6rem; }
+  .method strong { color: var(--text); font-weight: 500; }
+  .method h3 { color: var(--text); }
+  .err { color: var(--st-act); }
+  @media (max-width: 560px) {
+    .panel { padding: 1rem 0.85rem; }
+    .summary { grid-template-columns: 1fr 1fr; gap: 0.6rem; }
+    .tile .v { font-size: 1.2rem; }
+    .bar .back-long { display: none; }
+  }
+  footer { max-width: 72rem; margin: 0 auto; padding: 1.5rem 16px 3rem; border-top: 1px solid var(--line); color: var(--muted); font-size: 0.85rem; }
+</style>
+<script>
+  (function () {
+    var l = null;
+    try { l = localStorage.getItem('lang'); } catch (e) {}
+    l = l || ((navigator.language || 'cs').toLowerCase().indexOf('cs') === 0 ? 'cs' : 'en');
+    document.documentElement.setAttribute('data-lang', l);
+    document.documentElement.setAttribute('lang', l);
+  })();
+</script>
+</head>
+<body>
+<header class="bar"><div class="bar-in">
+  <a class="name" href="/">Václav Kotvalt</a>
+  <div class="bar-right">
+    <a href="/#projekty"><span class="cs">← Zpět<span class="back-long"> na hlavní stránku</span></span><span class="en">← Back<span class="back-long"> to main page</span></span></a>
+    <div class="lang" role="group" aria-label="Jazyk / Language">
+      <button type="button" data-set="cs" aria-pressed="true">CZ</button>
+      <button type="button" data-set="en" aria-pressed="false">EN</button>
+    </div>
+  </div>
+</div></header>
+
+<main>
+  <h1><span class="cs">Rebalancování portfolií</span><span class="en">Portfolio Rebalancing</span></h1>
+  <p class="lead"><span class="cs">Nástroj pro portfolio manažera. Ukáže, kteří klienti se vzdálili od cílového portfolia, co konkrétně koupit a prodat, kolik zásah stojí na daních a poplatcích a kdy se vyplatí počkat na vklad nebo na osvobození od daně.</span><span class="en">A tool for a portfolio manager. It shows which clients have drifted from their target portfolio, exactly what to buy and sell, what the trades cost in taxes and fees, and when it pays to wait for a deposit or for a tax exemption.</span></p>
+
+  <p id="status"><span class="cs">Načítám data…</span><span class="en">Loading data…</span></p>
+
+  <div id="app" hidden>
+    <section class="panel" aria-labelledby="dataH">
+      <h2 id="dataH" hidden>Data</h2>
+      <div class="toolbar">
+        <label class="f" style="width:11rem"><span><span class="cs">Datum ocenění</span><span class="en">Valuation date</span></span>
+          <input type="date" id="asOf">
+        </label>
+        <button class="btn" type="button" id="upload"><span class="cs">Nahrát vlastní Excel</span><span class="en">Upload your own Excel</span></button>
+        <input type="file" id="file" accept=".xlsx,.xls" hidden>
+        <button class="btn" type="button" id="sample"><span class="cs">Ukázková data</span><span class="en">Sample data</span></button>
+        <button class="btn primary" type="button" id="csv"><span class="cs">Stáhnout příkazy (CSV)</span><span class="en">Download orders (CSV)</span></button>
+        <span class="src" id="src"></span>
+      </div>
+      <details class="more">
+        <summary><span class="cs">Pravidla a parametry <span class="muted small">– tolerance, náklady, daně, čekání</span></span><span class="en">Rules and parameters <span class="muted small">– bands, costs, taxes, waiting</span></span></summary>
+        <div class="controls" id="settings"></div>
+        <p style="margin:1rem 0 0"><button class="btn" type="button" id="reset"><span class="cs">Obnovit výchozí</span><span class="en">Reset to defaults</span></button></p>
+      </details>
+    </section>
+
+    <section class="panel" aria-labelledby="ovH">
+      <h2 id="ovH"><span class="cs">Přehled klientů</span><span class="en">Client overview</span></h2>
+      <p class="muted small" id="ovNote"></p>
+      <div class="summary num" id="tiles"></div>
+      <div class="tbl-wrap">
+        <table class="num" id="clients">
+          <thead><tr>
+            <th><span class="cs">Klient</span><span class="en">Client</span></th>
+            <th><span class="cs">Stav</span><span class="en">Status</span></th>
+            <th><span class="cs">Kdy</span><span class="en">When</span></th>
+            <th class="r"><span class="cs">Majetek</span><span class="en">Assets</span></th>
+            <th class="r"><span class="cs">Max. odchylka</span><span class="en">Max drift</span></th>
+            <th><span class="cs">Obchody</span><span class="en">Trades</span></th>
+            <th class="r"><span class="cs">Náklady</span><span class="en">Costs</span></th>
+          </tr></thead>
+          <tbody id="cRows"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="panel" id="detail" aria-labelledby="dH">
+      <div class="dhead">
+        <h2 id="dH"></h2><span id="dChip"></span><span class="muted" id="dProfile"></span>
+      </div>
+      <ul class="reco" id="reco"></ul>
+      <p class="note" id="dNote" hidden></p>
+
+      <h3><span class="cs">Váhy: teď, cíl a po zásahu</span><span class="en">Weights: now, target and after the trades</span></h3>
+      <div class="legend">
+        <span><i class="sw now"></i><span class="cs">teď</span><span class="en">now</span></span>
+        <span><i class="sw tgt"></i><span class="cs">cíl</span><span class="en">target</span></span>
+        <span><i class="sw band"></i><span class="cs">tolerance</span><span class="en">band</span></span>
+        <span><i class="sw after"></i><span class="cs">po zásahu</span><span class="en">after trades</span></span>
+      </div>
+      <div class="chart" id="chart"></div>
+
+      <div id="tradesBox">
+        <h3 id="tradesH"></h3>
+        <div class="tbl-wrap">
+          <table class="num">
+            <thead><tr>
+              <th><span class="cs">Akce</span><span class="en">Side</span></th><th>Ticker</th>
+              <th class="r"><span class="cs">Kusy</span><span class="en">Units</span></th>
+              <th class="r"><span class="cs">Cena</span><span class="en">Price</span></th>
+              <th class="r"><span class="cs">Objem</span><span class="en">Amount</span></th>
+              <th class="r"><span class="cs">Poplatek</span><span class="en">Fee</span></th>
+              <th class="r"><span class="cs">Zisk</span><span class="en">Gain</span></th>
+              <th><span class="cs">Prodávané loty</span><span class="en">Lots sold</span></th>
+            </tr></thead>
+            <tbody id="tRows"></tbody>
+            <tfoot id="tFoot"></tfoot>
+          </table>
+        </div>
+        <p class="muted small" id="fxNote"></p>
+      </div>
+
+      <div class="grid2">
+        <div>
+          <h3><span class="cs">Daňové pozice (loty)</span><span class="en">Tax lots</span></h3>
+          <div class="tbl-wrap">
+            <table class="num">
+              <thead><tr>
+                <th>Ticker</th><th><span class="cs">Nákup</span><span class="en">Bought</span></th>
+                <th class="r"><span class="cs">Kusy</span><span class="en">Units</span></th>
+                <th class="r"><span class="cs">Hodnota</span><span class="en">Value</span></th>
+                <th class="r"><span class="cs">Zisk</span><span class="en">Gain</span></th>
+                <th><span class="cs">Daň</span><span class="en">Tax</span></th>
+              </tr></thead>
+              <tbody id="lRows"></tbody>
+            </table>
+          </div>
+        </div>
+        <div>
+          <h3><span class="cs">Hotovost a plánované pohyby</span><span class="en">Cash and planned flows</span></h3>
+          <div class="tbl-wrap">
+            <table class="num">
+              <thead><tr>
+                <th><span class="cs">Datum</span><span class="en">Date</span></th>
+                <th class="r"><span class="cs">Částka</span><span class="en">Amount</span></th>
+                <th><span class="cs">Poznámka</span><span class="en">Note</span></th>
+              </tr></thead>
+              <tbody id="fRows"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <section class="panel method" aria-labelledby="mH">
+    <h2 id="mH"><span class="cs">Jak nástroj rozhoduje</span><span class="en">How the tool decides</span></h2>
+    <div class="cs">
+      <h3>Pravidla</h3>
+      <ol>
+        <li><strong>Kdy zasáhnout – tolerance 5/25.</strong> Složka je mimo toleranci, když se od cíle liší o víc než 5 p. b. nebo o víc než 25 % své cílové váhy (platí užší z obou, nejméně však 2 p. b.). U 60% akcií je to ±5 p. b., u 10% zlata ±2,5 p. b. Čistě absolutní pásmo by u malých pozic připustilo odchylku o polovinu, čistě relativní by u velkých vedlo ke zbytečnému obchodování.</li>
+        <li><strong>Likvidita.</strong> Výběry plánované na příštích 90 dní se drží v hotovosti jako rezerva. Když na ně hotovost nestačí, je potřeba zasáhnout i bez odchylky.</li>
+        <li><strong>Když už obchodovat, tak na cíl.</strong> Při zásahu se portfolio vrací na cílové váhy (ne jen na okraj pásma), počítané z majetku bez rezervy. Obchody pod 20 000 Kč nebo pod 0,5 % majetku se vynechají – jsou to šum, který nestojí za poplatek.</li>
+        <li><strong>Nejdřív peněžní toky.</strong> Vklad v příštích 30 dnech: počkat na něj a nakoupit z něj, takže se prodává méně. Výběry se kryjí prodejem toho, čeho je v portfoliu nejvíc navíc.</li>
+        <li><strong>Daně.</strong> U fyzických osob se prodávají nejdřív loty osvobozené časovým testem (držené déle než 3 roky), pak ztrátové a nakonec ty s nejmenším ziskem. Když se prodávaný lot do 60 dní osvobodí a čekání ušetří aspoň 10 000 Kč, nástroj doporučí počkat. Pro s.r.o. žádné osvobození neplatí (21 %), proto se rebalancuje hlavně vklady.</li>
+        <li><strong>Náklady.</strong> Poplatek 0,1 % z objemu, minimálně 2 EUR za obchod; konverze měny 0,25 %. Vše se dá změnit v nastavení výše.</li>
+      </ol>
+      <h3>Předpoklady</h3>
+      <ul>
+        <li>Ceny a kurzy z data ocenění platí i v den obchodu (nástroj nepředpovídá trh).</li>
+        <li>Nákupní cena v CZK je přepočtená dnešním kurzem (zjednodušení ze zadání). Přesněji by se použil kurz ČNB ke dni nákupu.</li>
+        <li>Daň 15 % (FO) a 21 % (s.r.o.). Hodnotový test 100 000 Kč a strop osvobození 40 mil. Kč se počítají jen z obchodů navržených nástrojem – jiné prodeje klienta v roce nezná.</li>
+        <li>Časový test se počítá ke dni obchodu; první den osvobození je den po třetím výročí nákupu, posunutý na nejbližší pracovní den.</li>
+        <li>Obchoduje se po celých kusech. Výběr konkrétních lotů je potřeba mít podložený u brokera; na ukázkových datech vychází stejně jako FIFO.</li>
+      </ul>
+      <h3>Co nástroj neumí</h3>
+      <ul>
+        <li>Nenapojuje se na brokera ani na tržní data – ceny a pozice bere z nahraného Excelu.</li>
+        <li>Nepočítá se sazbou 23 % nad limitem příjmů ani s dalšími příjmy klienta; daň u s.r.o. je jen odhad dopadu na základ daně.</li>
+        <li>Neověří, jestli jsou historické údaje o pozicích převedených od jiného brokera správné – to musí udělat manažer.</li>
+      </ul>
+      <p>Výpočetní logika je v samostatném souboru <a href="engine.js">engine.js</a> (čisté funkce bez vazby na stránku) s testy v <a href="test.mjs">test.mjs</a>; čtení Excelu je v <a href="io.js">io.js</a>.</p>
+    </div>
+    <div class="en">
+      <h3>Rules</h3>
+      <ol>
+        <li><strong>When to act – the 5/25 band.</strong> A holding is out of band when it differs from its target by more than 5 pp or by more than 25% of its target weight (whichever is tighter, but at least 2 pp). For a 60% equity sleeve that is ±5 pp, for 10% gold ±2.5 pp. A purely absolute band would let small holdings drift by half; a purely relative one would trade large holdings needlessly.</li>
+        <li><strong>Liquidity.</strong> Withdrawals planned in the next 90 days are held in cash as a reserve. If cash cannot cover them, the client needs action even without drift.</li>
+        <li><strong>If trading, trade to target.</strong> Once triggered, the portfolio goes back to its target weights (not just to the edge of the band), measured on assets net of the reserve. Trades under CZK 20,000 or under 0.5% of assets are skipped – noise that isn’t worth the fee.</li>
+        <li><strong>Cash flows first.</strong> A deposit in the next 30 days: wait for it and buy with it, so fewer sales are needed. Withdrawals are funded by selling what is most overweight.</li>
+        <li><strong>Taxes.</strong> For individuals, lots exempt under the time test (held over 3 years) are sold first, then lots at a loss, then those with the smallest gain. If a lot being sold becomes exempt within 60 days and waiting saves at least CZK 10,000, the tool recommends waiting. Companies (s.r.o.) get no exemption (21%), so they rebalance mainly with deposits.</li>
+        <li><strong>Costs.</strong> Broker fee 0.1% of the amount, at least EUR 2 per trade; currency conversion 0.25%. Everything can be changed in the settings above.</li>
+      </ol>
+      <h3>Assumptions</h3>
+      <ul>
+        <li>Prices and FX rates from the valuation date also hold on the trade date (the tool does not forecast markets).</li>
+        <li>Purchase costs are converted to CZK at today’s rate (a simplification allowed by the brief). The precise approach would use the CNB rate on the purchase date.</li>
+        <li>Tax of 15% (individuals) and 21% (companies). The CZK 100,000 value test and the CZK 40m exemption cap only count the trades proposed here – the tool does not know about the client’s other sales in the year.</li>
+        <li>The time test is checked on the trade date; the first exempt day is the day after the third anniversary of the purchase, moved to the next business day.</li>
+        <li>Whole units only. Specific lot selection must be supported by the broker’s records; on the sample data it gives the same result as FIFO.</li>
+      </ul>
+      <h3>What the tool doesn’t do</h3>
+      <ul>
+        <li>It doesn’t connect to a broker or to market data – prices and holdings come from the uploaded Excel file.</li>
+        <li>It ignores the 23% rate above the income threshold and the client’s other income; company tax is only an estimate of the impact on the tax base.</li>
+        <li>It can’t verify historical records of positions transferred from another broker – the manager has to.</li>
+      </ul>
+      <p>The calculation logic lives in a separate file, <a href="engine.js">engine.js</a> (pure functions with no ties to the page), with tests in <a href="test.mjs">test.mjs</a>; reading the Excel file is in <a href="io.js">io.js</a>.</p>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <span class="cs">Ukázková data jsou smyšlená (case study Dvořák &amp; Zedník Wealth Management). Nejde o investiční ani daňové doporučení.</span>
+  <span class="en">The sample data are fictional (Dvořák &amp; Zedník Wealth Management case study). Not investment or tax advice.</span>
+</footer>
+
+<script type="module">
+import { analyze, orders, DEFAULTS, nextBusinessDay } from './engine.js';
+import { fromSheets } from './io.js';
+
+let LANG = document.documentElement.getAttribute('data-lang') === 'en' ? 'en' : 'cs';
+const L = (cs, en) => LANG === 'en' ? en : cs;
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const nf = (v, d = 0) => v == null || !isFinite(v) ? '–' : (Math.abs(v) < 0.5 * 10 ** -d ? 0 : v).toLocaleString(L('cs-CZ', 'en-US'), { minimumFractionDigits: d, maximumFractionDigits: d });
+const czk = (v) => L(`${nf(v)} Kč`, `CZK ${nf(v)}`);
+const mczk = (v) => Math.abs(v) >= 1e6 ? L(`${nf(v / 1e6, 2)} mil. Kč`, `CZK ${nf(v / 1e6, 2)}m`) : czk(v);
+const pct = (v, d = 1) => L(`${nf(v, d)} %`, `${nf(v, d)}%`);
+const pp = (v, d = 1) => `${v > 0 ? '+' : ''}${nf(v, d)} ${L('p. b.', 'pp')}`;
+const date = (s) => {
+  if (!s) return '–';
+  const d = new Date(s + 'T00:00:00Z');
+  return LANG === 'en' ? d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' }) : `${d.getUTCDate()}. ${d.getUTCMonth() + 1}. ${d.getUTCFullYear()}`;
+};
+const keyName = (k) => k === 'CASH' ? L('Hotovost', 'Cash') : k;
+const clientName = (id) => LANG === 'en' ? id.replace(/^Klient/, 'Client') : id;
+
+// Popisky parametrů v nastavení
+const PARAMS = [
+  ['bandAbs', 'Tolerance absolutní (p. b.)', 'Absolute band (pp)', 0.5],
+  ['bandRel', 'Tolerance relativní (% cíle)', 'Relative band (% of target)', 1],
+  ['bandMin', 'Minimální tolerance (p. b.)', 'Minimum band (pp)', 0.5],
+  ['horizonDays', 'Rezerva na výběry (dní dopředu)', 'Withdrawal reserve (days ahead)', 1],
+  ['inflowWaitDays', 'Počkat na vklad do (dní)', 'Wait for a deposit up to (days)', 1],
+  ['taxWaitDays', 'Počkat na osvobození do (dní)', 'Wait for tax exemption up to (days)', 1],
+  ['minTaxSaving', 'Čekat, jen když ušetří aspoň (Kč)', 'Wait only if it saves at least (CZK)', 1000],
+  ['minTrade', 'Minimální obchod (Kč)', 'Minimum trade (CZK)', 1000],
+  ['minTradePct', 'Minimální obchod (% majetku)', 'Minimum trade (% of assets)', 0.1],
+  ['feePct', 'Poplatek (% objemu)', 'Fee (% of amount)', 0.01],
+  ['feeMinEur', 'Minimální poplatek (EUR)', 'Minimum fee (EUR)', 0.5],
+  ['fxSpreadPct', 'Konverze měny (%)', 'Currency conversion (%)', 0.05],
+  ['taxFO', 'Daň FO (%)', 'Tax, individuals (%)', 1],
+  ['taxPO', 'Daň s.r.o. (%)', 'Tax, companies (%)', 1],
+  ['valueTestLimit', 'Hodnotový test FO (Kč)', 'Value test, individuals (CZK)', 1000],
+];
+
+let DATA = null, SOURCE = '', SETTINGS = { ...DEFAULTS }, RES = null, selected = null;
+try { Object.assign(SETTINGS, JSON.parse(localStorage.getItem('rb-settings') || '{}')); } catch (e) {}
+
+function applyLang(l) {
+  LANG = l;
+  const root = document.documentElement;
+  root.setAttribute('data-lang', l); root.setAttribute('lang', l);
+  try { localStorage.setItem('lang', l); } catch (e) {}
+  document.querySelectorAll('.lang button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.set === l)));
+  document.title = L('Rebalancování portfolií', 'Portfolio Rebalancing');
+  if (DATA) { renderSettings(); render(); }
+}
+document.querySelectorAll('.lang button').forEach(b => b.addEventListener('click', () => applyLang(b.dataset.set)));
+applyLang(LANG);
+
+fetch('data.json', { cache: 'no-cache' })
+  .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
+  .then(j => load(fromSheets(j.sheets), L('ukázková data ze zadání', 'sample data from the brief')))
+  .catch(() => { $('status').textContent = L('Data se nepodařilo načíst.', 'Could not load the data.'); });
+
+function load(data, source) {
+  DATA = data; SOURCE = source; selected = null;
+  $('asOf').value = data.asOf || new Date().toISOString().slice(0, 10);
+  $('status').hidden = true; $('app').hidden = false;
+  renderSettings(); render();
+}
+
+function run() {
+  RES = analyze(DATA, { ...SETTINGS, asOf: $('asOf').value || DATA.asOf });
+  if (!selected || !RES.clients.some(c => c.id === selected)) {
+    const order = { act: 0, wait: 1, ok: 2 };
+    selected = [...RES.clients].sort((a, b) => order[a.status] - order[b.status])[0]?.id;
+  }
+}
+
+function render() {
+  run();
+  $('src').textContent = `${L('Zdroj', 'Source')}: ${SOURCE} · ${L('ceny a kurzy k', 'prices and FX as of')} ${date(DATA.asOf)}`;
+  if (RES.issues.length) {
+    $('ovNote').innerHTML = `<span class="err">${RES.issues.map(issueText).map(esc).join(' · ')}</span>`;
+  } else {
+    $('ovNote').textContent = L('Klikněte na klienta pro detail. Stav: zasáhnout teď, počkat (s datem) nebo v pořádku.', 'Click a client for details. Status: act now, wait (with a date) or fine.');
+  }
+  if (!RES.summary) { $('tiles').innerHTML = ''; $('cRows').innerHTML = ''; $('detail').hidden = true; return; }
+  renderOverview(); renderDetail();
+}
+
+function issueText(i) {
+  switch (i.code) {
+    case 'targetsSum': return L(`${i.client}: cílové váhy dávají ${nf(i.sum, 1)} %, ne 100 %`, `${clientName(i.client)}: targets sum to ${nf(i.sum, 1)}%, not 100%`);
+    case 'unknownTicker': return L(`${i.client}: neznámý ticker ${i.ticker}`, `${clientName(i.client)}: unknown ticker ${i.ticker}`);
+    case 'missingFx': return L(`chybí kurz ${i.currency}`, `missing FX rate for ${i.currency}`);
+    case 'badPrice': return L(`chybí cena ${i.ticker}`, `missing price for ${i.ticker}`);
+    case 'unknownClient': return L(`pozice neznámého klienta ${i.client}`, `holdings of unknown client ${i.client}`);
+    case 'badLot': return L(`${i.client}: neplatná pozice ${i.ticker}`, `${clientName(i.client)}: invalid lot ${i.ticker}`);
+    case 'badFlow': return L(`${i.client}: neplatný pohyb hotovosti`, `${clientName(i.client)}: invalid cash flow`);
+    default: return i.code;
+  }
+}
+
+const STATUS = {
+  act: () => ['act', '●', L('Zasáhnout', 'Act now')],
+  wait: () => ['wait', '◷', L('Počkat', 'Wait')],
+  ok: () => ['ok', '✓', L('V pořádku', 'Fine')],
+};
+const chip = (s) => { const [c, i, t] = STATUS[s](); return `<span class="chip ${c}"><span aria-hidden="true">${i}</span>${t}</span>`; };
+
+function renderOverview() {
+  const s = RES.summary;
+  const tile = (v, k) => `<div class="tile"><div class="v">${v}</div><div class="k">${k}</div></div>`;
+  $('tiles').innerHTML = [
+    tile(mczk(s.aum), L('spravovaný majetek', 'assets under management')),
+    tile(s.count.act, L('zasáhnout teď', 'act now')),
+    tile(s.count.wait, L('počkat', 'wait')),
+    tile(s.count.ok, L('v pořádku', 'fine')),
+    tile(czk(s.costs), L('náklady navržených zásahů', 'cost of proposed trades')),
+    tile(czk(s.taxSaved), L('daň ušetřená čekáním', 'tax saved by waiting')),
+  ].join('');
+  $('cRows').innerHTML = RES.clients.map(c => {
+    const trades = c.plan ? c.plan.trades.map(t => `<span class="side-${t.side}">${t.side === 'buy' ? '+' : '−'}${nf(t.qty)}</span> ${t.ticker}`).join(', ') : '–';
+    return `<tr data-id="${esc(c.id)}" tabindex="0" class="${c.id === selected ? 'sel' : ''}">
+      <td><b style="font-weight:500">${esc(clientName(c.id))}</b><br><span class="muted small">${c.taxRegime === 'FO' ? L('FO', 'individual') : L('s.r.o.', 'company')}</span></td>
+      <td>${chip(c.status)}</td>
+      <td>${c.decision.date ? date(c.decision.date) : '–'}</td>
+      <td class="r">${mczk(c.total)}</td>
+      <td class="r">${pp(c.rows.reduce((m, r) => Math.abs(r.diff) > Math.abs(m) ? r.diff : m, 0))}</td>
+      <td class="wrap">${trades}</td>
+      <td class="r">${c.plan ? czk(c.plan.costs.total) : '–'}</td>
+    </tr>`;
+  }).join('');
+  $('cRows').querySelectorAll('tr').forEach(tr => {
+    const pick = () => { selected = tr.dataset.id; renderOverview(); renderDetail(); };
+    tr.addEventListener('click', pick);
+    tr.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(); } });
+  });
+}
+
+// Doporučení v lidské řeči z kódů, které vrací engine
+function recoItems(c) {
+  const items = [], S = RES.settings;
+  const rowsOut = (keys) => keys.map(k => { const r = c.rows.find(x => x.key === k); return `${keyName(k)} ${pp(r.diff)} (±${nf(r.band, 1)})`; }).join(', ');
+  for (const r of c.decision.reasons) {
+    switch (r.code) {
+      case 'inBand': items.push(L('Všechny složky jsou v toleranci. Není potřeba nic dělat; další kontrola při příští revizi.', 'All holdings are within their bands. No action needed; check again at the next review.')); break;
+      case 'drift': items.push(L(`Mimo toleranci: ${rowsOut(r.keys)}.`, `Out of band: ${rowsOut(r.keys)}.`)); break;
+      case 'liquidity': items.push(L(`Hotovost ${czk(r.cash)} nepokryje výběry v příštích ${S.horizonDays} dnech (${czk(r.reserve)}).`, `Cash of ${czk(r.cash)} doesn’t cover withdrawals in the next ${S.horizonDays} days (${czk(r.reserve)}).`)); break;
+      case 'waitInflow': items.push(L(`Počkat na vklad ${czk(r.amount)} (${date(r.date)}) a obchodovat až s ním – nakoupí se z něj a prodává se méně.`, `Wait for the ${czk(r.amount)} deposit (${date(r.date)}) and trade with it – it funds the purchases, so less has to be sold.`)); break;
+      case 'waitTax': items.push(L(`Počkat do ${date(r.date)}: prodávané loty se do té doby osvobodí časovým testem. Ušetří to přibližně ${czk(r.saving)} na dani.`, `Wait until ${date(r.date)}: the lots to be sold become exempt under the time test by then. This saves about ${czk(r.saving)} in tax.`)); break;
+      case 'taxNotWorthWaiting': items.push(L(`Čekání do ${date(r.date)} by ušetřilo jen ${czk(r.saving)} nebo by nevyšlo na výběry – obchodovat hned.`, `Waiting until ${date(r.date)} would save only ${czk(r.saving)} or would not fit the withdrawals – trade now.`)); break;
+      case 'taxDue': items.push(L(`Odhadovaná daň z prodejů: ${czk(r.amount)}.`, `Estimated tax on the sales: ${czk(r.amount)}.`)); break;
+      case 'poSellTaxable': items.push(L(`Klient je s.r.o.: každý zisk z prodeje se daní ${S.taxPO} %, osvobození neplatí.`, `The client is a company: every gain on a sale is taxed at ${S.taxPO}%, no exemption applies.`)); break;
+    }
+  }
+  if (c.plan) {
+    const sells = c.plan.trades.filter(t => t.side === 'sell'), buys = c.plan.trades.filter(t => t.side === 'buy');
+    const list = (a) => a.map(t => `${nf(t.qty)} ${t.ticker}`).join(', ');
+    const when = c.status === 'act' ? L('Hned', 'Right away') : L(`Dne ${date(c.plan.date)}`, `On ${date(c.plan.date)}`);
+    const parts = [];
+    if (sells.length) parts.push(L(`prodat ${list(sells)}`, `sell ${list(sells)}`));
+    if (buys.length) parts.push(L(`koupit ${list(buys)}`, `buy ${list(buys)}`));
+    if (parts.length) items.push(`${when}: ${parts.join(L(' a ', ' and '))}. ${L('Náklady celkem', 'Total cost')} ${czk(c.plan.costs.total)}.`);
+    if (c.plan.reserve > 0) items.push(L(`V hotovosti zůstane rezerva ${czk(c.plan.reserve)} na výběry do ${date(c.plan.reserveFlows.at(-1).date)}.`, `A cash reserve of ${czk(c.plan.reserve)} stays for withdrawals until ${date(c.plan.reserveFlows.at(-1).date)}.`));
+    if (c.alt) items.push(L(`Pro srovnání: zásah hned (${date(c.alt.date)}) by stál ${czk(c.alt.costs.total)}, z toho daň ${czk(c.alt.costs.tax)}.`, `For comparison: trading right away (${date(c.alt.date)}) would cost ${czk(c.alt.costs.total)}, of which ${czk(c.alt.costs.tax)} is tax.`));
+    if (c.plan.tax.overCap) items.push(L('Prodeje překračují strop osvobození 40 mil. Kč – rozložit do více let.', 'Sales exceed the CZK 40m exemption cap – spread them over several years.'));
+  }
+  for (const f of c.flows.filter(f => f.amount > 0 && (!c.plan || f.date > c.plan.date))) {
+    items.push(L(`Plánovaný vklad ${czk(f.amount)} (${date(f.date)}) zainvestovat podle cílových vah při jeho příchodu.`, `Invest the planned ${czk(f.amount)} deposit (${date(f.date)}) at target weights when it arrives.`));
+  }
+  const warn = [];
+  for (const w of c.warnings) {
+    if (w.code === 'withdrawalRate') warn.push(L(`Pravidelné výběry ${czk(w.yearly)} ročně odpovídají ${pct(w.rate)} majetku (po jednorázových výběrech). To je nad ${pct(S.withdrawalWarnPct, 0)} a portfolio se může postupně vyčerpat – probrat s klientem výši renty nebo profil.`, `Regular withdrawals of ${czk(w.yearly)} a year equal ${pct(w.rate)} of assets (after one-off withdrawals). That is above ${pct(S.withdrawalWarnPct, 0)} and may gradually deplete the portfolio – discuss the payout or profile with the client.`));
+    if (w.code === 'outflowsExceed') warn.push(L(`Plánované výběry (${czk(w.total)}) jsou vyšší než celý majetek.`, `Planned withdrawals (${czk(w.total)}) exceed total assets.`));
+  }
+  if (c.plan?.error) warn.push(L('Majetek nestačí na plánované výběry – nelze navrhnout obchody.', 'Assets don’t cover planned withdrawals – no trades can be proposed.'));
+  return { items, warn };
+}
+
+function renderDetail() {
+  const c = RES.clients.find(x => x.id === selected);
+  $('detail').hidden = !c;
+  if (!c) return;
+  $('dH').textContent = clientName(c.id);
+  $('dChip').innerHTML = chip(c.status) + (c.decision.date ? ` <span class="muted small">${date(c.decision.date)}</span>` : '');
+  $('dProfile').textContent = `${c.profile} · ${c.taxRegime === 'FO' ? L('fyzická osoba', 'individual') : L('s.r.o.', 'company')} · ${mczk(c.total)}`;
+  const { items, warn } = recoItems(c);
+  $('reco').innerHTML = items.map(t => `<li>${esc(t)}</li>`).join('') + warn.map(t => `<li class="warn">${esc(t)}</li>`).join('');
+  $('dNote').hidden = !c.note;
+  $('dNote').textContent = c.note ? `${L('Poznámka v datech', 'Note in the data')}: ${c.note}` : '';
+  drawChart(c);
+
+  // Obchody
+  const p = c.plan;
+  $('tradesBox').hidden = !p || !p.trades.length;
+  if (p && p.trades.length) {
+    $('tradesH').textContent = `${L('Navržené obchody', 'Proposed trades')} · ${date(p.date)}`;
+    $('tRows').innerHTML = p.trades.map(t => `<tr>
+      <td class="side-${t.side}">${t.side === 'buy' ? L('Koupit', 'Buy') : L('Prodat', 'Sell')}</td><td>${t.ticker}</td>
+      <td class="r">${nf(t.qty)}</td><td class="r">${nf(t.price, 2)} ${t.currency}</td>
+      <td class="r">${czk(t.valueCZK)}</td><td class="r">${czk(t.feeCZK)}</td>
+      <td class="r">${t.side === 'sell' ? czk(t.gainCZK) : '–'}</td>
+      <td>${t.lots.map(l => `${date(l.date)} × ${nf(l.qty)} ${l.exempt ? `<span class="tag ex">${L('osvobozeno', 'exempt')}</span>` : `<span class="tag">${L('zdanitelné', 'taxable')}</span>`}`).join('<br>') || '–'}</td>
+    </tr>`).join('');
+    const tx = p.tax;
+    const taxNote = tx.regime === 'FO'
+      ? (tx.valueTest ? L(' (hodnotový test – bez daně)', ' (value test – no tax)') : '')
+      : '';
+    $('tFoot').innerHTML = `<tr><td colspan="5">${L('Poplatky', 'Fees')} ${czk(p.costs.fees)} · ${L('konverze měn', 'FX conversion')} ${czk(p.costs.fx)} · ${L('daň', 'tax')} ${czk(p.costs.tax)}${taxNote}</td><td colspan="3" class="r">${L('Celkem', 'Total')} ${czk(p.costs.total)}</td></tr>`;
+    $('fxNote').textContent = p.conversions.length
+      ? `${L('Konverze', 'Conversions')}: ${p.conversions.map(x => `${x.from} → ${x.to}: ${czk(x.amountCZK)}`).join(' · ')}`
+      : '';
+  }
+
+  // Loty
+  $('lRows').innerHTML = c.lots.map(l => {
+    let tag;
+    if (c.taxRegime !== 'FO') tag = `<span class="tag">${L('daní se vždy', 'always taxed')}</span>`;
+    else if (l.exemptNow) tag = `<span class="tag ex">${L('osvobozeno', 'exempt')}</span>`;
+    else tag = `<span class="tag soon">${L('od', 'from')} ${date(nextBusinessDay(l.exemptFrom))}</span>`;
+    return `<tr><td>${l.ticker}</td><td>${date(l.date)}</td><td class="r">${nf(l.qty)}</td><td class="r">${czk(l.valueCZK)}</td><td class="r">${czk(l.gainCZK)}</td><td>${tag}</td></tr>`;
+  }).join('');
+
+  // Hotovost a pohyby
+  const cashRows = Object.entries(c.cash).map(([cur, a]) => `<tr><td>${L('teď', 'now')}</td><td class="r">${nf(a)} ${cur}</td><td class="muted">${cur === 'CZK' ? '' : '≈ ' + czk(a * RES.fx[cur])}</td></tr>`);
+  const flowRows = c.flows.map(f => `<tr><td>${date(f.date)}</td><td class="r ${f.amount > 0 ? 'side-buy' : 'side-sell'}">${f.amount > 0 ? '+' : '−'}${czk(Math.abs(f.amount))}</td><td class="muted">${esc(f.note)}</td></tr>`);
+  $('fRows').innerHTML = cashRows.join('') + (flowRows.length ? flowRows.join('') : `<tr><td colspan="3" class="muted">${L('Žádné plánované pohyby', 'No planned flows')}</td></tr>`);
+}
+
+// Graf: pro každou složku pás tolerance kolem cíle, váha teď a po zásahu
+function drawChart(c) {
+  const box = $('chart'); box.innerHTML = '';
+  const NS = 'http://www.w3.org/2000/svg';
+  const el = (n, a, p) => { const e = document.createElementNS(NS, n); for (const k in a) e.setAttribute(k, a[k]); p.appendChild(e); return e; };
+  const rows = c.rows.filter(r => r.target > 0 || Math.abs(r.weight) > 0.05 || (c.plan && Math.abs(c.plan.after.find(a => a.key === r.key).weight) > 0.05));
+  const afterOf = (k) => c.plan ? c.plan.after.find(a => a.key === k).weight : null;
+  const max = Math.ceil(Math.max(...rows.flatMap(r => [r.weight, r.target + r.band, afterOf(r.key) ?? 0])) / 10) * 10;
+  const W = Math.max(300, box.clientWidth || 720), rowH = 44, m = { l: 84, r: 16, t: 18, b: 26 } /* šířka = šířka kontejneru, písmo zůstane čitelné i na mobilu */, H = m.t + rows.length * rowH + m.b;
+  const X = (v) => m.l + (Math.max(0, Math.min(max, v)) / max) * (W - m.l - m.r);
+  const svg = el('svg', { viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': L('Váhy portfolia vůči cíli', 'Portfolio weights versus target') }, box);
+  for (let v = 0; v <= max; v += 10) {
+    el('line', { x1: X(v), x2: X(v), y1: m.t - 6, y2: H - m.b, stroke: 'var(--line)', 'stroke-width': 1 }, svg);
+    el('text', { x: X(v), y: H - 6, 'text-anchor': 'middle' }, svg).textContent = pct(v, 0);
+  }
+  const tip = document.createElement('div'); tip.className = 'tip'; box.appendChild(tip);
+  rows.forEach((r, i) => {
+    const y = m.t + i * rowH + rowH / 2;
+    el('text', { x: 0, y: y + 4, class: 'lab' }, svg).textContent = keyName(r.key);
+    el('rect', { x: X(r.target - r.band), y: y - 9, width: X(r.target + r.band) - X(r.target - r.band), height: 18, rx: 4, fill: 'var(--band)' }, svg);
+    el('line', { x1: X(r.target), x2: X(r.target), y1: y - 12, y2: y + 12, stroke: 'var(--text)', 'stroke-width': 2 }, svg);
+    const a = afterOf(r.key);
+    if (a != null) el('circle', { cx: X(a), cy: y, r: 7, fill: 'none', stroke: 'var(--accent)', 'stroke-width': 2 }, svg);
+    el('circle', { cx: X(r.weight), cy: y, r: 6, fill: 'var(--now)', stroke: 'var(--surface)', 'stroke-width': 2 }, svg);
+    const hit = el('rect', { x: m.l - 4, y: y - rowH / 2, width: W - m.l - m.r + 8, height: rowH, fill: 'transparent' }, svg);
+    hit.addEventListener('pointermove', ev => {
+      tip.innerHTML = `<b>${keyName(r.key)}</b><br>${L('teď', 'now')} ${pct(r.weight)} (${pp(r.diff)})<br>${L('cíl', 'target')} ${pct(r.target, 0)} ± ${nf(r.band, 1)} ${L('p. b.', 'pp')}${a != null ? `<br>${L('po zásahu', 'after')} ${pct(a)}` : ''}<br>${czk(r.value)}`;
+      tip.style.display = 'block';
+      const bb = box.getBoundingClientRect();
+      let left = ev.clientX - bb.left + 12;
+      if (left + tip.offsetWidth > bb.width) left = ev.clientX - bb.left - tip.offsetWidth - 12;
+      tip.style.left = left + 'px'; tip.style.top = (y / H * svg.getBoundingClientRect().height + 14) + 'px';
+    });
+    hit.addEventListener('pointerleave', () => { tip.style.display = 'none'; });
+  });
+}
+
+// Nastavení
+function renderSettings() {
+  $('settings').innerHTML = PARAMS.map(([k, cs, en, step]) => `<label class="f"><span>${L(cs, en)}</span><input type="number" step="${step}" min="0" data-k="${k}" value="${SETTINGS[k]}"></label>`).join('')
+    + `<label class="f"><span>${L('Výběr lotů k prodeji', 'Lot selection')}</span><select data-k="lotMethod">
+        <option value="tax"${SETTINGS.lotMethod === 'tax' ? ' selected' : ''}>${L('daňově nejvýhodnější', 'most tax-efficient')}</option>
+        <option value="fifo"${SETTINGS.lotMethod === 'fifo' ? ' selected' : ''}>${L('FIFO (nejstarší první)', 'FIFO (oldest first)')}</option></select></label>`;
+  $('settings').querySelectorAll('[data-k]').forEach(inp => inp.addEventListener('change', () => {
+    const k = inp.dataset.k;
+    SETTINGS[k] = inp.tagName === 'SELECT' ? inp.value : (inp.value === '' ? DEFAULTS[k] : +inp.value);
+    try { localStorage.setItem('rb-settings', JSON.stringify(SETTINGS)); } catch (e) {}
+    render();
+  }));
+}
+$('reset').addEventListener('click', () => {
+  SETTINGS = { ...DEFAULTS };
+  try { localStorage.removeItem('rb-settings'); } catch (e) {}
+  renderSettings(); render();
+});
+$('asOf').addEventListener('change', render);
+let rsz; let lastW = 0;
+window.addEventListener('resize', () => { clearTimeout(rsz); rsz = setTimeout(() => { const w = $('chart').clientWidth; if (RES && w !== lastW) { lastW = w; renderDetail(); } }, 150); });
+
+// Nahrání vlastního Excelu (SheetJS se načte až při prvním použití)
+$('upload').addEventListener('click', () => $('file').click());
+$('sample').addEventListener('click', () => location.reload());
+$('file').addEventListener('change', async () => {
+  const f = $('file').files[0];
+  if (!f) return;
+  try {
+    if (!window.XLSX) await new Promise((ok, fail) => {
+      const s = document.createElement('script');
+      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+      s.onload = ok; s.onerror = fail; document.head.appendChild(s);
+    });
+    const wb = window.XLSX.read(await f.arrayBuffer(), { cellDates: true });
+    const sheets = Object.fromEntries(wb.SheetNames.map(n => [n, window.XLSX.utils.sheet_to_json(wb.Sheets[n], { header: 1, blankrows: false, raw: true })]));
+    load(fromSheets(sheets), f.name);
+  } catch (e) {
+    alert(L('Soubor se nepodařilo načíst: ', 'Could not read the file: ') + (e.message || e));
+  }
+  $('file').value = '';
+});
+
+// Export příkazů
+$('csv').addEventListener('click', () => {
+  const rows = orders(RES);
+  const head = LANG === 'en'
+    ? ['client', 'date', 'status', 'side', 'ticker', 'units', 'price', 'currency', 'amount_czk', 'fee_czk', 'gain_czk', 'lots']
+    : ['klient', 'datum', 'stav', 'akce', 'ticker', 'kusy', 'cena', 'mena', 'objem_czk', 'poplatek_czk', 'zisk_czk', 'loty'];
+  const csv = [head, ...rows.map(r => [r.client, r.date, r.status, r.side, r.ticker, r.qty, r.price, r.currency, r.valueCZK, r.feeCZK, r.gainCZK, r.lots])]
+    .map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(';')).join('\r\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' }));
+  a.download = `rebalancing_${$('asOf').value}.csv`;
+  a.click(); URL.revokeObjectURL(a.href);
+});
+</script>
+</body>
+</html>
