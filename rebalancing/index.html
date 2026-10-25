@@ -69,6 +69,27 @@
   }
   .btn:hover { border-color: var(--muted); }
   .btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  .dl { position: relative; }
+  .dl .caret { display: inline-block; margin-left: 0.35rem; transition: transform 0.2s ease; }
+  .dl [aria-expanded="true"] .caret { transform: rotate(180deg); }
+  .menu {
+    position: absolute; z-index: 10; top: calc(100% + 6px); left: 0; min-width: 100%; width: max-content; max-width: calc(100vw - 32px);
+    background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 0.35rem;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+  }
+  .menu button {
+    display: block; width: 100%; text-align: left; font: inherit; font-size: 0.92rem; color: var(--text);
+    background: transparent; border: 0; border-radius: 6px; padding: 0.55rem 0.75rem; cursor: pointer;
+  }
+  .menu button small { display: block; color: var(--muted); font-size: 0.8rem; }
+  .menu button:hover:not(:disabled), .menu button:focus-visible { background: rgba(138, 184, 255, 0.1); outline: none; }
+  .menu button:disabled { opacity: 0.45; cursor: default; }
+  .why { border: 1px solid var(--line); border-left: 3px solid var(--st-wait); border-radius: 8px; padding: 0.9rem 1rem; margin: 1rem 0 0; max-width: 52rem; }
+  .why h3 { margin: 0 0 0.4rem; }
+  .why p { margin: 0 0 0.75rem; }
+  .why table { font-size: 0.88rem; }
+  .why tr.best td { color: var(--text); font-weight: 500; }
+  .why tr:not(.best) td { color: var(--muted); }
   .src { flex: 1 1 14rem; font-size: 0.85rem; color: var(--muted); align-self: center; }
   details.more { margin-top: 1rem; border-top: 1px solid var(--line); padding-top: 0.75rem; }
   details.more > summary { cursor: pointer; font-weight: 500; }
@@ -177,7 +198,10 @@
         <button class="btn" type="button" id="upload"><span class="cs">Nahrát vlastní Excel</span><span class="en">Upload your own Excel</span></button>
         <input type="file" id="file" accept=".xlsx,.xls" hidden>
         <button class="btn" type="button" id="sample"><span class="cs">Ukázková data</span><span class="en">Sample data</span></button>
-        <button class="btn primary" type="button" id="csv"><span class="cs">Stáhnout příkazy (CSV)</span><span class="en">Download orders (CSV)</span></button>
+        <div class="dl">
+          <button class="btn primary" type="button" id="csv" aria-haspopup="menu" aria-expanded="false" aria-controls="csvMenu"><span class="cs">Stáhnout příkazy (CSV)</span><span class="en">Download orders (CSV)</span><span class="caret" aria-hidden="true">▾</span></button>
+          <div class="menu" id="csvMenu" role="menu" hidden></div>
+        </div>
         <span class="src" id="src"></span>
       </div>
       <details class="more">
@@ -212,6 +236,7 @@
         <h2 id="dH"></h2><span id="dChip"></span><span class="muted" id="dProfile"></span>
       </div>
       <ul class="reco" id="reco"></ul>
+      <div class="why" id="why" hidden></div>
       <p class="note" id="dNote" hidden></p>
 
       <h3><span class="cs">Váhy: teď, cíl a po zásahu</span><span class="en">Weights: now, target and after the trades</span></h3>
@@ -484,8 +509,9 @@ function recoItems(c) {
       case 'inBand': items.push(L('Všechny složky jsou v toleranci. Není potřeba nic dělat; další kontrola při příští revizi.', 'All holdings are within their bands. No action needed; check again at the next review.')); break;
       case 'drift': items.push(L(`Mimo toleranci: ${rowsOut(r.keys)}.`, `Out of band: ${rowsOut(r.keys)}.`)); break;
       case 'liquidity': items.push(L(`Hotovost ${czk(r.cash)} nepokryje výběry v příštích ${S.horizonDays} dnech (${czk(r.reserve)}).`, `Cash of ${czk(r.cash)} doesn’t cover withdrawals in the next ${S.horizonDays} days (${czk(r.reserve)}).`)); break;
-      case 'waitInflow': items.push(L(`Počkat na vklad ${czk(r.amount)} (${date(r.date)}) a obchodovat až s ním – nakoupí se z něj a prodává se méně.`, `Wait for the ${czk(r.amount)} deposit (${date(r.date)}) and trade with it – it funds the purchases, so less has to be sold.`)); break;
-      case 'waitTax': items.push(L(`Počkat do ${date(r.date)}: prodávané loty se do té doby osvobodí časovým testem. Ušetří to přibližně ${czk(r.saving)} na dani.`, `Wait until ${date(r.date)}: the lots to be sold become exempt under the time test by then. This saves about ${czk(r.saving)} in tax.`)); break;
+      case 'waitInflow': items.push(L(`Počkat na vklad ${czk(r.amount)} (${date(r.date)}) a obchodovat až s ním – proč, viz srovnání níže.`, `Wait for the ${czk(r.amount)} deposit (${date(r.date)}) and trade with it – see the comparison below for why.`)); break;
+      case 'inflowNotWorthWaiting': items.push(L(`Na vklad ${czk(r.amount)} (${date(r.date)}) se nečeká: zásah hned a jeho pozdější zainvestování vyjde levněji (${czk(r.costNow + r.costFollow)} proti ${czk(r.costWait)}).`, `No point waiting for the ${czk(r.amount)} deposit (${date(r.date)}): trading now and investing it later is cheaper (${czk(r.costNow + r.costFollow)} vs ${czk(r.costWait)}).`)); break;
+      case 'waitTax': items.push(L(`Počkat do ${date(r.date)}: prodávané loty se do té doby osvobodí časovým testem – viz srovnání níže.`, `Wait until ${date(r.date)}: the lots to be sold become exempt under the time test by then – see the comparison below.`)); break;
       case 'taxNotWorthWaiting': items.push(L(`Čekání do ${date(r.date)} by ušetřilo jen ${czk(r.saving)} nebo by nevyšlo na výběry – obchodovat hned.`, `Waiting until ${date(r.date)} would save only ${czk(r.saving)} or would not fit the withdrawals – trade now.`)); break;
       case 'taxDue': items.push(L(`Odhadovaná daň z prodejů: ${czk(r.amount)}.`, `Estimated tax on the sales: ${czk(r.amount)}.`)); break;
       case 'poSellTaxable': items.push(L(`Klient je s.r.o.: každý zisk z prodeje se daní ${S.taxPO} %, osvobození neplatí.`, `The client is a company: every gain on a sale is taxed at ${S.taxPO}%, no exemption applies.`)); break;
@@ -500,7 +526,6 @@ function recoItems(c) {
     if (buys.length) parts.push(L(`koupit ${list(buys)}`, `buy ${list(buys)}`));
     if (parts.length) items.push(`${when}: ${parts.join(L(' a ', ' and '))}. ${L('Náklady celkem', 'Total cost')} ${czk(c.plan.costs.total)}.`);
     if (c.plan.reserve > 0) items.push(L(`V hotovosti zůstane rezerva ${czk(c.plan.reserve)} na výběry do ${date(c.plan.reserveFlows.at(-1).date)}.`, `A cash reserve of ${czk(c.plan.reserve)} stays for withdrawals until ${date(c.plan.reserveFlows.at(-1).date)}.`));
-    if (c.alt) items.push(L(`Pro srovnání: zásah hned (${date(c.alt.date)}) by stál ${czk(c.alt.costs.total)}, z toho daň ${czk(c.alt.costs.tax)}.`, `For comparison: trading right away (${date(c.alt.date)}) would cost ${czk(c.alt.costs.total)}, of which ${czk(c.alt.costs.tax)} is tax.`));
     if (c.plan.tax.overCap) items.push(L('Prodeje překračují strop osvobození 40 mil. Kč – rozložit do více let.', 'Sales exceed the CZK 40m exemption cap – spread them over several years.'));
   }
   for (const f of c.flows.filter(f => f.amount > 0 && (!c.plan || f.date > c.plan.date))) {
@@ -524,6 +549,7 @@ function renderDetail() {
   $('dProfile').textContent = `${c.profile} · ${c.taxRegime === 'FO' ? L('fyzická osoba', 'individual') : L('s.r.o.', 'company')} · ${mczk(c.total)}`;
   const { items, warn } = recoItems(c);
   $('reco').innerHTML = items.map(t => `<li>${esc(t)}</li>`).join('') + warn.map(t => `<li class="warn">${esc(t)}</li>`).join('');
+  renderWhy(c);
   $('dNote').hidden = !c.note;
   $('dNote').textContent = c.note ? `${L('Poznámka v datech', 'Note in the data')}: ${c.note}` : '';
   drawChart(c);
@@ -563,6 +589,46 @@ function renderDetail() {
   const cashRows = Object.entries(c.cash).map(([cur, a]) => `<tr><td>${L('teď', 'now')}</td><td class="r">${nf(a)} ${cur}</td><td class="muted">${cur === 'CZK' ? '' : '≈ ' + czk(a * RES.fx[cur])}</td></tr>`);
   const flowRows = c.flows.map(f => `<tr><td>${date(f.date)}</td><td class="r ${f.amount > 0 ? 'side-buy' : 'side-sell'}">${f.amount > 0 ? '+' : '−'}${czk(Math.abs(f.amount))}</td><td class="muted">${esc(f.note)}</td></tr>`);
   $('fRows').innerHTML = cashRows.join('') + (flowRows.length ? flowRows.join('') : `<tr><td colspan="3" class="muted">${L('Žádné plánované pohyby', 'No planned flows')}</td></tr>`);
+}
+
+// Proč počkat: srovnání obou cest se stejným cílovým stavem
+const dayDiff = (a, b) => Math.round((new Date(b) - new Date(a)) / 864e5);
+function renderWhy(c) {
+  const box = $('why');
+  const r = c.decision.reasons.find(x => x.code === 'waitInflow' || x.code === 'waitTax');
+  box.hidden = !(c.status === 'wait' && c.alt && r);
+  if (box.hidden) return;
+  const p = c.plan, a = c.alt, f = c.altFollow;
+  const nTrades = (x) => x ? x.trades.length : 0, sold = (x) => x ? x.sold : 0;
+  const nowCost = a.costs.total + (f ? f.costs.total : 0), nowTax = a.costs.tax + (f ? f.costs.tax : 0);
+  const extraDays = dayDiff(a.date, p.date);
+  let text;
+  if (r.code === 'waitInflow') {
+    // kusy prodané teď, které by se po vkladu zase kupovaly zpět
+    const back = (f ? f.trades : []).filter(t => t.side === 'buy').map(t => {
+      const s = a.trades.find(x => x.side === 'sell' && x.ticker === t.ticker);
+      return s ? L(`${nf(Math.min(s.qty, t.qty))} ks ${t.ticker}`, `${nf(Math.min(s.qty, t.qty))} units of ${t.ticker}`) : null;
+    }).filter(Boolean);
+    text = L(
+      `Zásah hned je sám o sobě levnější (${czk(a.costs.total)}), ale nezainvestuje vklad ${czk(r.amount)}, který přijde ${date(r.date)}. Na ten by pak bylo potřeba druhé kolo obchodů za dalších ${czk(f ? f.costs.total : 0)}, takže dohromady ${czk(nowCost)}.${back.length ? ` Navíc by se teď prodalo ${back.join(', ')}, které by se po vkladu kupovaly zpátky.` : ''} Počkáním se obchoduje jen jednou a ušetří se ${czk(nowCost - p.costs.total)}. Odchylka od cíle přitom potrvá jen o ${extraDays} dní déle.`,
+      `Trading now is cheaper on its own (${czk(a.costs.total)}), but it doesn’t invest the ${czk(r.amount)} deposit arriving on ${date(r.date)}. That would need a second round of trades costing another ${czk(f ? f.costs.total : 0)}, so ${czk(nowCost)} in total.${back.length ? ` On top of that, ${back.join(', ')} would be sold now and bought back after the deposit.` : ''} Waiting means trading only once and saves ${czk(nowCost - p.costs.total)}. The portfolio stays off target for only ${extraDays} days longer.`);
+  } else {
+    text = L(
+      `Kdyby se obchodovalo hned, prodávaly by se loty, které ještě nesplňují časový test, a daň by byla ${czk(nowTax)}. Od ${date(p.date)} jsou osvobozené, takže stejný rebalancing vyjde jen na poplatky. Úspora ${czk(nowCost - p.costs.total)} za ${extraDays} dní čekání.`,
+      `Trading now would sell lots that don’t yet meet the time test, with tax of ${czk(nowTax)}. From ${date(p.date)} they are exempt, so the same rebalancing costs only the fees. A saving of ${czk(nowCost - p.costs.total)} for waiting ${extraDays} days.`);
+  }
+  const row = (cls, label, trades, soldV, tax, cost) => `<tr class="${cls}"><td class="wrap">${label}</td><td class="r">${trades}</td><td class="r">${czk(soldV)}</td><td class="r">${czk(tax)}</td><td class="r">${czk(cost)}</td></tr>`;
+  const nowLabel = f
+    ? L(`Hned (${date(a.date)}) + zainvestovat vklad (${date(f.date)})`, `Now (${date(a.date)}) + invest the deposit (${date(f.date)})`)
+    : L(`Hned (${date(a.date)})`, `Now (${date(a.date)})`);
+  box.innerHTML = `<h3>${L('Proč počkat?', 'Why wait?')}</h3><p>${esc(text)}</p>
+    <div class="tbl-wrap"><table class="num">
+      <thead><tr><th>${L('Varianta', 'Option')}</th><th class="r">${L('Obchodů', 'Trades')}</th><th class="r">${L('Prodeje', 'Sales')}</th><th class="r">${L('Daň', 'Tax')}</th><th class="r">${L('Náklady celkem', 'Total cost')}</th></tr></thead>
+      <tbody>
+        ${row('', esc(nowLabel), nTrades(a) + nTrades(f), sold(a) + sold(f), nowTax, nowCost)}
+        ${row('best', esc(L(`Počkat do ${date(p.date)} – doporučeno`, `Wait until ${date(p.date)} – recommended`)), nTrades(p), sold(p), p.costs.tax, p.costs.total)}
+      </tbody>
+    </table></div>`;
 }
 
 // Graf: pro každou složku pás tolerance kolem cíle, váha teď a po zásahu
@@ -645,19 +711,36 @@ $('file').addEventListener('change', async () => {
   $('file').value = '';
 });
 
-// Export příkazů
-$('csv').addEventListener('click', () => {
-  const rows = orders(RES);
+// Export příkazů: rozbalovací nabídka – jen obchody k provedení teď, nebo všechny včetně plánovaných
+const menu = $('csvMenu'), csvBtn = $('csv');
+function openMenu(open) {
+  menu.hidden = !open; csvBtn.setAttribute('aria-expanded', String(open));
+  if (!open) return;
+  const all = orders(RES), today = all.filter(o => o.status === 'act');
+  const day = today[0]?.date;
+  const count = (n) => LANG === 'en' ? `${n} ${n === 1 ? 'trade' : 'trades'}` : `${n} ${n === 1 ? 'obchod' : n < 5 && n > 0 ? 'obchody' : 'obchodů'}`;
+  menu.innerHTML = `
+    <button type="button" role="menuitem" data-scope="today"${today.length ? '' : ' disabled'}>${L('Jen obchody na dnešek', 'Today’s trades only')}<small>${today.length ? `${date(day)} · ${count(today.length)}` : L('dnes se nic neobchoduje', 'nothing to trade today')}</small></button>
+    <button type="button" role="menuitem" data-scope="all"${all.length ? '' : ' disabled'}>${L('Všechny včetně plánovaných', 'All, including planned')}<small>${count(all.length)}${all.length > today.length ? L(` · ${all.length - today.length} s pozdějším datem`, ` · ${all.length - today.length} on later dates`) : ''}</small></button>`;
+  menu.querySelectorAll('button').forEach(b => b.addEventListener('click', () => { download(b.dataset.scope); openMenu(false); csvBtn.focus(); }));
+  menu.querySelector('button:not(:disabled)')?.focus();
+}
+csvBtn.addEventListener('click', (e) => { e.stopPropagation(); openMenu(menu.hidden); });
+document.addEventListener('click', (e) => { if (!menu.hidden && !menu.contains(e.target)) openMenu(false); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !menu.hidden) { openMenu(false); csvBtn.focus(); } });
+
+function download(scope) {
+  const rows = orders(RES).filter(r => scope === 'all' || r.status === 'act');
   const head = LANG === 'en'
     ? ['client', 'date', 'status', 'side', 'ticker', 'units', 'price', 'currency', 'amount_czk', 'fee_czk', 'gain_czk', 'lots']
     : ['klient', 'datum', 'stav', 'akce', 'ticker', 'kusy', 'cena', 'mena', 'objem_czk', 'poplatek_czk', 'zisk_czk', 'loty'];
   const csv = [head, ...rows.map(r => [r.client, r.date, r.status, r.side, r.ticker, r.qty, r.price, r.currency, r.valueCZK, r.feeCZK, r.gainCZK, r.lots])]
     .map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(';')).join('\r\n');
   const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' }));
-  a.download = `rebalancing_${$('asOf').value}.csv`;
+  a.href = URL.createObjectURL(new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' }));
+  a.download = `rebalancing_${$('asOf').value}_${scope === 'all' ? L('vse', 'all') : L('dnes', 'today')}.csv`;
   a.click(); URL.revokeObjectURL(a.href);
-});
+}
 </script>
 </body>
 </html>

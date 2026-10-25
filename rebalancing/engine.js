@@ -144,17 +144,28 @@ function analyzeClient(client, data, ctx) {
   const plan = (date) => planAt(date, { client, lots, held, cash, flows, tickers }, ctx);
   if (!triggers.length) {
     const nextIn = flows.find(f => f.amount > 0);
-    return { ...base, status: 'ok', decision: { date: null, reasons: [{ code: 'inBand' }], nextInflow: nextIn || null }, plan: null, alt: null };
+    return { ...base, status: 'ok', decision: { date: null, reasons: [{ code: 'inBand' }], nextInflow: nextIn || null }, plan: null, alt: null, altFollow: null };
   }
 
   const reasons = triggers.map(t => ({ ...t }));
   let date = now;
 
-  // 1) Vklad v blízké době: počkat a obchodovat jednou, s jeho penězi (méně prodejů)
+  // 1) Vklad v blízké době: srovnat stejný výsledek dvěma cestami –
+  //    a) zásah hned + druhé kolo obchodů po příchodu vkladu, b) počkat a obchodovat jednou
   const inflow = flows.find(f => f.amount > 0 && f.days <= S.inflowWaitDays);
+  let altFollow = null;
   if (inflow && liquidityOk(state.cashCZK, flows, inflow.date)) {
-    date = nextBusinessDay(inflow.date);
-    reasons.push({ code: 'waitInflow', date: inflow.date, amount: inflow.amount });
+    const dIn = nextBusinessDay(inflow.date);
+    const pNow = plan(now), pWait = plan(dIn);
+    altFollow = planAt(dIn, { client, lots, held: pNow.heldAfter, cash: pNow.cashAfter, flows: flows.filter(f => f.date > now), tickers }, ctx);
+    const cmp = {
+      date: inflow.date, tradeDate: dIn, amount: inflow.amount, days: daysBetween(asOf, dIn),
+      costWait: pWait.costs.total, costNow: pNow.costs.total, costFollow: altFollow.costs.total,
+      soldWait: pWait.sold, soldNow: pNow.sold + altFollow.sold,
+      tradesWait: pWait.trades.length, tradesNow: pNow.trades.length + altFollow.trades.length,
+    };
+    if (cmp.costWait <= cmp.costNow + cmp.costFollow) { date = dIn; reasons.push({ code: 'waitInflow', ...cmp }); }
+    else { reasons.push({ code: 'inflowNotWorthWaiting', ...cmp }); altFollow = null; }
   }
   let p = plan(date);
 
@@ -182,7 +193,8 @@ function analyzeClient(client, data, ctx) {
     ...base, status,
     decision: { date, reasons, taxSaved },
     plan: p,
-    alt: status === 'wait' ? plan(now) : null, // co by stál zásah hned
+    alt: status === 'wait' ? plan(now) : null, // co by stál zásah hned …
+    altFollow: status === 'wait' ? altFollow : null, // … a druhé kolo po příchodu vkladu
   };
 }
 
@@ -275,7 +287,7 @@ function planAt(date, cl, ctx) {
   const minTrade = Math.max(S.minTrade, (S.minTradePct / 100) * investable);
   const beforeRows = weightRows(before, client.targets, cl.tickers, reserve, S);
   if (investable <= 0) {
-    return { date, reserve, reserveFlows, investable, error: 'insufficient', trades: [], conversions: [], tax: { amount: 0 }, costs: { fees: 0, fx: 0, tax: 0, total: 0 }, before: beforeRows, after: beforeRows };
+    return { date, reserve, reserveFlows, investable, error: 'insufficient', trades: [], conversions: [], sold: 0, heldAfter: cl.held, cashAfter: cash0, tax: { amount: 0 }, costs: { fees: 0, fx: 0, tax: 0, total: 0 }, before: beforeRows, after: beforeRows };
   }
 
   const trades = [];
@@ -330,7 +342,8 @@ function planAt(date, cl, ctx) {
   const fees = sum(finalTrades, tr => tr.feeCZK), fxCost = sum(fx.conversions, c => c.costCZK);
   return {
     date, reserve, reserveFlows, investable,
-    trades: finalTrades, conversions: fx.conversions, cashAfter: cash,
+    trades: finalTrades, conversions: fx.conversions, cashAfter: cash, heldAfter,
+    sold: sum(finalTrades.filter(tr => tr.side === 'sell'), tr => tr.valueCZK),
     tax, costs: { fees, fx: fxCost, tax: tax.amount, total: fees + fxCost + tax.amount },
     turnover: sum(finalTrades, tr => tr.valueCZK),
     before: beforeRows,

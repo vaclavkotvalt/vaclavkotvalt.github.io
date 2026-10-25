@@ -82,3 +82,11 @@ test('Klient E: počkat na osvobození lotu z 20. 11. 2023', () => {
 test('nikde nevznikne záporná hotovost', () => {
   for (const c of res.clients) if (c.plan) for (const v of Object.values(c.plan.cashAfter)) assert.ok(v > -0.01, c.id);
 });
+
+test('Klient A: čekání na vklad je levnější než zásah hned + druhé kolo', () => {
+  const a = C('A'), r = a.decision.reasons.find(x => x.code === 'waitInflow');
+  assert.ok(a.altFollow && a.altFollow.trades.length > 0);
+  assert.ok(r.costWait < r.costNow + r.costFollow);
+  assert.ok(r.costNow < r.costWait); // samotný zásah hned je levnější – proto je potřeba srovnávat obě kola
+  assert.ok(r.soldWait < r.soldNow);
+});
