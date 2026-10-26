@@ -90,3 +90,18 @@ test('Klient A: čekání na vklad je levnější než zásah hned + druhé kolo
   assert.ok(r.costNow < r.costWait); // samotný zásah hned je levnější – proto je potřeba srovnávat obě kola
   assert.ok(r.soldWait < r.soldNow);
 });
+
+test('tržní ceny přepíšou ceny ze souboru, chybějící zůstanou', async () => {
+  const { applyMarket } = await import('./io.js');
+  const market = { fx: { EUR: { rate: 25, date: '2026-10-26' } }, prices: { VWCE: { price: 150, currency: 'EUR', date: '2026-10-26' }, IGLN: { price: 80, currency: 'EUR', date: '2026-10-26' } } };
+  const m = applyMarket(data, market);
+  assert.equal(m.data.instruments.find(i => i.ticker === 'VWCE').price, 150);
+  assert.equal(m.data.instruments.find(i => i.ticker === 'IGLN').price, 78.4); // jiná měna → ponechat
+  assert.equal(m.data.fx.EUR, 25);
+  assert.equal(m.data.fx.USD, 21);
+  assert.equal(m.asOf, '2026-10-26');
+  assert.deepEqual(m.kept.sort(), ['AVWS', 'EUNA', 'IGLN']);
+  // vklad klienta A (10. 11.) už měl proběhnout, když se počítá k 20. 11.
+  const later = analyze(m.data, { asOf: '2026-11-20' });
+  assert.ok(later.clients.find(c => c.id === 'Klient A').warnings.some(w => w.code === 'pastFlows'));
+});

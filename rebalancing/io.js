@@ -77,3 +77,19 @@ export function fromSheets(sheets) {
 
   return { asOf, fx, instruments, clients, lots, cash, flows };
 }
+
+// Přepíše ceny a kurzy aktuálními tržními daty (market.json). Instrumenty, pro které
+// tržní cena chybí nebo je v jiné měně, si ponechají cenu ze souboru.
+export function applyMarket(data, market) {
+  const fx = { ...data.fx }, applied = [], kept = [], dates = [];
+  for (const [code, v] of Object.entries(market.fx || {})) {
+    if (code in fx && v.rate > 0) { fx[code] = v.rate; dates.push(v.date); }
+  }
+  const instruments = data.instruments.map(i => {
+    const m = (market.prices || {})[i.ticker];
+    if (m && m.price > 0 && m.currency === i.currency) { applied.push(i.ticker); dates.push(m.date); return { ...i, price: m.price, priceDate: m.date, priceSource: m.source }; }
+    kept.push(i.ticker); return i;
+  });
+  const asOf = dates.sort().at(-1) || data.asOf;
+  return { data: { ...data, fx, instruments, asOf, fileAsOf: data.asOf }, applied, kept, asOf };
+}

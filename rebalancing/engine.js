@@ -133,6 +133,9 @@ function analyzeClient(client, data, ctx) {
   if (state.cashCZK < reserveNow) triggers.push({ code: 'liquidity', reserve: reserveNow, cash: state.cashCZK });
 
   const warnings = clientWarnings(client, flows, state, ctx);
+  // Pohyby mezi datem souboru a datem ocenění už měly proběhnout – nástroj je nezapočte, hotovost musí sedět ze souboru
+  const past = data.flows.filter(own).filter(f => f.date > (data.fileAsOf || data.asOf || '0000-00-00') && f.date <= asOf);
+  if (past.length) warnings.push({ code: 'pastFlows', flows: past });
   const base = {
     id: client.id, profile: client.profile, taxRegime: client.taxRegime, note: client.note,
     targets: client.targets, total: state.total, cash, cashCZK: state.cashCZK, rows, lots, flows,

@@ -19,10 +19,10 @@ UA = {"User-Agent": "Mozilla/5.0 (rebalancing tool; vaclavkotvalt.cz)"}
 
 # Ticker v nástroji → kandidátní symboly u zdrojů (zkouší se popořadě) a očekávaná měna
 INSTRUMENTS = {
-    "VWCE": {"currency": "EUR", "yahoo": ["VWCE.DE"], "stooq": ["vwce.de"]},
-    "AVWS": {"currency": "EUR", "yahoo": ["AVWS.DE"], "stooq": ["avws.de"]},
-    "EUNA": {"currency": "EUR", "yahoo": ["EUNA.DE"], "stooq": ["euna.de"]},
-    "IGLN": {"currency": "USD", "yahoo": ["IGLN.L"], "stooq": ["igln.uk"]},
+    "VWCE": {"isin": "IE00BK5BQT80", "currency": "EUR", "yahoo": ["VWCE.DE"], "stooq": ["vwce.de"]},
+    "AVWS": {"isin": "IE0003R87OG3", "currency": "EUR", "yahoo": ["AVWS.DE"], "stooq": ["avws.de"]},
+    "EUNA": {"isin": "IE00BDBRDM35", "currency": "EUR", "yahoo": ["EUNA.DE"], "stooq": ["euna.de"]},
+    "IGLN": {"isin": "IE00B4ND3602", "currency": "USD", "yahoo": ["IGLN.L"], "stooq": ["igln.uk"]},
 }
 FX = ["EUR", "USD"]
 MAX_JUMP = 0.25  # denní změna nad 25 % = podezřelý údaj, ponechat předchozí
@@ -67,6 +67,12 @@ def stooq(symbol):
     return float(r["Close"]), None, r["Date"]
 
 
+def isin_symbols(isin):
+    """Symboly, pod kterými Yahoo vede daný ISIN – kontrola, že kotace patří správnému fondu."""
+    j = json.loads(get(f"https://query2.finance.yahoo.com/v1/finance/search?q={isin}&quotesCount=20&newsCount=0"))
+    return [(q.get("symbol"), q.get("exchange"), q.get("longname") or q.get("shortname")) for q in j.get("quotes", [])]
+
+
 def fetch_price(ticker, spec):
     errors = []
     for source, fn in (("Yahoo Finance", yahoo), ("Stooq", stooq)):
@@ -94,6 +100,12 @@ def main():
         print(f"ČNB: nepodařilo se stáhnout ({e}), ponechávám předchozí kurzy")
 
     for ticker, spec in INSTRUMENTS.items():
+        try:
+            found = isin_symbols(spec["isin"])
+            ok = any(sym in spec["yahoo"] for sym, _, _ in found)
+            print(f"{ticker} {spec['isin']}: {'OK' if ok else 'POZOR – symbol nenalezen pod ISIN'} {found}")
+        except Exception as e:  # noqa: BLE001 – kontrola je jen informativní
+            print(f"{ticker}: kontrola ISIN se nepovedla ({e})")
         try:
             p = fetch_price(ticker, spec)
             prev = old.get("prices", {}).get(ticker)
