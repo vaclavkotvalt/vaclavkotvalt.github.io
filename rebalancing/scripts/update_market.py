@@ -100,14 +100,19 @@ def main():
         print(f"ČNB: nepodařilo se stáhnout ({e}), ponechávám předchozí kurzy")
 
     for ticker, spec in INSTRUMENTS.items():
+        check = None
         try:
             found = isin_symbols(spec["isin"])
-            ok = any(sym in spec["yahoo"] for sym, _, _ in found)
-            print(f"{ticker} {spec['isin']}: {'OK' if ok else 'POZOR – symbol nenalezen pod ISIN'} {found}")
+            match = [f for f in found if f[0] in spec["yahoo"]]
+            check = {"isin": spec["isin"], "ok": bool(match), "name": match[0][2] if match else None,
+                     "symbols": [f[0] for f in found]}
+            print(f"{ticker} {spec['isin']}: {check}")
         except Exception as e:  # noqa: BLE001 – kontrola je jen informativní
             print(f"{ticker}: kontrola ISIN se nepovedla ({e})")
         try:
             p = fetch_price(ticker, spec)
+            if check:
+                p["isinCheck"] = check
             prev = old.get("prices", {}).get(ticker)
             if prev and abs(p["price"] / prev["price"] - 1) > MAX_JUMP:
                 print(f"{ticker}: podezřelý skok {prev['price']} → {p['price']}, ponechávám předchozí")
