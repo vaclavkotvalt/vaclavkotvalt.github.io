@@ -1,0 +1,41 @@
+{
+ "updated": "2026-10-26T19:18+00:00",
+ "fx": {
+  "EUR": {
+   "rate": 24.365,
+   "date": "2026-10-26",
+   "source": "ČNB"
+  },
+  "USD": {
+   "rate": 21.782,
+   "date": "2026-10-26",
+   "source": "ČNB"
+  }
+ },
+ "prices": {
+  "VWCE": {
+   "price": 170.0,
+   "currency": "EUR",
+   "date": "2026-10-26",
+   "source": "Yahoo Finance (VWCE.DE)"
+  },
+  "AVWS": {
+   "price": 25.695,
+   "currency": "EUR",
+   "date": "2026-10-26",
+   "source": "Yahoo Finance (AVWS.DE)"
+  },
+  "EUNA": {
+   "price": 4.8613,
+   "currency": "EUR",
+   "date": "2026-10-26",
+   "source": "Yahoo Finance (EUNA.DE)"
+  },
+  "IGLN": {
+   "price": 77.9175,
+   "currency": "USD",
+   "date": "2026-10-26",
+   "source": "Yahoo Finance (IGLN.L)"
+  }
+ }
+}
