@@ -8,6 +8,8 @@ Statický web na GitHub Pages (větev `main`), bez build kroku.
 - Obě stránky jsou dvojjazyčné (CZ/EN, sdílený klíč `lang` v localStorage). Statický text
   přes `<span class="cs">…</span><span class="en">…</span>`, v `kvartaly/` dynamický text přes
   `L('česky', 'English')`. Každý nový text přidávej v obou jazycích.
+- `sitemap.xml` + `robots.txt` pro Google Search Console: novou stránku přidej do sitemapy
+  a u změněných stránek aktualizuj `<lastmod>`.
 
 ## Písma
 - Velké nadpisy stránek (`h1`, např. „Václav Kotvalt“, „Podobné kvartály“): **Newsreader** – `var(--font-heading)`.

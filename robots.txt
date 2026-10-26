@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://vaclavkotvalt.cz/sitemap.xml
