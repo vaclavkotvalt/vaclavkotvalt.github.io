@@ -193,10 +193,7 @@
     <section class="panel" aria-labelledby="dataH">
       <h2 id="dataH" hidden>Data</h2>
       <div class="toolbar">
-        <label class="f" style="width:11rem"><span><span class="cs">Datum ocenění</span><span class="en">Valuation date</span></span>
-          <input type="date" id="asOf">
-        </label>
-        <label class="f" style="width:14rem"><span><span class="cs">Ceny a kurzy</span><span class="en">Prices and FX</span></span>
+        <label class="f" style="width:17rem"><span><span class="cs">Ocenění</span><span class="en">Valuation</span></span>
           <select id="priceSrc"></select>
         </label>
         <button class="btn" type="button" id="upload"><span class="cs">Nahrát vlastní Excel</span><span class="en">Upload your own Excel</span></button>
@@ -453,7 +450,6 @@ function forgetFile() { try { localStorage.removeItem('rb-file'); } catch (e) {}
 function applyMode() {
   MERGE = MODE === 'market' && MARKET ? applyMarket(RAW, MARKET) : null;
   DATA = MERGE ? MERGE.data : RAW;
-  $('asOf').value = DATA.asOf || new Date().toISOString().slice(0, 10);
   render();
 }
 
@@ -484,7 +480,8 @@ function renderSourceUi() {
 }
 
 function run() {
-  RES = analyze(DATA, { ...SETTINGS, asOf: $('asOf').value || DATA.asOf });
+  // datum ocenění určuje zdroj cen: datum souboru (zadání), nebo datum posledních tržních dat
+  RES = analyze(DATA, { ...SETTINGS, asOf: DATA.asOf || new Date().toISOString().slice(0, 10) });
   if (!selected || !RES.clients.some(c => c.id === selected)) {
     const order = { act: 0, wait: 1, ok: 2 };
     selected = [...RES.clients].sort((a, b) => order[a.status] - order[b.status])[0]?.id;
@@ -740,7 +737,6 @@ $('reset').addEventListener('click', () => {
   try { localStorage.removeItem('rb-settings'); } catch (e) {}
   renderSettings(); render();
 });
-$('asOf').addEventListener('change', render);
 let rsz; let lastW = 0;
 window.addEventListener('resize', () => { clearTimeout(rsz); rsz = setTimeout(() => { const w = $('chart').clientWidth; if (RES && w !== lastW) { lastW = w; renderDetail(); } }, 150); });
 
@@ -796,7 +792,7 @@ function download(scope) {
     .map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(';')).join('\r\n');
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' }));
-  a.download = `rebalancing_${$('asOf').value}_${scope === 'all' ? L('vse', 'all') : L('dnes', 'today')}.csv`;
+  a.download = `rebalancing_${RES.asOf}_${scope === 'all' ? L('vse', 'all') : L('dnes', 'today')}.csv`;
   a.click(); URL.revokeObjectURL(a.href);
 }
 </script>
