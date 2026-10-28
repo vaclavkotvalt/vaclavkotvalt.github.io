@@ -198,7 +198,6 @@
         </label>
         <button class="btn" type="button" id="upload"><span class="cs">Nahrát vlastní Excel</span><span class="en">Upload your own Excel</span></button>
         <input type="file" id="file" accept=".xlsx,.xls" hidden>
-        <button class="btn" type="button" id="sample"><span class="cs">Ukázková data</span><span class="en">Sample data</span></button>
         <div class="dl">
           <button class="btn primary" type="button" id="csv" aria-haspopup="menu" aria-expanded="false" aria-controls="csvMenu"><span class="cs">Stáhnout příkazy (CSV)</span><span class="en">Download orders (CSV)</span><span class="caret" aria-hidden="true">▾</span></button>
           <div class="menu" id="csvMenu" role="menu" hidden></div>
@@ -405,7 +404,7 @@ const PARAMS = [
 ];
 
 // RAW = pozice z Excelu, MARKET = denní ceny a kurzy (market.json), DATA = to, co jde do enginu
-let RAW = null, MARKET = null, MODE = 'file', MERGE = null, FILE = null;
+let RAW = null, MARKET = null, MODE = 'brief', MERGE = null, FILE = null;
 let DATA = null, SETTINGS = { ...DEFAULTS }, RES = null, selected = null;
 try { Object.assign(SETTINGS, JSON.parse(localStorage.getItem('rb-settings') || '{}')); } catch (e) {}
 
@@ -424,40 +423,43 @@ applyLang(LANG);
 const SAMPLE = fetch('data.json', { cache: 'no-cache' }).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); });
 const MARKET_P = fetch('market.json', { cache: 'no-cache' }).then(r => r.ok ? r.json() : null).catch(() => null);
 
-// Při otevření: soubor uložený v tomto prohlížeči, jinak ukázková data ze zadání
+// Dva režimy ocenění:
+//  'brief'  = data ze zadání s jejich cenami a kurzy (výstup pro zadání)
+//  'market' = vlastní Excel (pokud je nahraný, jinak data ze zadání) s aktuálními tržními cenami a kurzy
+let SAMPLE_RAW = null, STORED = null;
 Promise.all([SAMPLE, MARKET_P]).then(([sample, market]) => {
   MARKET = market && market.prices && Object.keys(market.prices).length ? market : null;
-  let stored = null;
-  try { stored = JSON.parse(localStorage.getItem('rb-file') || 'null'); } catch (e) {}
-  if (stored) { try { return loadFile(stored.sheets, stored.name, false); } catch (e) { forgetFile(); } }
-  load(fromSheets(sample.sheets), null);
+  SAMPLE_RAW = fromSheets(sample.sheets);
+  try { STORED = JSON.parse(localStorage.getItem('rb-file') || 'null'); } catch (e) {}
+  if (STORED) { try { fromSheets(STORED.sheets); } catch (e) { forgetFile(); } }
+  $('status').hidden = true; $('app').hidden = false;
+  setMode(STORED && MARKET ? 'market' : 'brief');
+  renderSettings();
 }).catch(() => { $('status').textContent = L('Data se nepodařilo načíst.', 'Could not load the data.'); });
 
-// Vlastní soubor: výchozí jsou aktuální tržní ceny, u ukázkových dat ceny ze zadání (aby seděl výstup pro zadání)
-function load(raw, file) {
-  RAW = raw; FILE = file; selected = null;
-  MODE = file && MARKET ? 'market' : 'file';
-  $('status').hidden = true; $('app').hidden = false;
-  applyMode(); renderSettings();
-}
-function loadFile(sheets, name, remember) {
-  const raw = fromSheets(sheets); // vyhodí chybu, pokud soubor nemá očekávané listy
-  if (remember) { try { localStorage.setItem('rb-file', JSON.stringify({ name, sheets })); } catch (e) {} }
-  load(raw, name);
-}
-function forgetFile() { try { localStorage.removeItem('rb-file'); } catch (e) {} }
-
-function applyMode() {
-  MERGE = MODE === 'market' && MARKET ? applyMarket(RAW, MARKET) : null;
+function setMode(mode) {
+  MODE = mode === 'market' && MARKET ? 'market' : 'brief';
+  const own = MODE === 'market' && STORED;
+  RAW = own ? fromSheets(STORED.sheets) : SAMPLE_RAW;
+  FILE = own ? STORED.name : null;
+  selected = null;
+  MERGE = MODE === 'market' ? applyMarket(RAW, MARKET) : null;
   DATA = MERGE ? MERGE.data : RAW;
   render();
 }
+function loadFile(sheets, name) {
+  fromSheets(sheets); // vyhodí chybu, pokud soubor nemá očekávané listy
+  STORED = { name, sheets };
+  try { localStorage.setItem('rb-file', JSON.stringify(STORED)); } catch (e) {}
+  setMode('market');
+}
+function forgetFile() { STORED = null; try { localStorage.removeItem('rb-file'); } catch (e) {} }
 
 function renderSourceUi() {
   const sel = $('priceSrc');
   const mDate = MARKET ? Object.values(MARKET.prices).map(p => p.date).sort().at(-1) : null;
-  sel.innerHTML = `<option value="market"${MARKET ? '' : ' disabled'}>${L('aktuální trh', 'current market')}${mDate ? ` (${date(mDate)})` : ''}</option>`
-    + `<option value="file">${FILE ? L('ze souboru', 'from the file') : L('ze zadání', 'from the brief')}${RAW.asOf ? ` (${date(RAW.asOf)})` : ''}</option>`;
+  sel.innerHTML = `<option value="brief">${L('ze zadání', 'from the brief')}${SAMPLE_RAW.asOf ? ` (${date(SAMPLE_RAW.asOf)})` : ''}</option>`
+    + `<option value="market"${MARKET ? '' : ' disabled'}>${L('aktuální trh', 'current market')}${mDate ? ` (${date(mDate)})` : ''}${STORED ? ` – ${esc(STORED.name)}` : ''}</option>`;
   sel.value = MODE;
   const parts = [];
   parts.push(FILE
@@ -470,13 +472,13 @@ function renderSourceUi() {
     parts.push(`${L('Ceny', 'Prices')}: ${MERGE.applied.join(', ')} – ${src} ${L('k', 'as of')} ${date(mDate)}${MERGE.kept.length ? ` · ${MERGE.kept.join(', ')} ${L('ze souboru (bez tržní ceny)', 'from the file (no market price)')}` : ''} · ${L('kurzy ČNB', 'CNB rates')} ${fxDate ? date(fxDate) : ''}: ${fx}`);
     const age = Math.round((Date.now() - new Date(mDate + 'T18:00:00Z')) / 864e5);
     if (age > 4) parts.push(`<span class="err">${L(`Tržní data jsou ${age} dní stará – automatická aktualizace se možná nepovedla.`, `Market data are ${age} days old – the automatic update may have failed.`)}</span>`);
-    if (!FILE) parts.push(L('Ukázkové pozice jsou smyšlené, s dnešními cenami jde jen o ilustraci. Výstup pro zadání počítá s cenami ze zadání.', 'The sample holdings are fictional, so with today’s prices this is only an illustration. The output for the brief uses the brief’s prices.'));
+    if (!FILE) parts.push(L('Bez vlastního Excelu se počítá s pozicemi ze zadání. Ty jsou smyšlené, takže s dnešními cenami jde jen o ilustraci – pro aktuální ocenění nahrajte vlastní Excel.', 'Without your own Excel file the brief’s holdings are used. They are fictional, so with today’s prices this is only an illustration – upload your own Excel for a current valuation.'));
   } else {
-    parts.push(`${L('Ceny a kurzy', 'Prices and FX')}: ${FILE ? L('ze souboru', 'from the file') : L('ze zadání', 'from the brief')}${RAW.asOf ? ` ${L('k', 'as of')} ${date(RAW.asOf)}` : ''}`);
+    parts.push(`${L('Ceny a kurzy', 'Prices and FX')}: ${L('ze zadání', 'from the brief')}${RAW.asOf ? ` ${L('k', 'as of')} ${date(RAW.asOf)}` : ''}${STORED ? ` · ${L(`vlastní Excel (${esc(STORED.name)}) se použije při aktuálním tržním ocenění`, `your Excel file (${esc(STORED.name)}) is used with the current market valuation`)}` : ''}`);
   }
   $('src').innerHTML = parts.join('<br>');
   const f = $('forget');
-  if (f) f.addEventListener('click', () => { forgetFile(); SAMPLE.then(j => load(fromSheets(j.sheets), null)); });
+  if (f) f.addEventListener('click', () => { forgetFile(); setMode(MODE); });
 }
 
 function run() {
@@ -742,8 +744,7 @@ window.addEventListener('resize', () => { clearTimeout(rsz); rsz = setTimeout(()
 
 // Nahrání vlastního Excelu (SheetJS se načte až při prvním použití)
 $('upload').addEventListener('click', () => $('file').click());
-$('sample').addEventListener('click', () => SAMPLE.then(j => load(fromSheets(j.sheets), null)));
-$('priceSrc').addEventListener('change', () => { MODE = $('priceSrc').value; applyMode(); });
+$('priceSrc').addEventListener('change', () => setMode($('priceSrc').value));
 $('file').addEventListener('change', async () => {
   const f = $('file').files[0];
   if (!f) return;
@@ -758,7 +759,7 @@ $('file').addEventListener('change', async () => {
     // data převedená na text (ISO), aby se dala uložit do prohlížeče bez posunu časových pásem
     const sheets = Object.fromEntries(wb.SheetNames.map(n => [n, window.XLSX.utils.sheet_to_json(wb.Sheets[n], { header: 1, blankrows: false, raw: true })
       .map(r => r.map(c => c instanceof Date ? isoDate(c) : c))]));
-    loadFile(sheets, f.name, true);
+    loadFile(sheets, f.name);
   } catch (e) {
     alert(L('Soubor se nepodařilo načíst: ', 'Could not read the file: ') + (e.message || e));
   }
