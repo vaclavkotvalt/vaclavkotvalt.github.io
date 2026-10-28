@@ -674,7 +674,7 @@ function renderWhy(c) {
   const nowLabel = f
     ? L(`Hned (${date(a.date)}) + zainvestovat vklad (${date(f.date)})`, `Now (${date(a.date)}) + invest the deposit (${date(f.date)})`)
     : L(`Hned (${date(a.date)})`, `Now (${date(a.date)})`);
-  box.innerHTML = `<h3>${L('Proč počkat?', 'Why wait?')}</h3><p>${esc(text)}</p>
+  box.innerHTML = `<h3>${L('Proč počkat', 'Why wait')}</h3><p>${esc(text)}</p>
     <div class="tbl-wrap"><table class="num">
       <thead><tr><th>${L('Varianta', 'Option')}</th><th class="r">${L('Obchodů', 'Trades')}</th><th class="r">${L('Prodeje', 'Sales')}</th><th class="r">${L('Daň', 'Tax')}</th><th class="r">${L('Náklady celkem', 'Total cost')}</th></tr></thead>
       <tbody>
