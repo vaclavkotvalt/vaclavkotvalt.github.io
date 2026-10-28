@@ -82,6 +82,8 @@
     background: transparent; border: 0; border-radius: 6px; padding: 0.55rem 0.75rem; cursor: pointer;
   }
   .menu button small { display: block; color: var(--muted); font-size: 0.8rem; }
+  .menu button[role="menuitemradio"] { padding-left: 1.9rem; position: relative; }
+  .menu button[aria-checked="true"]::before { content: "✓"; position: absolute; left: 0.7rem; top: 0.55rem; color: var(--accent); }
   .menu button:hover:not(:disabled), .menu button:focus-visible { background: rgba(138, 184, 255, 0.1); outline: none; }
   .menu button:disabled { opacity: 0.45; cursor: default; }
   .why { border: 1px solid var(--line); border-left: 3px solid var(--st-wait); border-radius: 8px; padding: 0.9rem 1rem; margin: 1rem 0 0; max-width: 52rem; }
@@ -158,6 +160,7 @@
     .summary { grid-template-columns: 1fr 1fr; gap: 0.6rem; }
     .tile .v { font-size: 1.2rem; }
     .bar .back-long { display: none; }
+    .vpre { display: none; }
   }
   footer { max-width: 72rem; margin: 0 auto; padding: 1.5rem 16px 3rem; border-top: 1px solid var(--line); color: var(--muted); font-size: 0.85rem; }
 </style>
@@ -193,9 +196,10 @@
     <section class="panel" aria-labelledby="dataH">
       <h2 id="dataH" hidden>Data</h2>
       <div class="toolbar">
-        <label class="f" style="width:17rem"><span><span class="cs">Ocenění</span><span class="en">Valuation</span></span>
-          <select id="priceSrc"></select>
-        </label>
+        <div class="dl">
+          <button class="btn" type="button" id="val" aria-haspopup="menu" aria-expanded="false" aria-controls="valMenu"><span class="muted vpre"><span class="cs">Ocenění:</span><span class="en">Valuation:</span> </span><span id="valLabel"></span><span class="caret" aria-hidden="true">▾</span></button>
+          <div class="menu" id="valMenu" role="menu" hidden></div>
+        </div>
         <button class="btn" type="button" id="upload"><span class="cs">Nahrát vlastní Excel</span><span class="en">Upload your own Excel</span></button>
         <input type="file" id="file" accept=".xlsx,.xls" hidden>
         <div class="dl">
@@ -456,11 +460,8 @@ function loadFile(sheets, name) {
 function forgetFile() { STORED = null; try { localStorage.removeItem('rb-file'); } catch (e) {} }
 
 function renderSourceUi() {
-  const sel = $('priceSrc');
   const mDate = MARKET ? Object.values(MARKET.prices).map(p => p.date).sort().at(-1) : null;
-  sel.innerHTML = `<option value="brief">${L('ze zadání', 'from the brief')}${SAMPLE_RAW.asOf ? ` (${date(SAMPLE_RAW.asOf)})` : ''}</option>`
-    + `<option value="market"${MARKET ? '' : ' disabled'}>${L('aktuální trh', 'current market')}${mDate ? ` (${date(mDate)})` : ''}${STORED ? ` – ${esc(STORED.name)}` : ''}</option>`;
-  sel.value = MODE;
+  $('valLabel').textContent = MODE === 'market' ? `${L('aktuální trh', 'current market')} (${date(mDate)})` : `${L('ze zadání', 'from the brief')} (${date(SAMPLE_RAW.asOf)})`;
   const parts = [];
   parts.push(FILE
     ? `${L('Pozice', 'Holdings')}: ${esc(FILE)} – ${L('uloženo jen v tomto prohlížeči, nikam se neodesílá', 'stored only in this browser, never uploaded')} · <button type="button" class="lnk" id="forget">${L('zapomenout', 'forget')}</button>`
@@ -744,7 +745,25 @@ window.addEventListener('resize', () => { clearTimeout(rsz); rsz = setTimeout(()
 
 // Nahrání vlastního Excelu (SheetJS se načte až při prvním použití)
 $('upload').addEventListener('click', () => $('file').click());
-$('priceSrc').addEventListener('change', () => setMode($('priceSrc').value));
+// Výběr ocenění: rozbalovací nabídka ve stejném stylu jako export
+const valMenu = $('valMenu'), valBtn = $('val');
+function openValMenu(open) {
+  valMenu.hidden = !open; valBtn.setAttribute('aria-expanded', String(open));
+  if (!open) return;
+  const mDate = MARKET ? Object.values(MARKET.prices).map(p => p.date).sort().at(-1) : null;
+  const item = (mode, title, note, disabled) => `<button type="button" role="menuitemradio" aria-checked="${MODE === mode}" data-mode="${mode}"${disabled ? ' disabled' : ''}>${title}<small>${note}</small></button>`;
+  valMenu.innerHTML = item('brief', L('Ze zadání', 'From the brief'),
+      `${L('pozice, ceny a kurzy z Excelu ze zadání', 'holdings, prices and FX from the brief’s Excel')} · ${date(SAMPLE_RAW.asOf)}`)
+    + item('market', L('Aktuální trh', 'Current market'),
+      MARKET
+        ? `${STORED ? `${L('vlastní Excel', 'your Excel')} ${esc(STORED.name)}` : L('pozice ze zadání (jen ilustrace)', 'holdings from the brief (illustration only)')} · ${L('ceny a kurzy k', 'prices and FX as of')} ${date(mDate)}`
+        : L('tržní data nejsou k dispozici', 'market data unavailable'), !MARKET);
+  valMenu.querySelectorAll('button').forEach(b => b.addEventListener('click', () => { openValMenu(false); valBtn.focus(); if (b.dataset.mode !== MODE) setMode(b.dataset.mode); }));
+  valMenu.querySelector('[aria-checked="true"]')?.focus();
+}
+valBtn.addEventListener('click', (e) => { e.stopPropagation(); openMenu(false); openValMenu(valMenu.hidden); });
+document.addEventListener('click', (e) => { if (!valMenu.hidden && !valMenu.contains(e.target)) openValMenu(false); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !valMenu.hidden) { openValMenu(false); valBtn.focus(); } });
 $('file').addEventListener('change', async () => {
   const f = $('file').files[0];
   if (!f) return;
@@ -780,7 +799,7 @@ function openMenu(open) {
   menu.querySelectorAll('button').forEach(b => b.addEventListener('click', () => { download(b.dataset.scope); openMenu(false); csvBtn.focus(); }));
   menu.querySelector('button:not(:disabled)')?.focus();
 }
-csvBtn.addEventListener('click', (e) => { e.stopPropagation(); openMenu(menu.hidden); });
+csvBtn.addEventListener('click', (e) => { e.stopPropagation(); openValMenu(false); openMenu(menu.hidden); });
 document.addEventListener('click', (e) => { if (!menu.hidden && !menu.contains(e.target)) openMenu(false); });
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !menu.hidden) { openMenu(false); csvBtn.focus(); } });
 
