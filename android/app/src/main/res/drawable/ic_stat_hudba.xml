@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- malá ikonka v notifikační liště: notový znak (stejný jako ikona aplikace) -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="100"
+    android:viewportHeight="100">
+    <path android:fillColor="#FFFFFFFF" android:pathData="M18,72 a12,10 0 1,0 24,0 a12,10 0 1,0 -24,0 Z" />
+    <path android:fillColor="#FFFFFFFF" android:pathData="M58,64 a12,10 0 1,0 24,0 a12,10 0 1,0 -24,0 Z" />
+    <path android:fillColor="#FFFFFFFF" android:pathData="M36,22 L82,14 L82,64 L76,64 L76,26.5 L42,32.5 L42,72 L36,72 Z" />
+</vector>
