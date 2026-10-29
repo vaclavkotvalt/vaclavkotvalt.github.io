@@ -15,6 +15,8 @@ import pathlib
 import urllib.request
 
 OUT = pathlib.Path(__file__).resolve().parent.parent / "market.json"
+HIST = pathlib.Path(__file__).resolve().parent.parent / "fx_history.json"
+HIST_FROM = 2010  # od kterého roku držet denní kurzy ČNB (pro nákupní ceny lotů)
 UA = {"User-Agent": "Mozilla/5.0 (rebalancing tool; vaclavkotvalt.cz)"}
 
 # Ticker v nástroji → kandidátní symboly u zdrojů (zkouší se popořadě) a očekávaná měna
@@ -87,7 +89,47 @@ def fetch_price(ticker, spec):
     raise RuntimeError("; ".join(errors))
 
 
+def cnb_year(year):
+    """Denní kurzy ČNB za celý rok (rok.txt) → {měna: {datum: kurz za 1 jednotku}}."""
+    text = get(f"https://www.cnb.cz/cs/financni-trhy/devizovy-trh/kurzy-devizoveho-trhu/kurzy-devizoveho-trhu/rok.txt?rok={year}")
+    out = {c: {} for c in FX}
+    cols = {}
+    for line in text.strip().splitlines():
+        parts = line.split("|")
+        if parts[0] == "Datum":  # hlavička se může během roku změnit (nové měny)
+            cols = {}
+            for i, h in enumerate(parts[1:], 1):
+                amount, code = h.split()
+                if code in FX:
+                    cols[code] = (i, float(amount))
+            continue
+        day = dt.datetime.strptime(parts[0], "%d.%m.%Y").date().isoformat()
+        for code, (i, amount) in cols.items():
+            out[code][day] = round(float(parts[i].replace(",", ".")) / amount, 4)
+    return out
+
+
+def update_history():
+    """Historie kurzů pro přepočet nákupních cen: chybějící roky + vždy aktuální rok."""
+    hist = json.loads(HIST.read_text()) if HIST.exists() else {"source": "ČNB, kurzy devizového trhu", "rates": {c: {} for c in FX}}
+    have = {d[:4] for d in hist["rates"].get("EUR", {})}
+    this_year = dt.date.today().year
+    for year in range(HIST_FROM, this_year + 1):
+        if str(year) in have and year != this_year:
+            continue
+        try:
+            for code, days in cnb_year(year).items():
+                hist["rates"].setdefault(code, {}).update(days)
+            print(f"ČNB {year}: OK")
+        except Exception as e:  # noqa: BLE001
+            print(f"ČNB {year}: nepodařilo se stáhnout ({e})")
+    for code in hist["rates"]:
+        hist["rates"][code] = dict(sorted(hist["rates"][code].items()))
+    HIST.write_text(json.dumps(hist, ensure_ascii=False, separators=(",", ":")) + "\n")
+
+
 def main():
+    update_history()
     old = json.loads(OUT.read_text()) if OUT.exists() else {"fx": {}, "prices": {}}
     out = {"updated": dt.datetime.now(dt.timezone.utc).isoformat(timespec="minutes"), "fx": dict(old.get("fx", {})), "prices": dict(old.get("prices", {}))}
 
