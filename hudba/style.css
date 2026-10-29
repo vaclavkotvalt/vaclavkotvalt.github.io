@@ -55,11 +55,14 @@ h2 { font-family: var(--font-text); font-weight: 400; font-size: 1.4rem; margin:
 .progress input { width: 100%; accent-color: var(--accent); margin: 0; }
 .times { display: flex; justify-content: space-between; color: var(--muted); font-size: 0.8rem; font-variant-numeric: tabular-nums; }
 .controls { display: flex; align-items: center; justify-content: space-between; margin-top: 0.5rem; }
-.icon { width: 52px; height: 52px; border-radius: 50%; font-size: 1.45rem; display: grid; place-items: center; color: var(--muted); }
+.icon { width: 52px; height: 52px; border-radius: 50%; display: grid; place-items: center; color: var(--muted); }
+.icon svg { width: 24px; height: 24px; display: block; }
 .icon:active { background: var(--bg); }
 .icon.on { color: var(--accent); }
 #prevBtn, #nextBtn { color: var(--text); }
-.icon.play { width: 66px; height: 66px; background: var(--accent); color: var(--accent-ink); font-size: 1.7rem; }
+.icon.play { width: 66px; height: 66px; background: var(--accent); color: var(--accent-ink); }
+.icon.play svg { width: 30px; height: 30px; }
+#prevBtn svg, #nextBtn svg { width: 28px; height: 28px; }
 
 /* Zdroj hudby */
 .source-info { margin-bottom: 0.8rem; color: var(--muted); font-size: 0.95rem; }

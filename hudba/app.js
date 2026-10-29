@@ -9,6 +9,7 @@ let audio = players[0];
 let LANG = document.documentElement.getAttribute('data-lang') || 'cs';
 const L = (cs, en) => LANG === 'en' ? en : cs;
 
+const TAGS_VERSION = 2; // zvýšit, když se změní čtení tagů – názvy se pak načtou znovu
 const AUDIO_EXT = /\.(mp3|m4a|aac|ogg|oga|opus|flac|wav|webm)$/i;
 const canPickFolder = 'showDirectoryPicker' in window;
 
@@ -27,6 +28,24 @@ let selectToken = 0;
 let shuffle = load('hudba.shuffle', false);
 let repeat = load('hudba.repeat', 'all'); // off | all | one
 const history = [];
+
+/* ---------- Ikony tlačítek (vlastní SVG – emoji si telefony kreslí barevně po svém) ---------- */
+
+const svg = (body) => `<svg viewBox="0 0 24 24" aria-hidden="true">${body}</svg>`;
+const line = 'fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"';
+const ICONS = {
+  play: svg('<path fill="currentColor" d="M8 5.6v12.8a1 1 0 0 0 1.53.85l10.2-6.4a1 1 0 0 0 0-1.7L9.53 4.75A1 1 0 0 0 8 5.6z"/>'),
+  pause: svg('<rect fill="currentColor" x="6.5" y="5" width="4" height="14" rx="1.2"/><rect fill="currentColor" x="13.5" y="5" width="4" height="14" rx="1.2"/>'),
+  next: svg('<path fill="currentColor" d="M5.5 6.4v11.2a1 1 0 0 0 1.56.83l8.1-5.6a1 1 0 0 0 0-1.66l-8.1-5.6A1 1 0 0 0 5.5 6.4z"/><rect fill="currentColor" x="16.5" y="5.5" width="2.4" height="13" rx="1.2"/>'),
+  prev: svg('<g transform="matrix(-1 0 0 1 24 0)"><path fill="currentColor" d="M5.5 6.4v11.2a1 1 0 0 0 1.56.83l8.1-5.6a1 1 0 0 0 0-1.66l-8.1-5.6A1 1 0 0 0 5.5 6.4z"/><rect fill="currentColor" x="16.5" y="5.5" width="2.4" height="13" rx="1.2"/></g>'),
+  shuffle: svg(`<path ${line} d="M3.5 7h3c2 0 3.1 1 4.3 2.8l2.4 3.6C14.4 15.1 15.5 16 17.5 16h3M18 13.5l2.5 2.5-2.5 2.5M3.5 16h3c1 0 1.8-.3 2.5-.8M14.9 7.8c.7-.5 1.5-.8 2.6-.8h3M18 4.5 20.5 7 18 9.5"/>`),
+  repeat: svg(`<path ${line} d="M17 3.5 19.5 6 17 8.5M4.5 11.5V9.5A3.5 3.5 0 0 1 8 6h11.5M7 20.5 4.5 18 7 15.5M19.5 12.5v2a3.5 3.5 0 0 1-3.5 3.5H4.5"/>`),
+  repeatOne: svg(`<path ${line} d="M17 3.5 19.5 6 17 8.5M4.5 11.5V9.5A3.5 3.5 0 0 1 8 6h11.5M7 20.5 4.5 18 7 15.5M19.5 12.5v2a3.5 3.5 0 0 1-3.5 3.5H4.5"/><path ${line} stroke-width="1.6" d="M11.2 10.6l1.3-.8v4.6"/>`),
+};
+$('shuffleBtn').innerHTML = ICONS.shuffle;
+$('prevBtn').innerHTML = ICONS.prev;
+$('nextBtn').innerHTML = ICONS.next;
+$('playBtn').innerHTML = ICONS.play;
 
 /* ---------- Úložiště (IndexedDB) ---------- */
 
@@ -97,8 +116,21 @@ async function readTags(file, withArt) {
 }
 
 function decodeText(enc, bytes) {
-  const label = ['latin1', 'utf-16', 'utf-16be', 'utf-8'][enc] || 'latin1';
-  return new TextDecoder(label).decode(bytes).replace(/\0+$/, '').split('\0')[0].trim();
+  let label = ['latin1', 'utf-16le', 'utf-16be', 'utf-8'][enc] || 'latin1';
+  if (enc === 1 || enc === 2) {
+    // pořadí bajtů podle značky BOM; bez ní podle toho, kde jsou nulové bajty (u latinky jich je hodně)
+    if (bytes[0] === 0xff && bytes[1] === 0xfe) { label = 'utf-16le'; bytes = bytes.subarray(2); }
+    else if (bytes[0] === 0xfe && bytes[1] === 0xff) { label = 'utf-16be'; bytes = bytes.subarray(2); }
+    else {
+      let even = 0, odd = 0;
+      for (let i = 0; i + 1 < bytes.length; i += 2) { if (bytes[i] === 0) even++; if (bytes[i + 1] === 0) odd++; }
+      if (even > odd) label = 'utf-16be'; else if (odd > even) label = 'utf-16le';
+    }
+  }
+  let text = new TextDecoder(label).decode(bytes);
+  if (label === 'utf-16le' || label === 'utf-16be') text = text.replace(/^\ufeff/, '').split('\u0000')[0];
+  else text = text.split('\0')[0];
+  return text.trim();
 }
 
 function parseApic(data) {
@@ -209,10 +241,10 @@ async function scanFolder() {
       let info = cache.get(path);
       try {
         const file = await handle.getFile();
-        if (!info || info.size !== file.size || info.mtime !== file.lastModified) {
+        if (!info || info.v !== TAGS_VERSION || info.size !== file.size || info.mtime !== file.lastModified) {
           const tags = await readTags(file, false);
           const guess = fromFilename(file.name);
-          info = { path, size: file.size, mtime: file.lastModified, title: tags.title || guess.title, artist: tags.artist || guess.artist };
+          info = { v: TAGS_VERSION, path, size: file.size, mtime: file.lastModified, title: tags.title || guess.title, artist: tags.artist || guess.artist };
           fresh.push(info);
         }
       } catch {
@@ -456,7 +488,7 @@ $('seek').addEventListener('change', () => {
 
 function syncPlayState() {
   const playing = !audio.paused;
-  $('playBtn').textContent = playing ? '⏸' : '▶';
+  $('playBtn').innerHTML = playing ? ICONS.pause : ICONS.play;
   $('playBtn').setAttribute('aria-label', playing ? L('Pozastavit', 'Pause') : L('Přehrát', 'Play'));
   if ('mediaSession' in navigator) navigator.mediaSession.playbackState = playing ? 'playing' : 'paused';
   updatePositionState();
@@ -526,7 +558,7 @@ $('rescanBtn').addEventListener('click', async () => { if (await hasAccess()) sc
 function syncModes() {
   $('shuffleBtn').classList.toggle('on', shuffle);
   $('repeatBtn').classList.toggle('on', repeat !== 'off');
-  $('repeatBtn').textContent = repeat === 'one' ? '↻1' : '↻';
+  $('repeatBtn').innerHTML = repeat === 'one' ? ICONS.repeatOne : ICONS.repeat;
   const label = { off: L('Neopakovat', 'Repeat off'), all: L('Opakovat vše', 'Repeat all'), one: L('Opakovat skladbu', 'Repeat one') }[repeat];
   $('repeatBtn').title = label;
   $('repeatBtn').setAttribute('aria-label', label);

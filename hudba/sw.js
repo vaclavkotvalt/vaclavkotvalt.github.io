@@ -1,5 +1,5 @@
 // Uloží aplikaci do telefonu, aby se otevřela i bez internetu.
-const CACHE = 'hudba-v2';
+const CACHE = 'hudba-v3';
 const FILES = [
   './', 'index.html', 'style.css', 'app.js', 'manifest.webmanifest',
   'fonts/fonts.css', 'fonts/montserrat-latin.woff2', 'fonts/montserrat-latin-ext.woff2',
