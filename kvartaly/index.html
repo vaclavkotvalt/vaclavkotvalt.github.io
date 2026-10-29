@@ -121,6 +121,11 @@
   .snap .v { font-size: 1.15rem; font-weight: 500; }
   .snap .k { font-size: 0.8rem; color: var(--muted); }
 
+  .bt-table { margin-top: 1rem; }
+  .bt-table td { white-space: normal; }
+  .bt-opt { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem; margin-top: 1.25rem; }
+  button.bt-run { font-size: 0.95rem; padding: 0.45rem 1rem; color: var(--text); border-color: var(--muted); }
+  button.bt-run:disabled { opacity: 0.5; cursor: default; }
   .summary { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr)); margin: 0.75rem 0 1.25rem; }
   .tile { border: 1px solid var(--line); border-radius: 8px; padding: 0.75rem 0.9rem; }
   .tile .v { font-size: 1.6rem; font-weight: 500; line-height: 1.2; }
@@ -325,6 +330,21 @@
       <div class="chart" id="ustChart"></div>
     </section>
 
+    <section class="panel" id="btSec" aria-labelledby="btH">
+      <h2 id="btH"><span class="cs">Spolehlivost nastavení</span><span class="en">Reliability of the settings</span></h2>
+      <p class="muted small"><span class="cs">Zpětný test: pro každý kvartál v historii nástroj s aktuálním nastavením najde podobné kvartály – ale jen mezi těmi, u kterých už tehdy bylo známo, co po nich následovalo (žádný pohled do budoucnosti). Podíl analogů, po kterých přišla recese, bere jako odhad pravděpodobnosti recese a porovná ho s tím, co se opravdu stalo.</span><span class="en">Backtest: for every quarter in history the tool finds similar quarters with the current settings – but only among quarters whose aftermath was already known at that time (no look-ahead). The share of analogues followed by a recession is taken as the estimated recession probability and compared with what actually happened.</span></p>
+      <div class="summary num" id="btTiles"></div>
+      <div class="chart" id="btChart"></div>
+      <div class="legend" id="btLegend"></div>
+      <div class="tbl-wrap"><table class="num bt-table" id="btCal"></table></div>
+      <div class="bt-opt">
+        <button type="button" class="lnk bt-run" id="btRun"><span class="cs">Najít historicky nejpřesnější nastavení</span><span class="en">Find the historically most accurate settings</span></button>
+        <span class="muted small" id="btStatus"></span>
+      </div>
+      <div class="tbl-wrap"><table class="num bt-table" id="btBest" hidden></table></div>
+      <p class="muted small" id="btNote" hidden><span class="cs">Pozor: nejlepší nastavení je vybrané na stejných datech, na kterých se hodnotí, takže do budoucna bude jeho spolehlivost spíš nižší. Recesí bylo od roku 1947 jen <span class="recN"></span>, výsledky proto berte jako orientační.</span><span class="en">Note: the best settings are chosen on the same data they are scored on, so their future reliability will likely be lower. There have been only <span class="recN"></span> recessions since 1947, so treat the results as indicative.</span></p>
+    </section>
+
     <section class="method cs" aria-labelledby="mH">
       <h2 id="mH" style="color:var(--text)">Jak to funguje</h2>
       <ol>
@@ -407,7 +427,7 @@
     document.querySelectorAll('[data-cs][data-en]').forEach(e => { e.textContent = e.dataset[l]; });
     document.querySelectorAll('[data-cs-label]').forEach(e => e.setAttribute('aria-label', e.getAttribute(`data-${l}-label`)));
     document.querySelectorAll('[data-cs-title]').forEach(e => e.setAttribute('title', e.getAttribute(`data-${l}-title`)));
-    if (D) { renderInds(); syncChecks(); setSrcNote(); update(false); }
+    if (D) { renderInds(); syncChecks(); setSrcNote(); update(false); renderBest(); }
   }
   document.querySelectorAll('.lang button').forEach(b => b.addEventListener('click', () => applyLang(b.dataset.set)));
   applyLang(LANG);
@@ -461,6 +481,7 @@
       syncChecks(); update();
     }));
     ['w', 'ex', 'n', 'ep', 'shape', 'rh'].forEach(id => $(id).addEventListener('change', update));
+    $('btRun').addEventListener('click', runSearch);
     window.addEventListener('hashchange', () => { if (readHash()) { syncChecks(); update(false); } });
 
     $('status').hidden = true;
@@ -625,6 +646,7 @@
     renderRows(picked);
     analog = picked.length ? picked[0].c : null;
     refreshAnalog();
+    scheduleBacktest();
   }
   function refreshAnalog() { markSel(); renderCompare(); renderSp(); renderTimeline(); }
 
@@ -777,7 +799,7 @@
   let resizeT;
   window.addEventListener('resize', () => {
     clearTimeout(resizeT);
-    resizeT = setTimeout(() => { if (lastScores) { renderSp(); renderTimeline(); } }, 150);
+    resizeT = setTimeout(() => { if (lastScores) { renderSp(); renderTimeline(); if (lastBt) renderBtChart(lastBt); } }, 150);
   });
 
   // Tržní grafy přes celou historii (S&P 500 log. osa, výnos 10Y lineárně) s tečkami u nejpodobnějších kvartálů
@@ -852,6 +874,180 @@
       const i = idxAt(ev);
       if (res[i] && Math.abs(i - t) > ex) { analog = i; refreshAnalog(); }
     });
+  }
+
+  // ---------- Zpětný test spolehlivosti nastavení ----------
+  // Pro každý kvartál t: analogy jen z kvartálů c, u kterých bylo v čase t známo, co následovalo (c + H <= t).
+  // Odhad = podíl analogů s recesí do H kvartálů; porovná se se skutečností po t.
+  let lastBt = null, btTimer = null;
+  const curConfig = () => ({
+    ids: [...sel], W: +$('w').value, shape: $('shape').checked && +$('w').value > 1,
+    N: +$('n').value, ep: $('ep').checked, ex: Math.max(0, +$('ex').value || 0), H: 4 * recYears(),
+  });
+  function scheduleBacktest() {
+    clearTimeout(btTimer);
+    btTimer = setTimeout(() => { lastBt = backtest(curConfig()); renderBt(lastBt); }, 60);
+  }
+  function recWithin(c, H) {
+    if (c + H >= T) return null;
+    for (let k = 1; k <= H; k++) if (D.recession[c + k]) return 1;
+    return 0;
+  }
+  function backtest(cfg) {
+    const { ids, W, shape, N, ep, ex, H } = cfg;
+    const V = [], avail = [];
+    for (let t = 0; t < T; t++) {
+      const v = Float64Array.from(windowVec(t, ids, W, shape), x => x == null ? NaN : x);
+      V.push(v); avail.push(v.reduce((a, x) => a + (x === x ? 1 : 0), 0));
+    }
+    const out = [];
+    for (let t = W - 1; t < T; t++) {
+      const actual = recWithin(t, H);
+      if (actual == null || !avail[t]) continue;
+      const tv = V[t], need = Math.max(1, 0.6 * avail[t]), cands = [];
+      for (let c = W - 1; c + H <= t; c++) {
+        if (Math.abs(c - t) <= ex) continue;
+        const cv = V[c];
+        let s = 0, n = 0;
+        for (let j = 0; j < tv.length; j++) { const a = tv[j], b = cv[j]; if (a === a && b === b) { s += (a - b) * (a - b); n++; } }
+        if (n >= need) cands.push([s / n, c]);
+      }
+      if (cands.length < N) continue;
+      cands.sort((a, b) => a[0] - b[0]);
+      const picked = [];
+      for (const [, c] of cands) {
+        if (picked.length >= N) break;
+        if (ep && picked.some(p => Math.abs(p - c) <= 4)) continue;
+        picked.push(c);
+      }
+      if (picked.length < N) continue;
+      const p = picked.reduce((a, c) => a + recWithin(c, H), 0) / picked.length;
+      out.push({ t, p, a: actual });
+    }
+    return { cfg, rows: out, m: btMetrics(out) };
+  }
+  function btMetrics(rows) {
+    const n = rows.length;
+    if (!n) return null;
+    const base = rows.reduce((s, r) => s + r.a, 0) / n;
+    const brier = rows.reduce((s, r) => s + (r.p - r.a) ** 2, 0) / n;
+    const ref = rows.reduce((s, r) => s + (base - r.a) ** 2, 0) / n;
+    let tp = 0, fp = 0, tn = 0, fn = 0;
+    for (const r of rows) { const yes = r.p >= 0.5; if (yes && r.a) tp++; else if (yes) fp++; else if (r.a) fn++; else tn++; }
+    const zero = rows.filter(r => r.p === 0), all = rows.filter(r => r.p === 1);
+    return {
+      n, base, brier, bss: ref > 0 ? 1 - brier / ref : 0,
+      acc: (tp + tn) / n, prec: tp + fp ? tp / (tp + fp) : null, rec: tp + fn ? tp / (tp + fn) : null, tp, fp, fn,
+      zeroN: zero.length, zeroOk: zero.filter(r => !r.a).length, allN: all.length, allOk: all.filter(r => r.a).length,
+      from: rows[0].t,
+    };
+  }
+  const pct0 = (x) => x == null ? '–' : fmt(100 * x, 0) + PCT();
+  function renderBt(bt) {
+    const m = bt.m, H = bt.cfg.H, yrs = recLabel(H / 4);
+    if (!m) {
+      $('btTiles').innerHTML = `<p class="muted small">${L('S tímto nastavením nejde zpětný test spočítat (málo srovnatelných kvartálů).', 'The backtest cannot be computed with these settings (too few comparable quarters).')}</p>`;
+      $('btChart').innerHTML = ''; $('btCal').innerHTML = ''; $('btLegend').innerHTML = '';
+      return;
+    }
+    $('btTiles').innerHTML = `
+      <div class="tile"><div class="v">${pct0(m.acc)}</div><div class="k">${L(`správných odhadů „recese do ${yrs}: ano/ne“ (hranice 50 %), ${m.n} kvartálů od ${ql(D.quarters[m.from])}; tip „${m.base < 0.5 ? 'nikdy' : 'vždy'} recese“ by trefil ${pct0(Math.max(m.base, 1 - m.base))}`, `correct “recession within ${yrs}: yes/no” calls (50% threshold), ${m.n} quarters since ${ql(D.quarters[m.from])}; always guessing “${m.base < 0.5 ? 'no' : 'yes'}” would score ${pct0(Math.max(m.base, 1 - m.base))}`)}</div></div>
+      <div class="tile"><div class="v">${pct0(m.prec)}</div><div class="k">${L(`když většina analogů měla recesi, recese do ${yrs} opravdu přišla (${m.tp} z ${m.tp + m.fp})`, `when most analogues had a recession, one really came within ${yrs} (${m.tp} of ${m.tp + m.fp})`)}</div></div>
+      <div class="tile"><div class="v">${m.zeroN ? pct0(m.zeroOk / m.zeroN) : '–'}</div><div class="k">${L(`když žádný z analogů recesi neměl, opravdu nepřišla (${m.zeroOk} z ${m.zeroN})`, `when none of the analogues had a recession, none came (${m.zeroOk} of ${m.zeroN})`)}</div></div>
+      <div class="tile"><div class="v">${sgn(100 * m.bss, 0)}${PCT()}</div><div class="k">${L('zlepšení přesnosti oproti prostému odhadu podle průměrné četnosti recesí (Brier skill score; nad nulou = lepší)', 'accuracy gain over a naive forecast from the average recession frequency (Brier skill score; above zero = better)')}</div></div>`;
+    renderBtChart(bt);
+    $('btLegend').innerHTML = `<span><i class="sw t"></i>${L(`odhad pravděpodobnosti recese do ${yrs}`, `estimated probability of a recession within ${yrs}`)}</span><span><i class="sw r"></i>${L('recese (podle NBER)', 'recession (according to NBER)')}</span>`;
+    const buckets = [[0, 0, '0 %'], [0.001, 0.399, '1–39 %'], [0.4, 0.599, '40–59 %'], [0.6, 0.999, '60–99 %'], [1, 1, '100 %']];
+    $('btCal').innerHTML = `<thead><tr><th>${L('Podíl analogů s recesí', 'Share of analogues with a recession')}</th><th class="r">${L('Počet kvartálů', 'Quarters')}</th><th class="r">${L(`Recese do ${yrs} opravdu přišla`, `Recession within ${yrs} actually came`)}</th></tr></thead><tbody>` +
+      buckets.map(([lo, hi, lab]) => {
+        const rs = bt.rows.filter(r => r.p >= lo - 1e-9 && r.p <= hi + 1e-9), k = rs.filter(r => r.a).length;
+        return `<tr><td>${LANG === 'en' ? lab.replace(' %', '%') : lab}</td><td class="r">${rs.length}</td><td class="r">${rs.length ? pct0(k / rs.length) + ` <span class="muted small">(${k})</span>` : '–'}</td></tr>`;
+      }).join('') + '</tbody>';
+  }
+  function renderBtChart(bt) {
+    const box = $('btChart');
+    box.innerHTML = '';
+    if (!bt.m) return;
+    const byT = new Map(bt.rows.map(r => [r.t, r]));
+    const Wd = chartWidth(box), H = 200, m = { l: 40, r: 10, t: 10, b: 24 };
+    const X = i => m.l + i / (T - 1) * (Wd - m.l - m.r);
+    const Y = v => m.t + (1 - v) * (H - m.t - m.b);
+    const svg = el('svg', { viewBox: `0 0 ${Wd} ${H}`, role: 'img', 'aria-label': L('Odhad pravděpodobnosti recese v čase', 'Estimated recession probability over time') }, box);
+    for (let i = 0; i < T; i++) if (D.recession[i]) el('rect', { x: X(i) - (Wd - m.l - m.r) / T / 2, y: m.t, width: (Wd - m.l - m.r) / T + 0.5, height: H - m.t - m.b, fill: 'var(--rec)' }, svg);
+    for (const tk of [0, 0.5, 1]) {
+      el('line', { x1: m.l, x2: Wd - m.r, y1: Y(tk), y2: Y(tk), stroke: tk === 0.5 ? 'var(--muted)' : 'var(--grid)', 'stroke-dasharray': tk === 0.5 ? '3 3' : 'none', 'stroke-opacity': tk === 0.5 ? 0.5 : 1 }, svg);
+      el('text', { x: m.l - 6, y: Y(tk) + 3.5, 'text-anchor': 'end' }, svg).textContent = (100 * tk) + PCT();
+    }
+    const y0 = +D.quarters[0].slice(0, 4), y1 = +D.quarters[T - 1].slice(0, 4), step = Wd < 600 ? 20 : 10;
+    for (let y = Math.ceil(y0 / step) * step; y <= y1; y += step) {
+      const i = D.quarters.indexOf(y + 'Q1');
+      if (i >= 0) el('text', { x: X(i), y: H - 6, 'text-anchor': 'middle' }, svg).textContent = y;
+    }
+    el('path', { d: path(Array.from({ length: T }, (_, i) => byT.has(i) ? [X(i), Y(byT.get(i).p)] : null)), fill: 'none', stroke: 'var(--s-target)', 'stroke-width': 1.75, 'stroke-linejoin': 'round' }, svg);
+    const cross = el('line', { y1: m.t, y2: H - m.b, stroke: 'var(--muted)', 'stroke-opacity': 0.7, visibility: 'hidden' }, svg);
+    const dot = el('circle', { r: 4, fill: 'var(--s-target)', stroke: 'var(--surface)', 'stroke-width': 2, visibility: 'hidden' }, svg);
+    const tip = document.createElement('div'); tip.className = 'tip'; box.appendChild(tip);
+    const hit = el('rect', { x: m.l, y: 0, width: Wd - m.l - m.r, height: H, fill: 'transparent' }, svg);
+    hit.addEventListener('pointermove', ev => {
+      const r = svg.getBoundingClientRect(), px = (ev.clientX - r.left) / r.width * Wd;
+      const i = Math.max(0, Math.min(T - 1, Math.round((px - m.l) / (Wd - m.l - m.r) * (T - 1)))), row = byT.get(i);
+      cross.setAttribute('x1', X(i)); cross.setAttribute('x2', X(i)); cross.setAttribute('visibility', 'visible');
+      if (row) { dot.setAttribute('cx', X(i)); dot.setAttribute('cy', Y(row.p)); dot.setAttribute('visibility', 'visible'); } else dot.setAttribute('visibility', 'hidden');
+      tip.innerHTML = `<b>${ql(D.quarters[i])}</b>${D.recession[i] ? ' · ' + L('recese', 'recession') : ''}<br>` + (row
+        ? `${L('odhad', 'estimate')}: ${pct0(row.p)}<br>${L('recese opravdu přišla', 'recession actually came')}: ${row.a ? L('ano', 'yes') : L('ne', 'no')}`
+        : L('mimo zpětný test', 'outside the backtest'));
+      tip.style.display = 'block';
+      const left = X(i) / Wd * r.width;
+      tip.style.left = (left > r.width / 2 ? left - tip.offsetWidth - 10 : left + 10) + 'px';
+      tip.style.top = '0.5rem';
+    });
+    hit.addEventListener('pointerleave', () => { tip.style.display = 'none'; cross.setAttribute('visibility', 'hidden'); dot.setAttribute('visibility', 'hidden'); });
+  }
+
+  // Hledání historicky nejpřesnějšího nastavení (mřížka sad ukazatelů, oken, počtu výsledků a epizod)
+  const SETS = () => [
+    ['default', L('výchozí ukazatele', 'default indicators'), DEFAULT],
+    ['real', L('reálná ekonomika', 'real economy'), PRESETS.real],
+    ['fin', L('sazby a trhy', 'rates and markets'), PRESETS.fin],
+    ['all', L('všechny ukazatele', 'all indicators'), Object.keys(IND)],
+  ].map(([k, lab, ids]) => [k, lab, ids.filter(id => IND[id])]);
+  let bestRows = null;
+  function cfgLabel(c) {
+    return [c.setLabel, L(`okno ${c.W}`, `window ${c.W}`), L(`${c.N} výsledků`, `${c.N} results`), c.ep ? L('1 z epizody', '1 per episode') : L('bez omezení epizod', 'no episode limit')].join(' · ');
+  }
+  function runSearch() {
+    const base = curConfig(), grid = [];
+    for (const [key, setLabel, ids] of SETS()) for (const W of [1, 4, 8]) for (const N of [5, 10, 20]) for (const ep of [true, false])
+      grid.push({ ...base, ids, W, N, ep, shape: false, set: key, setLabel });
+    const res = [];
+    $('btRun').disabled = true;
+    let i = 0;
+    const step = () => {
+      const until = performance.now() + 40;
+      while (i < grid.length && performance.now() < until) { const bt = backtest(grid[i]); if (bt.m) res.push({ c: grid[i], m: bt.m }); i++; }
+      $('btStatus').textContent = L(`Počítám ${i} z ${grid.length} nastavení…`, `Computing ${i} of ${grid.length} settings…`);
+      if (i < grid.length) { setTimeout(step, 0); return; }
+      res.sort((a, b) => b.m.bss - a.m.bss);
+      bestRows = res.slice(0, 5);
+      $('btRun').disabled = false;
+      $('btStatus').textContent = L(`Prověřeno ${grid.length} nastavení pro „recese do ${recLabel(base.H / 4)}“.`, `Tested ${grid.length} settings for “recession within ${recLabel(base.H / 4)}”.`);
+      renderBest();
+    };
+    step();
+  }
+  function renderBest() {
+    if (!bestRows) return;
+    $('btBest').hidden = false; $('btNote').hidden = false;
+    const recN = D.recession.filter((r, i) => r && !D.recession[i - 1]).length;
+    document.querySelectorAll('.recN').forEach(e => { e.textContent = recN; });
+    $('btBest').innerHTML = `<thead><tr><th>#</th><th>${L('Nastavení', 'Settings')}</th><th class="r">${L('Zlepšení (BSS)', 'Gain (BSS)')}</th><th class="r">${L('Správně', 'Correct')}</th><th></th></tr></thead><tbody>` +
+      bestRows.map((r, i) => `<tr><td class="muted">${i + 1}</td><td>${cfgLabel({ ...r.c, setLabel: SETS().find(s => s[0] === r.c.set)[1] })}</td><td class="r">${sgn(100 * r.m.bss, 0)}${PCT()}</td><td class="r">${pct0(r.m.acc)}</td>` +
+        `<td><button type="button" class="lnk" data-best="${i}">${L('Použít', 'Apply')}</button></td></tr>`).join('') + '</tbody>';
+    $('btBest').querySelectorAll('[data-best]').forEach(b => b.addEventListener('click', () => {
+      const c = bestRows[+b.dataset.best].c;
+      sel = new Set(c.ids); $('w').value = c.W; $('n').value = c.N; $('ep').checked = c.ep; $('shape').checked = false;
+      syncChecks(); renderInds(); update();
+    }));
   }
 
   function renderTimeline() {
