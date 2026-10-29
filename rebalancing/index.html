@@ -105,6 +105,7 @@
   .controls { display: grid; gap: 1rem 1.25rem; grid-template-columns: repeat(auto-fill, minmax(12.5rem, 1fr)); align-items: end; }
 
   .summary { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(10.5rem, 1fr)); margin: 0.75rem 0 1.25rem; }
+  @media (min-width: 861px) { .summary { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); } }
   .tile { border: 1px solid var(--line); border-radius: 8px; padding: 0.75rem 0.9rem; }
   .tile .v { font-size: 1.5rem; font-weight: 500; line-height: 1.2; }
   .tile .k { font-size: 0.8rem; color: var(--muted); }
@@ -554,7 +555,6 @@ function renderOverview() {
     tile(mczk(s.aum), L('spravovaný majetek', 'assets under management')),
     tile(s.count.act, L('zasáhnout teď', 'act now')),
     tile(s.count.wait, L('počkat', 'wait')),
-    tile(s.count.ok, L('v pořádku', 'fine')),
     tile(czk(s.costs), L('náklady navržených zásahů', 'cost of proposed trades')),
     tile(czk(s.taxSaved), L('daň ušetřená čekáním', 'tax saved by waiting')),
   ].join('');
@@ -649,7 +649,7 @@ function renderDetail() {
   const p = c.plan;
   $('tradesBox').hidden = !p || !p.trades.length;
   if (p && p.trades.length) {
-    $('tradesH').textContent = `${L('Navržené obchody', 'Proposed trades')} · ${date(p.date)}`;
+    $('tradesH').innerHTML = `${L('Navržené obchody', 'Proposed trades')} <span class="muted" style="font-weight:400">· ${date(p.date)}</span>`;
     $('tRows').innerHTML = p.trades.map(t => `<tr>
       <td class="side-${t.side}">${t.side === 'buy' ? L('Koupit', 'Buy') : L('Prodat', 'Sell')}</td><td>${t.ticker}</td>
       <td class="r">${nf(t.qty)}</td><td class="r">${nf(t.price, 2)} ${t.currency}</td>
@@ -663,7 +663,10 @@ function renderDetail() {
       : '';
     $('tFoot').innerHTML = `<tr><td colspan="5">${L('Poplatky', 'Fees')} ${czk(p.costs.fees)} · ${L('konverze měn', 'FX conversion')} ${czk(p.costs.fx)} · ${L('daň', 'tax')} ${czk(p.costs.tax)}${taxNote}</td><td colspan="3" class="r">${L('Celkem', 'Total')} ${czk(p.costs.total)}</td></tr>`;
     $('fxNote').textContent = p.conversions.length
-      ? `${L('Konverze', 'Conversions')}: ${p.conversions.map(x => `${x.from} → ${x.to}: ${czk(x.amountCZK)}`).join(' · ')}`
+      ? p.conversions.map(x => {
+          const why = x.to === 'CZK' ? L('na výběry a hotovost v Kč', 'for withdrawals and cash in CZK') : L(`na nákupy v ${x.to}`, `for purchases in ${x.to}`);
+          return L(`Převod měny ${x.from} → ${x.to}: ${czk(x.amountCZK)} ${why} (náklad konverze ${czk(x.costCZK)}).`, `Currency conversion ${x.from} → ${x.to}: ${czk(x.amountCZK)} ${why} (conversion cost ${czk(x.costCZK)}).`);
+        }).join(' ')
       : '';
   }
 
