@@ -48,15 +48,15 @@
   html[data-lang="cs"] .en, html[data-lang="en"] .cs { display: none !important; }
 
   main { max-width: 72rem; margin: 0 auto; padding: 0 16px 4rem; }
-  h1 { font-family: var(--font-heading); font-weight: 300; font-size: clamp(2.3rem, 7vw, 4rem); line-height: 1; letter-spacing: -0.02em; margin: 3rem 0 1rem; }
-  h2 { font-family: var(--font-text); font-weight: 400; font-size: 1.6rem; margin: 0 0 0.25rem; }
-  h3 { font-size: 1rem; font-weight: 600; margin: 1.5rem 0 0.5rem; }
-  .lead { color: var(--muted); font-size: 1.1rem; margin: 0 0 2rem; }
+  h1 { font-family: var(--font-heading); font-weight: 300; font-size: clamp(2.3rem, 7vw, 4rem); line-height: 1; letter-spacing: -0.02em; margin: 3.5rem 0 1.5rem; }
+  h2 { font-family: var(--font-text); font-weight: 400; font-size: 1.6rem; margin: 0 0 0.6rem; }
+  h3 { font-size: 1rem; font-weight: 600; margin: 2.25rem 0 0.75rem; }
+  .lead { color: var(--muted); font-size: 1.1rem; line-height: 1.65; margin: 0 0 3rem; }
   .muted { color: var(--muted); }
   .small { font-size: 0.875rem; }
   .num { font-variant-numeric: tabular-nums; }
 
-  .panel { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 1.25rem; margin-bottom: 1.5rem; }
+  .panel { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 1.75rem; margin-bottom: 2.5rem; }
   /* čtyři stejně široká tlačítka (na mobilu 2 × 2) */
   .toolbar { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.75rem; }
   .toolbar > .btn, .toolbar .dl > .btn { width: 100%; text-align: center; text-decoration: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -91,7 +91,7 @@
   .menu button[aria-checked="true"]::before { content: "✓"; position: absolute; left: 0.7rem; top: 0.55rem; color: var(--accent); }
   .menu button:hover:not(:disabled), .menu button:focus-visible { background: rgba(138, 184, 255, 0.1); outline: none; }
   .menu button:disabled { opacity: 0.45; cursor: default; }
-  .why { border: 1px solid var(--line); border-left: 3px solid var(--st-wait); border-radius: 8px; padding: 0.9rem 1rem; margin: 1rem 0 0; max-width: 52rem; }
+  .why { border: 1px solid var(--line); border-left: 3px solid var(--st-wait); border-radius: 8px; padding: 0.9rem 1rem; margin: 1.5rem 0 0; max-width: 52rem; }
   .why h3 { margin: 0 0 0.4rem; }
   .why p { margin: 0 0 0.75rem; }
   .why table { font-size: 0.88rem; }
@@ -99,12 +99,12 @@
   .why tr:not(.best) td { color: var(--muted); }
   .src { font-size: 0.85rem; color: var(--muted); margin: 0.9rem 0 0; }
   .src button.lnk { font: inherit; background: none; border: 0; padding: 0; color: var(--accent); cursor: pointer; text-decoration: underline; text-underline-offset: 0.2em; }
-  details.more { margin-top: 1rem; border-top: 1px solid var(--line); padding-top: 0.75rem; }
+  details.more { margin-top: 1.5rem; border-top: 1px solid var(--line); padding-top: 1.25rem; }
   details.more > summary { cursor: pointer; font-weight: 500; }
-  details.more[open] > summary { margin-bottom: 1rem; }
+  details.more[open] > summary { margin-bottom: 1.25rem; }
   .controls { display: grid; gap: 1rem 1.25rem; grid-template-columns: repeat(auto-fill, minmax(12.5rem, 1fr)); align-items: end; }
 
-  .summary { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(10.5rem, 1fr)); margin: 0.75rem 0 1.25rem; }
+  .summary { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(10.5rem, 1fr)); margin: 1.5rem 0 2rem; }
   @media (min-width: 861px) { .summary { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); } }
   .tile { border: 1px solid var(--line); border-radius: 8px; padding: 0.75rem 0.9rem; }
   .tile .v { font-size: 1.5rem; font-weight: 500; line-height: 1.2; }
@@ -129,7 +129,7 @@
   .tag.soon { border-color: #2d4f80; color: var(--st-wait); }
 
   .dhead { display: flex; flex-wrap: wrap; gap: 0.5rem 1rem; align-items: baseline; }
-  .reco { margin: 1rem 0 0; padding: 0; list-style: none; max-width: 52rem; }
+  .reco { margin: 1.25rem 0 0; padding: 0; list-style: none; max-width: 52rem; }
   .reco li { padding: 0.45rem 0 0.45rem 1.4rem; position: relative; }
   .reco li::before { content: "›"; position: absolute; left: 0.3rem; color: var(--accent); }
   .reco li.warn::before { content: "!"; color: var(--st-act); font-weight: 600; }
@@ -167,6 +167,16 @@
     .bar .back-long { display: none; }
     .vpre { display: none; }
   }
+  /* Postupné najetí nadpisů a sekcí při otevření (jen s JS; bez animace při prefers-reduced-motion) */
+  .js .reveal { opacity: 0; transform: translateY(18px); }
+  .js .reveal.in { opacity: 1; transform: none; transition: opacity 0.7s ease, transform 0.8s cubic-bezier(0.2, 0.7, 0.2, 1); transition-delay: var(--d, 0ms); }
+  @keyframes riseIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+  .intro .reveal.in .tile, .intro .reveal.in #cRows tr { animation: riseIn 0.5s ease both; animation-delay: calc(var(--d, 0ms) + 250ms + var(--i, 0) * 70ms); }
+  @media (prefers-reduced-motion: reduce) {
+    .js .reveal { opacity: 1; transform: none; }
+    .js .reveal.in { transition: none; }
+    .intro .reveal.in .tile, .intro .reveal.in #cRows tr { animation: none; }
+  }
   footer { max-width: 72rem; margin: 0 auto; padding: 1.5rem 16px 3rem; border-top: 1px solid var(--line); color: var(--muted); font-size: 0.85rem; }
 </style>
 <script>
@@ -176,6 +186,7 @@
     l = l || ((navigator.language || 'cs').toLowerCase().indexOf('cs') === 0 ? 'cs' : 'en');
     document.documentElement.setAttribute('data-lang', l);
     document.documentElement.setAttribute('lang', l);
+    document.documentElement.classList.add('js');
   })();
 </script>
 </head>
@@ -192,13 +203,13 @@
 </div></header>
 
 <main>
-  <h1><span class="cs">Rebalancování portfolií</span><span class="en">Portfolio Rebalancing</span></h1>
-  <p class="lead"><span class="cs">Nástroj pro portfolio manažera. Ukáže, kteří klienti se vzdálili od cílového portfolia, co konkrétně koupit a prodat, kolik zásah stojí na daních a poplatcích a kdy se vyplatí počkat na vklad nebo na osvobození od daně.</span><span class="en">A tool for a portfolio manager. It shows which clients have drifted from their target portfolio, exactly what to buy and sell, what the trades cost in taxes and fees, and when it pays to wait for a deposit or for a tax exemption.</span></p>
+  <h1 class="reveal"><span class="cs">Rebalancování portfolií</span><span class="en">Portfolio Rebalancing</span></h1>
+  <p class="lead reveal"><span class="cs">Nástroj pro portfolio manažera. Ukáže, kteří klienti se vzdálili od cílového portfolia, co konkrétně koupit a prodat, kolik zásah stojí na daních a poplatcích a kdy se vyplatí počkat na vklad nebo na osvobození od daně.</span><span class="en">A tool for a portfolio manager. It shows which clients have drifted from their target portfolio, exactly what to buy and sell, what the trades cost in taxes and fees, and when it pays to wait for a deposit or for a tax exemption.</span></p>
 
   <p id="status"><span class="cs">Načítám data…</span><span class="en">Loading data…</span></p>
 
   <div id="app" hidden>
-    <section class="panel" aria-labelledby="dataH">
+    <section class="panel reveal" aria-labelledby="dataH">
       <h2 id="dataH" hidden>Data</h2>
       <div class="toolbar">
         <div class="dl">
@@ -222,7 +233,7 @@
       </details>
     </section>
 
-    <section class="panel" aria-labelledby="ovH">
+    <section class="panel reveal" aria-labelledby="ovH">
       <h2 id="ovH"><span class="cs">Přehled klientů</span><span class="en">Client overview</span></h2>
       <p class="muted small" id="ovNote"></p>
       <div class="summary num" id="tiles"></div>
@@ -242,7 +253,7 @@
       </div>
     </section>
 
-    <section class="panel" id="detail" aria-labelledby="dH">
+    <section class="panel reveal" id="detail" aria-labelledby="dH">
       <div class="dhead">
         <h2 id="dH"></h2><span id="dChip"></span><span class="muted" id="dProfile"></span>
       </div>
@@ -314,7 +325,7 @@
     </section>
   </div>
 
-  <section class="panel method" aria-labelledby="mH">
+  <section class="panel method reveal" aria-labelledby="mH">
     <h2 id="mH"><span class="cs">Jak nástroj rozhoduje</span><span class="en">How the tool decides</span></h2>
     <div class="cs">
       <h3>Pravidla</h3>
@@ -377,7 +388,7 @@
   </section>
 </main>
 
-<footer>
+<footer class="reveal">
   <span class="cs">Ukázková data jsou smyšlená (case study Dvořák &amp; Zedník Wealth Management). Nejde o investiční ani daňové doporučení.</span>
   <span class="en">The sample data are fictional (Dvořák &amp; Zedník Wealth Management case study). Not investment or tax advice.</span>
 </footer>
@@ -424,6 +435,23 @@ const PARAMS = [
 ];
 
 // RAW = pozice z Excelu, MARKET = denní ceny a kurzy (market.json), DATA = to, co jde do enginu
+// Postupné najetí: prvky, které jsou vidět hned po otevření, najedou jeden po druhém; níž položené až při posunu
+(() => {
+  const els = document.querySelectorAll('.reveal');
+  if (!('IntersectionObserver' in window)) { els.forEach(e => e.classList.add('in')); return; }
+  const start = performance.now();
+  let n = 0;
+  const io = new IntersectionObserver(entries => {
+    entries.filter(e => e.isIntersecting).sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top).forEach(e => {
+      const intro = performance.now() - start < 1500;
+      e.target.style.setProperty('--d', `${intro ? n++ * 140 : 0}ms`);
+      e.target.classList.add('in');
+      io.unobserve(e.target);
+    });
+  }, { threshold: 0.06 });
+  els.forEach(e => io.observe(e));
+})();
+
 let RAW = null, MARKET = null, MODE = 'brief', MERGE = null, FILE = null;
 let DATA = null, SETTINGS = { ...DEFAULTS }, RES = null, selected = null;
 try { Object.assign(SETTINGS, JSON.parse(localStorage.getItem('rb-settings-v2') || '{}')); } catch (e) {}
@@ -458,6 +486,12 @@ Promise.all([SAMPLE, MARKET_P, HISTORY_P]).then(([sample, market, history]) => {
   try { STORED = JSON.parse(localStorage.getItem('rb-file') || 'null'); } catch (e) {}
   if (STORED) { try { fromSheets(STORED.sheets); } catch (e) { forgetFile(); } }
   $('status').hidden = true; $('app').hidden = false;
+  document.body.classList.add('intro');
+  // dlaždice a řádky najedou jen při otevření, ne po každém kliknutí
+  const endIntro = () => document.body.classList.remove('intro');
+  setTimeout(endIntro, 3000);
+  document.addEventListener('pointerdown', endIntro, { once: true, capture: true });
+  document.addEventListener('keydown', endIntro, { once: true, capture: true });
   setMode(STORED && MARKET ? 'market' : 'brief');
   renderSettings();
 }).catch(() => { $('status').textContent = L('Data se nepodařilo načíst.', 'Could not load the data.'); });
@@ -550,7 +584,8 @@ const chip = (s) => { const [c, i, t] = STATUS[s](); return `<span class="chip $
 
 function renderOverview() {
   const s = RES.summary;
-  const tile = (v, k) => `<div class="tile"><div class="v">${v}</div><div class="k">${k}</div></div>`;
+  let ti = 0;
+  const tile = (v, k) => `<div class="tile" style="--i:${ti++}"><div class="v">${v}</div><div class="k">${k}</div></div>`;
   $('tiles').innerHTML = [
     tile(mczk(s.aum), L('spravovaný majetek', 'assets under management')),
     tile(s.count.act, L('zasáhnout teď', 'act now')),
@@ -558,9 +593,9 @@ function renderOverview() {
     tile(czk(s.costs), L('náklady navržených zásahů', 'cost of proposed trades')),
     tile(czk(s.taxSaved), L('daň ušetřená čekáním', 'tax saved by waiting')),
   ].join('');
-  $('cRows').innerHTML = RES.clients.map(c => {
+  $('cRows').innerHTML = RES.clients.map((c, ci) => {
     const trades = c.plan ? c.plan.trades.map(t => `<span class="side-${t.side}">${t.side === 'buy' ? '+' : '−'}${nf(t.qty)}</span> ${t.ticker}`).join(', ') : '–';
-    return `<tr data-id="${esc(c.id)}" tabindex="0" class="${c.id === selected ? 'sel' : ''}">
+    return `<tr data-id="${esc(c.id)}" tabindex="0" class="${c.id === selected ? 'sel' : ''}" style="--i:${ci + 3}">
       <td><b style="font-weight:500">${esc(clientName(c.id))}</b><br><span class="muted small">${c.taxRegime === 'FO' ? L('FO', 'individual') : L('s.r.o.', 'company')}</span></td>
       <td>${chip(c.status)}</td>
       <td>${c.decision.date ? date(c.decision.date) : '–'}</td>
