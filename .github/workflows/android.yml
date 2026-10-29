@@ -45,7 +45,14 @@ jobs:
       - name: Sestavit APK
         env:
           HUDBA_KEYSTORE_PASSWORD: ${{ secrets.HUDBA_KEYSTORE_PASSWORD }}
-        run: gradle -p android assembleRelease --no-daemon
+        run: |
+          set -o pipefail
+          if ! gradle -p android assembleRelease --no-daemon 2>&1 | tee build.log; then
+            # chyby jako hlášení u sestavení, aby byly vidět i bez stahování celého protokolu
+            msg=$(grep -E "^e: |error:|What went wrong|^> " build.log | head -40 | sed 's/%/%25/g' | awk '{printf "%s%%0A", $0}')
+            echo "::error title=Sestavení selhalo::${msg:-viz protokol}"
+            exit 1
+          fi
       - name: Zveřejnit APK ke stažení
         env:
           GH_TOKEN: ${{ github.token }}
