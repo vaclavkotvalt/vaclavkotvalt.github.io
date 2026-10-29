@@ -25,6 +25,8 @@ let currentId = null;
 let needsLoad = false;   // vybraná skladba, jejíž soubor se načte až při přehrání
 let artUrl = null;
 let selectToken = 0;
+let preloaded = null;    // další skladba už připravená v záložním přehrávači: { id, url, file, player }
+let plannedNext = null;  // při náhodném pořadí předem vybraná další skladba (aby šla připravit)
 let shuffle = load('hudba.shuffle', false);
 let repeat = load('hudba.repeat', 'all'); // off | all | one
 const history = [];
@@ -325,7 +327,9 @@ function rebuild(pickCurrent = true) {
 
 function clearPlayer(p) {
   const url = p.src;
+  if (preloaded && preloaded.player === p) preloaded = null;
   p.pause();
+  p.volume = 1;
   p.removeAttribute('src');
   p.load();
   if (url.startsWith('blob:')) URL.revokeObjectURL(url);
@@ -358,29 +362,38 @@ async function select(id, autoplay = true) {
     return;
   }
 
-  let file;
-  try {
-    if (t.kind === 'dir') {
-      if (!(await ensureAccess())) throw new Error('no access');
-      file = await (await fileHandleFor(t)).getFile();
-    } else {
-      file = t.blob;
-    }
-  } catch (e) {
-    console.warn(e);
-    if (token !== selectToken) return;
-    needsLoad = true;
-    $('artist').textContent = L('Soubor nejde otevřít – zkuste „Načíst znovu“.', 'Cannot open the file – try “Rescan”.');
-    return;
-  }
-  if (token !== selectToken) return;
-
-  // novou skladbu pustíme ve druhém přehrávači a ten dosavadní zastavíme až potom
+  // novou skladbu pustíme ve druhém přehrávači a ten dosavadní zastavíme až potom;
+  // do té doby stará jen ztichne (zastavit ji hned by Androidu schovalo ovládání v liště)
   const old = audio;
   const fresh = players.find((p) => p !== old);
-  const stale = fresh.src;
-  fresh.src = URL.createObjectURL(file);
-  if (stale.startsWith('blob:')) URL.revokeObjectURL(stale);
+  if (autoplay) old.volume = 0;
+  const ready = preloaded && preloaded.id === id && preloaded.player === fresh && fresh.src === preloaded.url;
+
+  let file;
+  if (ready) {
+    file = preloaded.file;
+  } else {
+    try {
+      if (t.kind === 'dir') {
+        if (!(await ensureAccess())) throw new Error('no access');
+        file = await (await fileHandleFor(t)).getFile();
+      } else {
+        file = t.blob;
+      }
+    } catch (e) {
+      console.warn(e);
+      if (token !== selectToken) return;
+      old.volume = 1;
+      needsLoad = true;
+      $('artist').textContent = L('Soubor nejde otevřít – zkuste „Načíst znovu“.', 'Cannot open the file – try “Rescan”.');
+      return;
+    }
+    if (token !== selectToken) return;
+    const stale = fresh.src;
+    fresh.src = URL.createObjectURL(file);
+    if (stale.startsWith('blob:')) URL.revokeObjectURL(stale);
+  }
+  preloaded = null;
   if (autoplay) {
     try { await fresh.play(); } catch (e) { console.warn(e); }
     if (token !== selectToken) return; // mezitím se přeskočilo dál, přehrávač už patří novější skladbě
@@ -390,6 +403,7 @@ async function select(id, autoplay = true) {
   clearPlayer(old);
   onMetadata();
   syncPlayState();
+  preloadNext();
 
   setCover(null);
   updateMediaSession(t, null);
@@ -424,21 +438,58 @@ async function togglePlay() {
   audio.paused ? audio.play().catch(() => {}) : audio.pause();
 }
 
+// která skladba přijde po té aktuální (u náhodného pořadí se vybere předem a pamatuje)
+function upcomingId() {
+  if (!tracks.length) return null;
+  const idx = tracks.findIndex((x) => x.id === currentId);
+  if (shuffle && tracks.length > 1) {
+    if (!plannedNext || plannedNext === currentId || !tracks.some((x) => x.id === plannedNext)) {
+      let n;
+      do { n = Math.floor(Math.random() * tracks.length); } while (n === idx);
+      plannedNext = tracks[n].id;
+    }
+    return plannedNext;
+  }
+  return tracks[(idx + 1) % tracks.length].id;
+}
+
 function next(fromEnded = false) {
   if (!tracks.length) return;
   if (fromEnded && repeat === 'one') { audio.currentTime = 0; audio.play(); return; }
   const idx = tracks.findIndex((x) => x.id === currentId);
-  let nextIdx;
-  if (shuffle && tracks.length > 1) {
-    do { nextIdx = Math.floor(Math.random() * tracks.length); } while (nextIdx === idx);
-  } else {
-    nextIdx = idx + 1;
-    if (nextIdx >= tracks.length) {
-      if (fromEnded && repeat === 'off') { audio.currentTime = 0; syncPlayState(); return; }
-      nextIdx = 0;
-    }
+  if (fromEnded && repeat === 'off' && !shuffle && idx === tracks.length - 1) {
+    audio.currentTime = 0; syncPlayState(); return;
   }
-  select(tracks[nextIdx].id);
+  const id = upcomingId();
+  plannedNext = null;
+  select(id);
+}
+
+// Další skladbu načteme do záložního přehrávače už během hraní, takže přeskočení je hned.
+async function preloadNext() {
+  const token = selectToken;
+  const id = upcomingId();
+  if (!id || id === currentId || (preloaded && preloaded.id === id)) return;
+  const t = tracks.find((x) => x.id === id);
+  let file;
+  try {
+    if (t.kind === 'dir') {
+      if (!(await hasAccess())) return;
+      file = await (await fileHandleFor(t)).getFile();
+    } else {
+      file = t.blob;
+    }
+  } catch (e) {
+    console.warn(e);
+    return;
+  }
+  if (token !== selectToken) return; // mezitím se přeskakovalo, záložní přehrávač je obsazený
+  const standby = players.find((p) => p !== audio);
+  const stale = standby.src;
+  const url = URL.createObjectURL(file);
+  standby.src = url;
+  if (stale.startsWith('blob:')) URL.revokeObjectURL(stale);
+  preloaded = { id, url, file, player: standby };
 }
 
 function prev() {
@@ -545,7 +596,7 @@ if ('mediaSession' in navigator) {
 $('playBtn').addEventListener('click', togglePlay);
 $('nextBtn').addEventListener('click', () => next());
 $('prevBtn').addEventListener('click', prev);
-$('shuffleBtn').addEventListener('click', () => { shuffle = !shuffle; save('hudba.shuffle', shuffle); syncModes(); });
+$('shuffleBtn').addEventListener('click', () => { shuffle = !shuffle; save('hudba.shuffle', shuffle); syncModes(); plannedNext = null; if (!needsLoad && currentId) preloadNext(); });
 $('repeatBtn').addEventListener('click', () => {
   repeat = { off: 'all', all: 'one', one: 'off' }[repeat];
   save('hudba.repeat', repeat);
