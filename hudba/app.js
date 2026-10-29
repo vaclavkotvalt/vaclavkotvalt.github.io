@@ -1,7 +1,10 @@
 'use strict';
 
 const $ = (id) => document.getElementById(id);
-const audio = $('audio');
+// Dva přehrávače, které se střídají: nová skladba se rozehraje dřív, než se stará zastaví,
+// takže Android ovládání v notifikační liště mezi skladbami neschová.
+const players = [$('audioA'), $('audioB')];
+let audio = players[0];
 
 let LANG = document.documentElement.getAttribute('data-lang') || 'cs';
 const L = (cs, en) => LANG === 'en' ? en : cs;
@@ -13,11 +16,12 @@ let folderTracks = [];   // skladby ze složky v telefonu (čtou se přímo, nic
 let storedTracks = [];   // jednotlivě přidané skladby (uložené v aplikaci)
 let tracks = [];
 let dirHandle = null;
-let dirState = canPickFolder ? 'none' : 'unsupported'; // none | needs-permission | scanning | ready | unsupported
+// none | locked (seznam je uložený, přístup ke složce se potvrdí při přehrání) | scanning | ready | unsupported
+let dirState = canPickFolder ? 'none' : 'unsupported';
 let scanProgress = 0;
 
 let currentId = null;
-let currentUrl = null;
+let needsLoad = false;   // vybraná skladba, jejíž soubor se načte až při přehrání
 let artUrl = null;
 let selectToken = 0;
 let shuffle = load('hudba.shuffle', false);
@@ -132,20 +136,39 @@ async function pickFolder() {
     return;
   }
   dirHandle = handle;
+  folderTracks = [];
   await db('meta', 'readwrite', (s) => s.put(handle, 'dir'));
+  if (navigator.storage && navigator.storage.persist) navigator.storage.persist();
   await scanFolder();
 }
 
-async function grantFolder() {
+async function hasAccess() {
+  try { return !!dirHandle && await dirHandle.queryPermission({ mode: 'read' }) === 'granted'; }
+  catch { return false; }
+}
+
+// Po novém spuštění chce Android přístup ke složce znovu potvrdit – stačí klepnutí na skladbu nebo ▶.
+async function ensureAccess() {
+  if (await hasAccess()) return true;
   try {
-    if (await dirHandle.requestPermission({ mode: 'read' }) === 'granted') {
-      await scanFolder();
+    if (dirHandle && await dirHandle.requestPermission({ mode: 'read' }) === 'granted') {
+      if (dirState === 'locked') scanFolder(); // na pozadí zkontroluje nové a smazané skladby
       return true;
     }
   } catch (e) {
     console.warn(e);
   }
   return false;
+}
+
+// Soubor skladby ze složky podle uložené cesty (po restartu aplikace ještě nemáme odkazy na soubory).
+async function fileHandleFor(t) {
+  if (t.handle) return t.handle;
+  const parts = t.path.split('/').slice(1);
+  let dir = dirHandle;
+  for (const name of parts.slice(0, -1)) dir = await dir.getDirectoryHandle(name);
+  t.handle = await dir.getFileHandle(parts[parts.length - 1]);
+  return t.handle;
 }
 
 async function* walk(dir, prefix) {
@@ -170,7 +193,7 @@ async function scanFolder() {
     }
   } catch (e) {
     console.warn(e);
-    dirState = 'needs-permission';
+    dirState = 'locked';
     renderSource();
     return;
   }
@@ -206,7 +229,13 @@ async function scanFolder() {
   const collator = new Intl.Collator('cs', { numeric: true, sensitivity: 'base' });
   folderTracks = result.sort((a, b) => collator.compare(a.path, b.path));
   dirState = 'ready';
+  // seznam zůstane uložený i po zavření aplikace, dokud nevyberete jinou složku
+  await db('meta', 'readwrite', (s) => s.put(folderTracks.map(({ path, title, artist }) => ({ path, title, artist })), 'list'));
   rebuild();
+}
+
+function fromSavedList(list) {
+  return list.map(({ path, title, artist }) => ({ id: 'd:' + path, kind: 'dir', path, handle: null, title, artist }));
 }
 
 /* ---------- Jednotlivě přidané skladby ---------- */
@@ -240,28 +269,41 @@ async function removeTrack(id) {
   if (id === currentId) {
     const idx = tracks.indexOf(t);
     const playing = !audio.paused;
-    audio.pause();
     currentId = null;
-    rebuild();
+    rebuild(false);
     if (tracks.length) select(tracks[Math.min(idx, tracks.length - 1)].id, playing);
-    else showEmptyPlayer();
+    else { stopAll(); showEmptyPlayer(); }
     return;
   }
   rebuild();
 }
 
-function rebuild() {
+function rebuild(pickCurrent = true) {
   tracks = [...folderTracks, ...storedTracks];
   renderSource();
   render();
-  if (currentId && !tracks.some((t) => t.id === currentId)) { currentId = null; audio.pause(); showEmptyPlayer(); }
-  if (!currentId && tracks.length) {
+  if (currentId && !tracks.some((t) => t.id === currentId)) { currentId = null; stopAll(); showEmptyPlayer(); }
+  if (pickCurrent && !currentId && tracks.length) {
     const last = load('hudba.lastId', null);
     select((tracks.find((t) => t.id === last) || tracks[0]).id, false);
   }
 }
 
 /* ---------- Přehrávání ---------- */
+
+function clearPlayer(p) {
+  const url = p.src;
+  p.pause();
+  p.removeAttribute('src');
+  p.load();
+  if (url.startsWith('blob:')) URL.revokeObjectURL(url);
+}
+
+function stopAll() {
+  players.forEach(clearPlayer);
+  needsLoad = false;
+  syncPlayState();
+}
 
 async function select(id, autoplay = true) {
   const t = tracks.find((x) => x.id === id);
@@ -276,26 +318,52 @@ async function select(id, autoplay = true) {
   document.title = t.title;
   highlight();
 
+  // bez přehrání a bez přístupu ke složce jen ukážeme název, soubor se načte po klepnutí na ▶
+  if (!autoplay && t.kind === 'dir' && !(await hasAccess())) {
+    if (token !== selectToken) return;
+    needsLoad = true;
+    updateMediaSession(t, null);
+    return;
+  }
+
   let file;
   try {
-    file = t.kind === 'dir' ? await t.handle.getFile() : t.blob;
+    if (t.kind === 'dir') {
+      if (!(await ensureAccess())) throw new Error('no access');
+      file = await (await fileHandleFor(t)).getFile();
+    } else {
+      file = t.blob;
+    }
   } catch (e) {
     console.warn(e);
     if (token !== selectToken) return;
+    needsLoad = true;
     $('artist').textContent = L('Soubor nejde otevřít – zkuste „Načíst znovu“.', 'Cannot open the file – try “Rescan”.');
     return;
   }
   if (token !== selectToken) return;
 
-  if (currentUrl) URL.revokeObjectURL(currentUrl);
-  currentUrl = URL.createObjectURL(file);
-  audio.src = currentUrl;
-  if (autoplay) audio.play().catch(() => {});
+  // novou skladbu pustíme ve druhém přehrávači a ten dosavadní zastavíme až potom
+  const old = audio;
+  const fresh = players.find((p) => p !== old);
+  const stale = fresh.src;
+  fresh.src = URL.createObjectURL(file);
+  if (stale.startsWith('blob:')) URL.revokeObjectURL(stale);
+  if (autoplay) {
+    try { await fresh.play(); } catch (e) { console.warn(e); }
+    if (token !== selectToken) return; // mezitím se přeskočilo dál, přehrávač už patří novější skladbě
+  }
+  audio = fresh;
+  needsLoad = false;
+  clearPlayer(old);
+  onMetadata();
+  syncPlayState();
 
-  if (artUrl) URL.revokeObjectURL(artUrl);
-  artUrl = null;
   setCover(null);
   updateMediaSession(t, null);
+  // obal předchozí skladby uvolníme až později – lišta Androidu si ho může ještě dočítat
+  if (artUrl) setTimeout(URL.revokeObjectURL, 10000, artUrl);
+  artUrl = null;
 
   const { art } = await readTags(file, true);
   if (token !== selectToken || !art) return;
@@ -310,21 +378,17 @@ function setCover(url) {
 }
 
 function showEmptyPlayer() {
-  audio.removeAttribute('src');
   $('title').textContent = L('Nic nehraje', 'Nothing playing');
-  $('artist').textContent = dirState === 'needs-permission'
-    ? L('Klepněte na ▶ a povolte přístup ke složce', 'Tap ▶ and allow access to the folder')
-    : L('Vyberte složku s hudbou', 'Pick your music folder');
+  $('artist').textContent = L('Vyberte složku s hudbou', 'Pick your music folder');
+  $('seek').max = 0; $('seek').value = 0;
+  $('cur').textContent = $('dur').textContent = '0:00';
   setCover(null);
   document.title = L('Hudba', 'Music');
 }
 
 async function togglePlay() {
-  if (!currentId) {
-    if (dirState === 'needs-permission' && await grantFolder() && tracks.length) audio.play().catch(() => {});
-    else if (tracks.length) select(tracks[0].id);
-    return;
-  }
+  if (!currentId) { if (tracks.length) select(tracks[0].id); return; }
+  if (needsLoad) { select(currentId); return; }
   audio.paused ? audio.play().catch(() => {}) : audio.pause();
 }
 
@@ -338,7 +402,7 @@ function next(fromEnded = false) {
   } else {
     nextIdx = idx + 1;
     if (nextIdx >= tracks.length) {
-      if (fromEnded && repeat === 'off') { audio.currentTime = 0; return; }
+      if (fromEnded && repeat === 'off') { audio.currentTime = 0; syncPlayState(); return; }
       nextIdx = 0;
     }
   }
@@ -362,18 +426,25 @@ function prev() {
   select(tracks[(idx - 1 + tracks.length) % tracks.length].id);
 }
 
-audio.addEventListener('ended', () => next(true));
-audio.addEventListener('play', syncPlayState);
-audio.addEventListener('pause', syncPlayState);
-audio.addEventListener('loadedmetadata', () => {
+function onMetadata() {
+  if (!(audio.readyState >= 1)) return;
   $('seek').max = audio.duration || 0;
   $('dur').textContent = fmt(audio.duration);
   updatePositionState();
-});
-audio.addEventListener('timeupdate', () => {
-  if (!seeking) $('seek').value = audio.currentTime;
-  $('cur').textContent = fmt(audio.currentTime);
-});
+}
+
+// události bereme jen od přehrávače, který právě hraje (ten odstavený při přeskočení ignorujeme)
+const fromActive = (fn) => (e) => { if (e.target === audio) fn(e); };
+for (const p of players) {
+  p.addEventListener('ended', fromActive(() => next(true)));
+  p.addEventListener('play', fromActive(syncPlayState));
+  p.addEventListener('pause', fromActive(() => { if (!audio.ended) syncPlayState(); }));
+  p.addEventListener('loadedmetadata', fromActive(onMetadata));
+  p.addEventListener('timeupdate', fromActive(() => {
+    if (!seeking) $('seek').value = audio.currentTime;
+    $('cur').textContent = fmt(audio.currentTime);
+  }));
+}
 
 let seeking = false;
 $('seek').addEventListener('input', () => { seeking = true; $('cur').textContent = fmt($('seek').value); });
@@ -424,7 +495,7 @@ function updatePositionState() {
 
 if ('mediaSession' in navigator) {
   const handlers = {
-    play: () => audio.play(),
+    play: () => (needsLoad ? select(currentId) : audio.play()),
     pause: () => audio.pause(),
     previoustrack: prev,
     nexttrack: () => next(),
@@ -449,8 +520,8 @@ $('repeatBtn').addEventListener('click', () => {
   syncModes();
 });
 $('filter').addEventListener('input', render);
-$('folderBtn').addEventListener('click', () => (dirState === 'needs-permission' ? grantFolder() : pickFolder()));
-$('rescanBtn').addEventListener('click', () => scanFolder());
+$('folderBtn').addEventListener('click', pickFolder);
+$('rescanBtn').addEventListener('click', async () => { if (await hasAccess()) scanFolder(); else ensureAccess(); });
 
 function syncModes() {
   $('shuffleBtn').classList.toggle('on', shuffle);
@@ -468,8 +539,8 @@ function renderSource() {
   const btn = $('folderBtn');
   const name = dirHandle ? escapeHtml(dirHandle.name) : '';
   btn.hidden = !canPickFolder || dirState === 'scanning';
-  btn.classList.toggle('primary', dirState !== 'ready');
-  $('rescanBtn').hidden = dirState !== 'ready';
+  btn.classList.toggle('primary', dirState === 'none');
+  $('rescanBtn').hidden = !(dirState === 'ready' || dirState === 'locked');
   $('folderHint').hidden = !(dirState === 'none' || dirState === 'ready');
 
   if (dirState === 'unsupported') {
@@ -479,16 +550,16 @@ function renderSource() {
     info.innerHTML = L('Vyberte složku v telefonu, kde máte hudbu. Aplikace ji bude číst přímo – nic se nikam nenahrává.',
       'Pick the folder on your phone where your music is. The app reads it directly – nothing gets uploaded.');
     btn.textContent = L('Vybrat složku s hudbou', 'Pick music folder');
-  } else if (dirState === 'needs-permission') {
-    info.innerHTML = L(`Složka <b>${name}</b> – Android chce po spuštění znovu potvrdit přístup.`,
-      `Folder <b>${name}</b> – Android asks to confirm access again after restart.`);
-    btn.textContent = L('Povolit přístup ke složce', 'Allow folder access');
   } else if (dirState === 'scanning') {
     info.innerHTML = L(`Načítám složku <b>${name}</b>… ${scanProgress || ''}`, `Reading folder <b>${name}</b>… ${scanProgress || ''}`);
   } else {
     const n = folderTracks.length;
     info.innerHTML = L(`Složka <b>${name}</b> · ${n} ${n === 1 ? 'skladba' : n >= 2 && n <= 4 ? 'skladby' : 'skladeb'}`,
       `Folder <b>${name}</b> · ${n} ${n === 1 ? 'track' : 'tracks'}`);
+    if (dirState === 'locked') {
+      info.innerHTML += L('<br>Po spuštění aplikace Android při prvním přehrání jednou potvrdí přístup ke složce.',
+        '<br>After the app starts, Android confirms folder access once on first play.');
+    }
     btn.textContent = L('Změnit složku', 'Change folder');
   }
 }
@@ -555,12 +626,18 @@ document.querySelectorAll('.lang button').forEach((b) => b.addEventListener('cli
   applyLang(LANG);
   storedTracks = ((await db('tracks', 'readonly', (s) => s.getAll())) || []).sort((a, b) => a.added - b.added);
   if (canPickFolder) dirHandle = await db('meta', 'readonly', (s) => s.get('dir'));
-  rebuild();
   if (dirHandle) {
-    let perm = 'prompt';
-    try { perm = await dirHandle.queryPermission({ mode: 'read' }); } catch {}
-    if (perm === 'granted') await scanFolder();
-    else { dirState = 'needs-permission'; renderSource(); if (!currentId) showEmptyPlayer(); }
+    // uložený seznam skladeb ukážeme hned, bez čekání na složku
+    let list = await db('meta', 'readonly', (s) => s.get('list'));
+    if (!list) list = (await db('tags', 'readonly', (s) => s.getAll())).filter((t) => t.path.startsWith(dirHandle.name + '/'));
+    const collator = new Intl.Collator('cs', { numeric: true, sensitivity: 'base' });
+    folderTracks = fromSavedList(list).sort((a, b) => collator.compare(a.path, b.path));
+    const granted = await hasAccess();
+    dirState = granted ? 'ready' : 'locked';
+    rebuild();
+    if (granted) scanFolder(); // na pozadí zkontroluje nové a smazané skladby
+  } else {
+    rebuild();
   }
 })();
 

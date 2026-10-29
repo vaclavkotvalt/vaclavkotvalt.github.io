@@ -9,9 +9,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,300;6..72,400&family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="fonts/fonts.css">
 <link rel="stylesheet" href="style.css">
 <script>
   (function () {
@@ -81,7 +79,9 @@
   </section>
 </main>
 
-<audio id="audio" preload="auto"></audio>
+<!-- dva přehrávače: při přeskočení začne hrát druhý dřív, než se první zastaví, takže ovládání v liště nezmizí -->
+<audio id="audioA" preload="auto"></audio>
+<audio id="audioB" preload="auto"></audio>
 <script src="app.js"></script>
 </body>
 </html>
