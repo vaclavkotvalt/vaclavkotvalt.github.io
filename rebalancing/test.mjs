@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { fromSheets } from './io.js';
-import { analyze, exemptFrom, nextBusinessDay, taxOf, DEFAULTS } from './engine.js';
+import { analyze, exemptFrom, nextBusinessDay, taxOf, historicFx, addYears, DEFAULTS } from './engine.js';
 
 const raw = JSON.parse(fs.readFileSync(new URL('./data.json', import.meta.url)));
 const data = fromSheets(raw.sheets);
@@ -28,6 +28,8 @@ test('časový test a pracovní dny', () => {
   assert.equal(exemptFrom('2023-11-20', 3), '2026-11-21');
   assert.equal(nextBusinessDay('2026-11-21'), '2026-11-23'); // sobota → pondělí
   assert.equal(nextBusinessDay('2026-11-17'), '2026-11-18'); // státní svátek
+  assert.equal(addYears('2024-02-29', 3), '2027-02-28'); // lhůta končí posledním dnem února
+  assert.equal(exemptFrom('2024-02-29', 3), '2027-03-01');
 });
 
 test('hodnotový test FO: do 100 000 Kč hrubých příjmů bez daně', () => {
@@ -36,6 +38,9 @@ test('hodnotový test FO: do 100 000 Kč hrubých příjmů bez daně', () => {
   assert.equal(taxOf([lot(150000, 30000)], 'FO', DEFAULTS).amount, 4500);
   assert.equal(taxOf([lot(150000, 30000), lot(80000, -40000)], 'FO', DEFAULTS).amount, 0); // ztráta se započte
   assert.equal(taxOf([lot(150000, 30000)], 'PO', DEFAULTS).amount, 6300);
+  // do úhrnu 100 000 Kč se konzervativně počítají i prodeje osvobozené časovým testem
+  const ex = { exempt: true, proceedsCZK: 50000, gainCZK: 20000 };
+  assert.equal(taxOf([lot(80000, 30000), ex], 'FO', DEFAULTS).amount, 4500);
 });
 
 test('Klient A: počkat na vklad, prodat jen osvobozený lot', () => {
@@ -119,4 +124,24 @@ test('daňově šetrné pravidlo: zdanitelné loty jen nad 2× tolerancí, jen p
   // bez pravidla by se AVWS prodávalo se ziskem a daní
   const full = analyze(applyMarket(data, market).data, { taxableBandMult: 0 }).clients.find(c => c.id === 'Klient A');
   assert.ok(full.plan.tax.amount > 50000);
+});
+
+test('nákupní cena kurzem ČNB ke dni nákupu, poplatek z prodeje jako výdaj, FIFO', () => {
+  const hist = JSON.parse(fs.readFileSync(new URL('./fx_history.json', import.meta.url)));
+  const fxAt = historicFx(hist);
+  assert.equal(fxAt('EUR', '2021-03-15').rate, 26.195);
+  assert.equal(fxAt('EUR', '2021-03-13').date, '2021-03-12'); // sobota → kurz z pátku
+  assert.equal(DEFAULTS.lotMethod, 'fifo');
+  const r = analyze({ ...data, fxHistory: hist });
+  const a = r.clients.find(c => c.id === 'Klient A');
+  const lot = a.lots.find(l => l.date === '2021-03-15');
+  near(lot.costCZK, 1500 * 92.1 * 26.195);
+  const sold = a.plan.trades.find(t => t.side === 'sell').lots[0];
+  // 217 × (142,5 × 24,3 − 92,1 × 26,195) − poplatek 0,1 % z prodeje
+  near(sold.gainCZK, 217 * (142.5 * 24.3 - 92.1 * 26.195) - 0.001 * 217 * 142.5 * 24.3);
+  // klient E při prodeji hned: FIFO bere 180 ks z roku 2020 (osvobozené) a 620 ks z 20. 11. 2023 (zdanitelné)
+  const e = r.clients.find(c => c.id === 'Klient E');
+  const alt = e.alt.trades.find(t => t.ticker === 'VWCE').lots;
+  assert.deepEqual(alt.map(l => [l.date, l.qty, l.exempt]), [['2020-01-13', 180, true], ['2023-11-20', 620, false]]);
+  near(e.alt.tax.amount, 0.15 * (620 * (142.5 * 24.3 - 98.7 * 24.545) - 0.001 * 800 * 142.5 * 24.3 * 620 / 800), 1);
 });

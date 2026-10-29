@@ -17,10 +17,9 @@ export const DEFAULTS = {
   fxSpreadPct: 0.25,     // náklad konverze měny v % převáděné částky
   taxFO: 15,             // daň z příjmů FO (§ 10 ZDP) v %
   taxPO: 21,             // daň z příjmů PO v %
-  valueTestLimit: 100000,   // hodnotový test FO: hrubé příjmy z prodeje CP za rok
-  timeTestCap: 40000000,    // strop osvobození příjmů z časového testu FO za rok
+  valueTestLimit: 100000,   // hodnotový test FO: úhrn hrubých příjmů ze všech prodejů CP za rok
   timeTestYears: 3,
-  lotMethod: 'tax',      // 'tax' = daňově nejvýhodnější loty, 'fifo' = nejstarší první
+  lotMethod: 'fifo',     // 'fifo' = nejstarší první (nejlépe doložitelné pro časový test), 'tax' = výběr konkrétních lotů
   taxableBandMult: 2,    // zdanitelné loty se ziskem prodávat jen nad 2× pásmem, a to jen ten přesah (0 = vypnuto)
   withdrawalWarnPct: 4,  // varovat, pokud pravidelné výběry přesahují 4 % majetku ročně
 };
@@ -31,7 +30,13 @@ const toDate = (s) => new Date(s + 'T00:00:00Z');
 const iso = (d) => d.toISOString().slice(0, 10);
 export const addDays = (s, n) => iso(new Date(toDate(s).getTime() + n * DAY));
 export const daysBetween = (a, b) => Math.round((toDate(b) - toDate(a)) / DAY);
-export function addYears(s, n) { const d = toDate(s); d.setUTCFullYear(d.getUTCFullYear() + n); return iso(d); }
+// 29. 2. + rok = 28. 2. (lhůta končí posledním dnem měsíce), ne 1. 3.
+export function addYears(s, n) {
+  const d = toDate(s), m = d.getUTCMonth();
+  d.setUTCFullYear(d.getUTCFullYear() + n);
+  if (d.getUTCMonth() !== m) d.setUTCDate(0);
+  return iso(d);
+}
 
 function easterSunday(y) { // anonymní gregoriánský algoritmus
   const a = y % 19, b = Math.floor(y / 100), c = y % 100, d = Math.floor(b / 4), e = b % 4;
@@ -87,7 +92,8 @@ export function analyze(data, settings = {}) {
   if (fatal.length) return { asOf, settings: S, issues, clients: [], summary: null };
 
   const inst = Object.fromEntries(data.instruments.map(i => [i.ticker, { ...i, pCZK: i.price * data.fx[i.currency] }]));
-  const ctx = { S, asOf, fx: data.fx, inst, feeMinCZK: S.feeMinEur * (data.fx.EUR || 25) };
+  const fxAt = historicFx(data.fxHistory);
+  const ctx = { S, asOf, fx: data.fx, inst, fxAt, feeMinCZK: S.feeMinEur * (data.fx.EUR || 25) };
   const clients = data.clients.map(c => analyzeClient(c, data, ctx));
 
   const summary = {
@@ -101,7 +107,7 @@ export function analyze(data, settings = {}) {
 }
 
 function analyzeClient(client, data, ctx) {
-  const { S, asOf, fx, inst } = ctx;
+  const { S, asOf, fx, inst, fxAt } = ctx;
   const own = (x) => x.client === client.id;
   const cash = {};
   for (const c of data.cash.filter(own)) cash[c.currency] = (cash[c.currency] || 0) + c.amount;
@@ -111,11 +117,15 @@ function analyzeClient(client, data, ctx) {
   const lots = data.lots.filter(own).map(l => {
     const i = inst[l.ticker];
     const ex = client.taxRegime === 'FO' ? exemptFrom(l.date, S.timeTestYears) : null;
+    // Nákupní cena kurzem ČNB platným v den nákupu (§ 38 ZDP); bez historie kurzů dnešním kurzem
+    const h = i.currency === 'CZK' ? null : fxAt(i.currency, l.date);
+    const costFx = h ? h.rate : fx[i.currency];
+    const costCZK = l.qty * l.cost * costFx;
     return {
       ...l, currency: i.currency,
       valueCZK: l.qty * i.pCZK,
-      costCZK: l.qty * l.cost * fx[i.currency],          // nákupní cena dnešním kurzem (zjednodušení ze zadání)
-      gainCZK: l.qty * (i.price - l.cost) * fx[i.currency],
+      costFx, costFxDate: h ? h.date : null, costCZK,
+      gainCZK: l.qty * i.pCZK - costCZK,
       exemptFrom: ex, exemptNow: ex != null && asOf >= ex,
     };
   });
@@ -211,6 +221,19 @@ function analyzeClient(client, data, ctx) {
     plan: p,
     alt: status === 'wait' && p.trades.length ? (altFull || plan(now)) : null, // co by stál zásah hned …
     altFollow: status === 'wait' ? altFollow : null, // … a druhé kolo po příchodu vkladu
+  };
+}
+
+// Kurz ČNB platný v daný den = poslední vyhlášený kurz k tomuto dni (o víkendu a svátku ten předchozí)
+export function historicFx(history) {
+  const idx = {};
+  for (const [cur, days] of Object.entries(history?.rates || {})) idx[cur] = Object.keys(days).sort();
+  return (cur, day) => {
+    const keys = idx[cur];
+    if (!keys || !keys.length || day < keys[0] || daysBetween(keys.at(-1), day) > 7) return null;
+    let lo = 0, hi = keys.length - 1;
+    while (lo < hi) { const mid = (lo + hi + 1) >> 1; if (keys[mid] <= day) lo = mid; else hi = mid - 1; }
+    return { date: keys[lo], rate: history.rates[cur][keys[lo]] };
   };
 }
 
@@ -313,7 +336,6 @@ function planAt(date, cl, ctx) {
   const heldBack = [];
   const lotsOf = (t) => cl.lots.filter(l => l.ticker === t);
   const take = (t, q) => takeLots(lotsOf(t), q, date, client.taxRegime, S.lotMethod);
-  const taxableGain = (lots) => sum(lots.filter(l => !l.exempt && l.gainCZK > 0), l => l.gainCZK);
   for (const t of cl.tickers) {
     const delta = tgt(t) - before.values[t];
     if (delta >= 0 || cl.held[t] === 0) continue;
@@ -350,11 +372,8 @@ function planAt(date, cl, ctx) {
     shortfall = reserve - (before.cashCZK + netOf());
   }
   for (const h of heldBack) {
-    const sold = h.wanted - h.qty;
-    h.sold = sold;
-    const rest = take(h.ticker, h.wanted); // loty, které by šly při plném prodeji
-    h.taxAvoided = (taxableGain(take(h.ticker, h.wanted)) - taxableGain(sold > 0 ? take(h.ticker, sold) : [])) * (client.taxRegime === 'PO' ? S.taxPO : S.taxFO) / 100;
-    const ex = rest.filter(l => !l.exempt && l.exemptFrom).map(l => l.exemptFrom).sort();
+    h.sold = h.wanted - h.qty;
+    const ex = take(h.ticker, h.wanted).filter(l => !l.exempt && l.exemptFrom).map(l => l.exemptFrom).sort();
     h.exemptFrom = ex.length ? nextBusinessDay(ex[0]) : null;
   }
   // Nákupy: rozpočet = hotovost po prodejích − rezerva − cílová hotovost
@@ -386,10 +405,19 @@ function planAt(date, cl, ctx) {
   }
   const finalTrades = trades.filter(tr => tr.qty > 0);
 
-  // Daně
-  const soldLots = finalTrades.flatMap(tr => tr.lots.map(l => ({ ...l, ticker: tr.ticker, proceedsCZK: l.qty * inst[tr.ticker].pCZK })));
+  // Daně: poplatek za prodej je výdaj, rozpočte se na prodávané loty podle počtu kusů
+  const pieces = (tr, lots) => lots.map(l => ({ ...l, ticker: tr.ticker, proceedsCZK: l.qty * inst[tr.ticker].pCZK,
+    gainCZK: l.gainCZK - fee(tr.qty * inst[tr.ticker].pCZK, ctx) * l.qty / tr.qty }));
+  for (const tr of finalTrades) if (tr.side === 'sell') tr.lots = pieces(tr, tr.lots);
+  const soldLots = finalTrades.flatMap(tr => tr.lots);
   const tax = taxOf(soldLots, client.taxRegime, S);
   for (const tr of finalTrades) tr.gainCZK = sum(tr.lots, l => l.gainCZK);
+  // Ušetřená daň u zadržených lotů = daň plánu s plným prodejem dané pozice − skutečná daň plánu
+  for (const h of heldBack) {
+    const fullTr = { ticker: h.ticker, qty: h.wanted };
+    const others = soldLots.filter(l => l.ticker !== h.ticker);
+    h.taxAvoided = Math.max(0, taxOf([...others, ...pieces(fullTr, take(h.ticker, h.wanted))], client.taxRegime, S).amount - tax.amount);
+  }
 
   const heldAfter = { ...cl.held };
   for (const tr of finalTrades) heldAfter[tr.ticker] += tr.side === 'buy' ? tr.qty : -tr.qty;
@@ -412,17 +440,15 @@ export function taxOf(soldLots, regime, S) {
     const net = sum(soldLots, l => l.gainCZK);
     return { regime, net, base: Math.max(0, net), amount: Math.max(0, net) * S.taxPO / 100 };
   }
+  // Hodnotový test (§ 4 odst. 1 písm. t): úhrn příjmů z prodeje cenných papírů za rok do 100 000 Kč.
+  // Zákon z úhrnu nevyjímá prodeje osvobozené časovým testem → konzervativně se počítají všechny.
+  // Časový test (písm. u) osvobozuje jednotlivé loty; ztráty se započtou jen proti zdanitelným ziskům.
   const taxable = soldLots.filter(l => !l.exempt);
-  const proceedsTaxable = sum(taxable, l => l.proceedsCZK);
-  const proceedsExempt = sum(soldLots.filter(l => l.exempt), l => l.proceedsCZK);
+  const proceedsAll = sum(soldLots, l => l.proceedsCZK);
   const net = sum(taxable, l => l.gainCZK);
-  const valueTest = taxable.length > 0 && proceedsTaxable <= S.valueTestLimit;
+  const valueTest = taxable.length > 0 && proceedsAll <= S.valueTestLimit;
   const base = valueTest ? 0 : Math.max(0, net);
-  return {
-    regime, net, base, proceedsTaxable, proceedsExempt, valueTest,
-    overCap: proceedsExempt > S.timeTestCap,
-    amount: base * S.taxFO / 100,
-  };
+  return { regime, net, base, proceedsAll, valueTest, amount: base * S.taxFO / 100 };
 }
 
 // Upozornění, která nejsou pravidlem rebalancování, ale manažer je má vidět

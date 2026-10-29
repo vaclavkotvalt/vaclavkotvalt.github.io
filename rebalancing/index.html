@@ -279,6 +279,8 @@
               <thead><tr>
                 <th>Ticker</th><th><span class="cs">Nákup</span><span class="en">Bought</span></th>
                 <th class="r"><span class="cs">Kusy</span><span class="en">Units</span></th>
+                <th class="r"><span class="cs">Nákupní cena</span><span class="en">Cost</span></th>
+                <th class="r" data-cs-title="Kurz ČNB platný v den nákupu" data-en-title="CNB rate valid on the purchase date"><span class="cs">Kurz ČNB</span><span class="en">CNB rate</span></th>
                 <th class="r"><span class="cs">Hodnota</span><span class="en">Value</span></th>
                 <th class="r"><span class="cs">Zisk</span><span class="en">Gain</span></th>
                 <th><span class="cs">Daň</span><span class="en">Tax</span></th>
@@ -313,22 +315,24 @@
         <li><strong>Likvidita.</strong> Výběry plánované na příštích 90 dní se drží v hotovosti jako rezerva. Když na ně hotovost nestačí, je potřeba zasáhnout i bez odchylky.</li>
         <li><strong>Když už obchodovat, tak na cíl.</strong> Při zásahu se portfolio vrací na cílové váhy (ne jen na okraj pásma), počítané z majetku bez rezervy. Obchody pod 20 000 Kč nebo pod 0,5 % majetku se vynechají – jsou to šum, který nestojí za poplatek.</li>
         <li><strong>Nejdřív peněžní toky.</strong> Vklad v příštích 30 dnech: počkat na něj a nakoupit z něj, takže se prodává méně. Výběry se kryjí prodejem toho, čeho je v portfoliu nejvíc navíc.</li>
-        <li><strong>Daně.</strong> U fyzických osob se prodávají nejdřív loty osvobozené časovým testem (držené déle než 3 roky), pak ztrátové a nakonec ty s nejmenším ziskem. Když se prodávaný lot do 60 dní osvobodí a čekání ušetří aspoň 10 000 Kč, nástroj doporučí počkat. Pro s.r.o. žádné osvobození neplatí (21 %), proto se rebalancuje hlavně vklady.</li>
+        <li><strong>Daně fyzických osob.</strong> Loty se prodávají metodou FIFO (nejstarší první) – nejlépe se tak dokládá časový test. Lot držený déle než 3 roky je osvobozený (§ 4 odst. 1 písm. u) ZDP). Zisky ze zdanitelných lotů se sečtou se ztrátami ze zdanitelných lotů a daní se 15 %. Hodnotový test (písm. t): když úhrn příjmů ze všech prodejů cenných papírů za rok nepřesáhne 100 000 Kč, je osvobozeno vše. Když se prodávaný lot do 60 dní osvobodí a čekání ušetří aspoň 10 000 Kč, nástroj doporučí počkat. Strop 40 mil. Kč pro osvobození se od 1. 1. 2026 u cenných papírů neuplatní (zákon č. 360/2025 Sb.).</li>
+        <li><strong>Daně s.r.o.</strong> Žádné osvobození, zisk z prodeje se daní 21 %, proto se rebalancuje hlavně vklady.</li>
         <li><strong>Zdanitelné loty se ziskem se drží.</strong> Prodávají se jen tehdy, když je pozice nad cílem o víc než dvojnásobek tolerance, a jen o ten přesah – pozice se vrátí na hranici dvojnásobku, ne až na cíl. Zbytek nadváhy se srovná nákupy ostatních složek a vklady, dokud se loty neosvobodí. Platit desítky tisíc na dani kvůli pár procentním bodům se nevyplatí. Výjimkou jsou výběry: když na ně hotovost nestačí, prodá se i zdanitelný lot.</li>
         <li><strong>Náklady.</strong> Poplatek 0,1 % z objemu, minimálně 2 EUR za obchod; konverze měny 0,25 %. Vše se dá změnit v nastavení výše.</li>
       </ol>
       <h3>Předpoklady</h3>
       <ul>
         <li>Ceny a kurzy z data ocenění platí i v den obchodu (nástroj nepředpovídá trh).</li>
-        <li>Nákupní cena v CZK je přepočtená dnešním kurzem (zjednodušení ze zadání). Přesněji by se použil kurz ČNB ke dni nákupu.</li>
-        <li>Daň 15 % (FO) a 21 % (s.r.o.). Hodnotový test 100 000 Kč a strop osvobození 40 mil. Kč se počítají jen z obchodů navržených nástrojem – jiné prodeje klienta v roce nezná.</li>
-        <li>Časový test se počítá ke dni obchodu; první den osvobození je den po třetím výročí nákupu, posunutý na nejbližší pracovní den.</li>
-        <li>Obchoduje se po celých kusech. Výběr konkrétních lotů je potřeba mít podložený u brokera; na ukázkových datech vychází stejně jako FIFO.</li>
+        <li>Nákupní cena se přepočítá kurzem ČNB platným v den nákupu (§ 38 ZDP; o víkendu a ve svátek kurz z posledního pracovního dne), příjem z prodeje kurzem z data ocenění. Denní kurzy od roku 2010 se stahují přímo z ČNB. Kde kurz chybí, použije se dnešní kurz (v tabulce lotů označeno *).</li>
+        <li>Poplatek za prodej se odečte jako výdaj. Poplatek za nákup v datech není, takže se neodečítá – daň je spíš mírně nadhodnocená.</li>
+        <li>Hodnotový test se počítá jen z obchodů navržených nástrojem; jiné prodeje klienta v roce nezná. Do úhrnu 100 000 Kč se konzervativně počítají i prodeje osvobozené časovým testem, protože zákon je z úhrnu výslovně nevyjímá.</li>
+        <li>Časový test se počítá ke dni obchodu: první den osvobození je den po třetím výročí nákupu (u 29. 2. po 28. 2.), posunutý na nejbližší pracovní den. Pokud by správce daně posuzoval den vypořádání (T+2), posune se nákup i prodej stejně a výsledek zůstane.</li>
+        <li>Obchoduje se po celých kusech. Výběr konkrétních lotů (místo FIFO) jde zapnout v nastavení, ale je nutné ho mít podložený evidencí u brokera.</li>
       </ul>
       <h3>Co nástroj neumí</h3>
       <ul>
         <li>Nenapojuje se na brokera – pozice, hotovost a plánované pohyby bere z nahraného Excelu, který je potřeba udržovat aktuální. Ceny ETF (Yahoo Finance, záložně Stooq) a kurzy ČNB se stahují automaticky každý pracovní den večer; jde o závěrečné ceny, ne o ceny v okamžiku obchodu.</li>
-        <li>Nepočítá se sazbou 23 % nad limitem příjmů ani s dalšími příjmy klienta; daň u s.r.o. je jen odhad dopadu na základ daně.</li>
+        <li>Nepočítá se sazbou 23 % pro část základu daně nad 36násobkem průměrné mzdy ani s dalšími příjmy klienta. U s.r.o. je daň jen odhad dopadu na základ daně (účetní ocenění cenných papírů nástroj neřeší).</li>
         <li>Neověří, jestli jsou historické údaje o pozicích převedených od jiného brokera správné – to musí udělat manažer.</li>
       </ul>
       <p>Výpočetní logika je v samostatném souboru <a href="engine.js">engine.js</a> (čisté funkce bez vazby na stránku) s testy v <a href="test.mjs">test.mjs</a>; čtení Excelu je v <a href="io.js">io.js</a>.</p>
@@ -340,22 +344,24 @@
         <li><strong>Liquidity.</strong> Withdrawals planned in the next 90 days are held in cash as a reserve. If cash cannot cover them, the client needs action even without drift.</li>
         <li><strong>If trading, trade to target.</strong> Once triggered, the portfolio goes back to its target weights (not just to the edge of the band), measured on assets net of the reserve. Trades under CZK 20,000 or under 0.5% of assets are skipped – noise that isn’t worth the fee.</li>
         <li><strong>Cash flows first.</strong> A deposit in the next 30 days: wait for it and buy with it, so fewer sales are needed. Withdrawals are funded by selling what is most overweight.</li>
-        <li><strong>Taxes.</strong> For individuals, lots exempt under the time test (held over 3 years) are sold first, then lots at a loss, then those with the smallest gain. If a lot being sold becomes exempt within 60 days and waiting saves at least CZK 10,000, the tool recommends waiting. Companies (s.r.o.) get no exemption (21%), so they rebalance mainly with deposits.</li>
+        <li><strong>Taxes for individuals.</strong> Lots are sold FIFO (oldest first), which is the easiest way to document the time test. A lot held for more than 3 years is exempt (Section 4(1)(u) of the Income Tax Act). Gains on taxable lots are netted against losses on taxable lots and taxed at 15%. Value test (letter t): if total proceeds from all securities sales in the year do not exceed CZK 100,000, everything is exempt. If a lot being sold becomes exempt within 60 days and waiting saves at least CZK 10,000, the tool recommends waiting. Since 1 January 2026 the CZK 40m cap on the exemption no longer applies to securities (Act No. 360/2025 Coll.).</li>
+        <li><strong>Taxes for companies (s.r.o.).</strong> No exemption; gains are taxed at 21%, so they rebalance mainly with deposits.</li>
         <li><strong>Taxable lots with a gain are held.</strong> They are sold only when the holding is above target by more than twice its band, and only by that excess – the holding goes back to the edge of the doubled band, not all the way to target. The rest of the overweight is corrected by buying the other holdings and with deposits until the lots become exempt. Paying tens of thousands in tax for a few percentage points isn’t worth it. Withdrawals are the exception: if cash can’t cover them, a taxable lot is sold too.</li>
         <li><strong>Costs.</strong> Broker fee 0.1% of the amount, at least EUR 2 per trade; currency conversion 0.25%. Everything can be changed in the settings above.</li>
       </ol>
       <h3>Assumptions</h3>
       <ul>
         <li>Prices and FX rates from the valuation date also hold on the trade date (the tool does not forecast markets).</li>
-        <li>Purchase costs are converted to CZK at today’s rate (a simplification allowed by the brief). The precise approach would use the CNB rate on the purchase date.</li>
-        <li>Tax of 15% (individuals) and 21% (companies). The CZK 100,000 value test and the CZK 40m exemption cap only count the trades proposed here – the tool does not know about the client’s other sales in the year.</li>
-        <li>The time test is checked on the trade date; the first exempt day is the day after the third anniversary of the purchase, moved to the next business day.</li>
-        <li>Whole units only. Specific lot selection must be supported by the broker’s records; on the sample data it gives the same result as FIFO.</li>
+        <li>Purchase costs are converted at the CNB rate valid on the purchase date (Section 38; on weekends and holidays the last business day’s rate), sale proceeds at the valuation-date rate. Daily rates since 2010 are downloaded directly from the CNB. Where a rate is missing, today’s rate is used (marked * in the lots table).</li>
+        <li>The sale fee is deducted as an expense. Purchase fees are not in the data, so they are not deducted – the tax is, if anything, slightly overstated.</li>
+        <li>The value test only counts the trades proposed here; the tool does not know about the client’s other sales in the year. Sales exempt under the time test are conservatively included in the CZK 100,000 total, because the law doesn’t explicitly exclude them.</li>
+        <li>The time test is checked on the trade date: the first exempt day is the day after the third anniversary of the purchase (for 29 February, after 28 February), moved to the next business day. If the tax office looked at the settlement date (T+2), both purchase and sale shift equally and the result stays the same.</li>
+        <li>Whole units only. Specific lot selection (instead of FIFO) can be switched on in the settings, but it must be supported by the broker’s records.</li>
       </ul>
       <h3>What the tool doesn’t do</h3>
       <ul>
         <li>It doesn’t connect to a broker – holdings, cash and planned flows come from the uploaded Excel file, which has to be kept up to date. ETF prices (Yahoo Finance, with Stooq as a fallback) and CNB rates are fetched automatically every business day in the evening; they are closing prices, not prices at the moment of the trade.</li>
-        <li>It ignores the 23% rate above the income threshold and the client’s other income; company tax is only an estimate of the impact on the tax base.</li>
+        <li>It ignores the 23% rate on the part of the tax base above 36 times the average wage and the client’s other income. For companies the tax is only an estimate of the impact on the tax base (the tool doesn’t handle accounting valuation of securities).</li>
         <li>It can’t verify historical records of positions transferred from another broker – the manager has to.</li>
       </ul>
       <p>The calculation logic lives in a separate file, <a href="engine.js">engine.js</a> (pure functions with no ties to the page), with tests in <a href="test.mjs">test.mjs</a>; reading the Excel file is in <a href="io.js">io.js</a>.</p>
@@ -412,7 +418,7 @@ const PARAMS = [
 // RAW = pozice z Excelu, MARKET = denní ceny a kurzy (market.json), DATA = to, co jde do enginu
 let RAW = null, MARKET = null, MODE = 'brief', MERGE = null, FILE = null;
 let DATA = null, SETTINGS = { ...DEFAULTS }, RES = null, selected = null;
-try { Object.assign(SETTINGS, JSON.parse(localStorage.getItem('rb-settings') || '{}')); } catch (e) {}
+try { Object.assign(SETTINGS, JSON.parse(localStorage.getItem('rb-settings-v2') || '{}')); } catch (e) {}
 
 function applyLang(l) {
   LANG = l;
@@ -421,6 +427,7 @@ function applyLang(l) {
   try { localStorage.setItem('lang', l); } catch (e) {}
   document.querySelectorAll('.lang button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.set === l)));
   document.title = L('Rebalancování portfolií', 'Portfolio Rebalancing');
+  document.querySelectorAll('[data-cs-title]').forEach(e => e.setAttribute('title', e.getAttribute(`data-${l}-title`)));
   if (RAW) { renderSettings(); render(); }
 }
 document.querySelectorAll('.lang button').forEach(b => b.addEventListener('click', () => applyLang(b.dataset.set)));
@@ -428,12 +435,16 @@ applyLang(LANG);
 
 const SAMPLE = fetch('data.json', { cache: 'no-cache' }).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); });
 const MARKET_P = fetch('market.json', { cache: 'no-cache' }).then(r => r.ok ? r.json() : null).catch(() => null);
+// denní kurzy ČNB od roku 2010 – nákupní cena lotu se přepočítá kurzem ze dne nákupu
+const HISTORY_P = fetch('fx_history.json', { cache: 'no-cache' }).then(r => r.ok ? r.json() : null).catch(() => null);
+let FX_HISTORY = null;
 
 // Dva režimy ocenění:
 //  'brief'  = data ze zadání s jejich cenami a kurzy (výstup pro zadání)
 //  'market' = vlastní Excel (pokud je nahraný, jinak data ze zadání) s aktuálními tržními cenami a kurzy
 let SAMPLE_RAW = null, STORED = null;
-Promise.all([SAMPLE, MARKET_P]).then(([sample, market]) => {
+Promise.all([SAMPLE, MARKET_P, HISTORY_P]).then(([sample, market, history]) => {
+  FX_HISTORY = history;
   MARKET = market && market.prices && Object.keys(market.prices).length ? market : null;
   SAMPLE_RAW = fromSheets(sample.sheets);
   try { STORED = JSON.parse(localStorage.getItem('rb-file') || 'null'); } catch (e) {}
@@ -446,7 +457,7 @@ Promise.all([SAMPLE, MARKET_P]).then(([sample, market]) => {
 function setMode(mode) {
   MODE = mode === 'market' && MARKET ? 'market' : 'brief';
   const own = MODE === 'market' && STORED;
-  RAW = own ? fromSheets(STORED.sheets) : SAMPLE_RAW;
+  RAW = { ...(own ? fromSheets(STORED.sheets) : SAMPLE_RAW), fxHistory: FX_HISTORY };
   FILE = own ? STORED.name : null;
   selected = null;
   MERGE = MODE === 'market' ? applyMarket(RAW, MARKET) : null;
@@ -595,7 +606,6 @@ function recoItems(c) {
             `${h.ticker}: don’t sell – the ${pp(h.diff)} drift on the trade date is ${belowEn} (±${nf(h.mult * h.band, 1)} pp) and a sale would hit taxable lots with a gain (tax of about ${czk(h.taxAvoided)}). The overweight is corrected by buying the other holdings.${exTxt}`));
     }
     if (c.plan.reserve > 0) items.push(L(`V hotovosti zůstane rezerva ${czk(c.plan.reserve)} na výběry do ${date(c.plan.reserveFlows.at(-1).date)}.`, `A cash reserve of ${czk(c.plan.reserve)} stays for withdrawals until ${date(c.plan.reserveFlows.at(-1).date)}.`));
-    if (c.plan.tax.overCap) items.push(L('Prodeje překračují strop osvobození 40 mil. Kč – rozložit do více let.', 'Sales exceed the CZK 40m exemption cap – spread them over several years.'));
   }
   for (const f of c.flows.filter(f => f.amount > 0 && (!c.plan || f.date > c.plan.date))) {
     items.push(L(`Plánovaný vklad ${czk(f.amount)} (${date(f.date)}) zainvestovat podle cílových vah při jeho příchodu.`, `Invest the planned ${czk(f.amount)} deposit (${date(f.date)}) at target weights when it arrives.`));
@@ -652,7 +662,7 @@ function renderDetail() {
     if (c.taxRegime !== 'FO') tag = `<span class="tag">${L('daní se vždy', 'always taxed')}</span>`;
     else if (l.exemptNow) tag = `<span class="tag ex">${L('osvobozeno', 'exempt')}</span>`;
     else tag = `<span class="tag soon">${L('od', 'from')} ${date(nextBusinessDay(l.exemptFrom))}</span>`;
-    return `<tr><td>${l.ticker}</td><td>${date(l.date)}</td><td class="r">${nf(l.qty)}</td><td class="r">${czk(l.valueCZK)}</td><td class="r">${czk(l.gainCZK)}</td><td>${tag}</td></tr>`;
+    return `<tr><td>${l.ticker}</td><td>${date(l.date)}</td><td class="r">${nf(l.qty)}</td><td class="r">${nf(l.cost, 2)} ${l.currency}</td><td class="r">${l.currency === 'CZK' ? '–' : `${nf(l.costFx, 3)}${l.costFxDate ? '' : ' *'}`}</td><td class="r">${czk(l.valueCZK)}</td><td class="r">${czk(l.gainCZK)}</td><td>${tag}</td></tr>`;
   }).join('');
 
   // Hotovost a pohyby
@@ -742,18 +752,18 @@ function drawChart(c) {
 function renderSettings() {
   $('settings').innerHTML = PARAMS.map(([k, cs, en, step]) => `<label class="f"><span>${L(cs, en)}</span><input type="number" step="${step}" min="0" data-k="${k}" value="${SETTINGS[k]}"></label>`).join('')
     + `<label class="f"><span>${L('Výběr lotů k prodeji', 'Lot selection')}</span><select data-k="lotMethod">
-        <option value="tax"${SETTINGS.lotMethod === 'tax' ? ' selected' : ''}>${L('daňově nejvýhodnější', 'most tax-efficient')}</option>
-        <option value="fifo"${SETTINGS.lotMethod === 'fifo' ? ' selected' : ''}>${L('FIFO (nejstarší první)', 'FIFO (oldest first)')}</option></select></label>`;
+        <option value="fifo"${SETTINGS.lotMethod === 'fifo' ? ' selected' : ''}>${L('FIFO – nejstarší první (doporučeno)', 'FIFO – oldest first (recommended)')}</option>
+        <option value="tax"${SETTINGS.lotMethod === 'tax' ? ' selected' : ''}>${L('konkrétní loty – daňově nejvýhodnější', 'specific lots – most tax-efficient')}</option></select></label>`;
   $('settings').querySelectorAll('[data-k]').forEach(inp => inp.addEventListener('change', () => {
     const k = inp.dataset.k;
     SETTINGS[k] = inp.tagName === 'SELECT' ? inp.value : (inp.value === '' ? DEFAULTS[k] : +inp.value);
-    try { localStorage.setItem('rb-settings', JSON.stringify(SETTINGS)); } catch (e) {}
+    try { localStorage.setItem('rb-settings-v2', JSON.stringify(SETTINGS)); } catch (e) {}
     render();
   }));
 }
 $('reset').addEventListener('click', () => {
   SETTINGS = { ...DEFAULTS };
-  try { localStorage.removeItem('rb-settings'); } catch (e) {}
+  try { localStorage.removeItem('rb-settings-v2'); } catch (e) {}
   renderSettings(); render();
 });
 let rsz; let lastW = 0;
