@@ -339,6 +339,7 @@
       <div class="tbl-wrap"><table class="num bt-table" id="btCal"></table></div>
       <div class="bt-opt">
         <button type="button" class="lnk bt-run" id="btRun"><span class="cs">Najít historicky nejpřesnější nastavení</span><span class="en">Find the historically most accurate settings</span></button>
+        <button type="button" class="lnk bt-run" id="btReset"><span class="cs">Výchozí nastavení</span><span class="en">Default settings</span></button>
         <span class="muted small" id="btStatus"></span>
       </div>
       <div class="tbl-wrap"><table class="num bt-table" id="btBest" hidden></table></div>
@@ -482,6 +483,7 @@
     }));
     ['w', 'ex', 'n', 'ep', 'shape', 'rh'].forEach(id => $(id).addEventListener('change', update));
     $('btRun').addEventListener('click', runSearch);
+    $('btReset').addEventListener('click', resetDefaults);
     window.addEventListener('hashchange', () => { if (readHash()) { syncChecks(); update(false); } });
 
     $('status').hidden = true;
@@ -1034,6 +1036,13 @@
       renderBest();
     };
     step();
+  }
+  // Vrátí ukazatele i všechna další nastavení na výchozí hodnoty (vybraný kvartál zůstává)
+  function resetDefaults() {
+    sel = new Set(DEFAULT.filter(id => IND[id]));
+    $('w').value = '4'; $('ex').value = '8'; $('n').value = '10'; $('rh').value = '2';
+    $('ep').checked = true; $('shape').checked = false;
+    renderInds(); syncChecks(); update();
   }
   function renderBest() {
     if (!bestRows) return;
