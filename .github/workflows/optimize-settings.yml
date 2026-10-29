@@ -1,0 +1,41 @@
+name: Prohledání nastavení (kvartaly)
+
+# Úplné prohledání nastavení nástroje Podobné kvartály (kombinace ukazatelů × okna ×
+# počty výsledků × epizody) trvá zhruba hodinu, proto běží jednou týdně po aktualizaci dat.
+on:
+  schedule:
+    - cron: "37 7 * * 1"   # pondělí, hodinu po aktualizaci dat
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: optimize-settings
+  cancel-in-progress: true
+
+jobs:
+  search:
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Přeložit vyhledávání
+        run: gcc -O3 -march=native -fopenmp -o search kvartaly/scripts/search.c -lm
+      - name: Prohledat nastavení
+        run: python kvartaly/scripts/search_settings.py ./search
+      - name: Uložit výsledky
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git pull --rebase --autostash origin "${GITHUB_REF_NAME}"
+          git add kvartaly/best.json
+          if git diff --cached --quiet; then
+            echo "Žádná změna."
+          else
+            git commit -m "Aktualizace nejpřesnějších nastavení pro kvartaly"
+            git push
+          fi
