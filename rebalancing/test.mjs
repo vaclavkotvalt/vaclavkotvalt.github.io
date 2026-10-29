@@ -105,3 +105,18 @@ test('tržní ceny přepíšou ceny ze souboru, chybějící zůstanou', async (
   const later = analyze(m.data, { asOf: '2026-11-20' });
   assert.ok(later.clients.find(c => c.id === 'Klient A').warnings.some(w => w.code === 'pastFlows'));
 });
+
+test('daňově šetrné pravidlo: zdanitelné loty jen nad 2× tolerancí, jen přesah', async () => {
+  const { applyMarket } = await import('./io.js');
+  // AVWS na dvojnásobku ceny: u klienta A je nad cílem, ale pod 2× tolerancí → neprodávat
+  const market = { fx: {}, prices: { AVWS: { price: 25.2, currency: 'EUR', date: '2026-10-23' } } };
+  const r = analyze(applyMarket(data, market).data);
+  const a = r.clients.find(c => c.id === 'Klient A');
+  const h = a.plan.heldBack.find(x => x.ticker === 'AVWS');
+  assert.ok(h && h.sold === 0 && h.taxAvoided > 50000);
+  assert.ok(!a.plan.trades.some(t => t.ticker === 'AVWS' && t.side === 'sell'));
+  assert.equal(a.plan.tax.amount, 0);
+  // bez pravidla by se AVWS prodávalo se ziskem a daní
+  const full = analyze(applyMarket(data, market).data, { taxableBandMult: 0 }).clients.find(c => c.id === 'Klient A');
+  assert.ok(full.plan.tax.amount > 50000);
+});

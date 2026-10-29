@@ -21,6 +21,7 @@ export const DEFAULTS = {
   timeTestCap: 40000000,    // strop osvobození příjmů z časového testu FO za rok
   timeTestYears: 3,
   lotMethod: 'tax',      // 'tax' = daňově nejvýhodnější loty, 'fifo' = nejstarší první
+  taxableBandMult: 2,    // zdanitelné loty se ziskem prodávat jen nad 2× pásmem, a to jen ten přesah (0 = vypnuto)
   withdrawalWarnPct: 4,  // varovat, pokud pravidelné výběry přesahují 4 % majetku ročně
 };
 
@@ -145,6 +146,9 @@ function analyzeClient(client, data, ctx) {
 
   const now = nextBusinessDay(addDays(asOf, 1));
   const plan = (date) => planAt(date, { client, lots, held, cash, flows, tickers }, ctx);
+  // plný rebalancing bez daňově šetrného pravidla – pro srovnání s čekáním na osvobození
+  const ctxFull = { ...ctx, S: { ...S, taxableBandMult: 0 } };
+  const planFull = (date) => planAt(date, { client, lots, held, cash, flows, tickers }, ctxFull);
   if (!triggers.length) {
     const nextIn = flows.find(f => f.amount > 0);
     return { ...base, status: 'ok', decision: { date: null, reasons: [{ code: 'inBand' }], nextInflow: nextIn || null }, plan: null, alt: null, altFollow: null };
@@ -172,18 +176,20 @@ function analyzeClient(client, data, ctx) {
   }
   let p = plan(date);
 
-  // 2) Daň: když se prodávané loty brzy osvobodí, porovnat obchod teď a po osvobození
-  let taxSaved = 0;
-  if (p.tax.amount > 0 && client.taxRegime === 'FO') {
-    const soon = p.trades.flatMap(t => t.lots).filter(l => !l.exempt && l.exemptFrom && daysBetween(date, l.exemptFrom) <= S.taxWaitDays);
+  // 2) Daň: když se zdanitelné loty brzy osvobodí, porovnat plný rebalancing teď a po osvobození
+  //    (u zadržených lotů by se jinak teď obchodovalo jen napůl a za pár týdnů znovu)
+  let taxSaved = 0, altFull = null;
+  const pFull = p.heldBack.length ? planFull(date) : p;
+  if (pFull.tax.amount > 0 && client.taxRegime === 'FO') {
+    const soon = pFull.trades.flatMap(t => t.lots).filter(l => !l.exempt && l.exemptFrom && daysBetween(date, l.exemptFrom) <= S.taxWaitDays);
     if (soon.length) {
       const d2 = nextBusinessDay(soon.map(l => l.exemptFrom).sort().at(-1));
       const p2 = plan(d2);
-      const saving = p.tax.amount - p2.tax.amount;
+      const saving = pFull.tax.amount - p2.tax.amount;
       if (saving >= S.minTaxSaving && liquidityOk(state.cashCZK, flows, d2)) {
         reasons.push({ code: 'waitTax', date: d2, saving, days: daysBetween(asOf, d2) });
-        taxSaved = saving; p = p2; date = d2;
-      } else {
+        taxSaved = saving; p = p2; date = d2; altFull = planFull(now);
+      } else if (p.tax.amount > 0) {
         reasons.push({ code: 'taxNotWorthWaiting', date: d2, saving });
       }
     }
@@ -191,12 +197,19 @@ function analyzeClient(client, data, ctx) {
   if (p.tax.amount > 0) reasons.push({ code: 'taxDue', amount: p.tax.amount });
   if (client.taxRegime === 'PO' && p.trades.some(t => t.side === 'sell')) reasons.push({ code: 'poSellTaxable' });
 
-  const status = date > now ? 'wait' : 'act';
+  let status = date > now ? 'wait' : 'act';
+  // Nic k obchodování, protože nadváhu drží jen zdanitelné loty: nechat ležet do jejich osvobození
+  if (!p.trades.length && p.heldBack.length) {
+    const ex = p.heldBack.map(h => h.exemptFrom).filter(Boolean).sort()[0] || null;
+    reasons.push({ code: 'holdTaxable', date: ex });
+    status = ex ? 'wait' : 'ok';
+    date = ex;
+  }
   return {
     ...base, status,
     decision: { date, reasons, taxSaved },
     plan: p,
-    alt: status === 'wait' ? plan(now) : null, // co by stál zásah hned …
+    alt: status === 'wait' && p.trades.length ? (altFull || plan(now)) : null, // co by stál zásah hned …
     altFollow: status === 'wait' ? altFollow : null, // … a druhé kolo po příchodu vkladu
   };
 }
@@ -290,24 +303,63 @@ function planAt(date, cl, ctx) {
   const minTrade = Math.max(S.minTrade, (S.minTradePct / 100) * investable);
   const beforeRows = weightRows(before, client.targets, cl.tickers, reserve, S);
   if (investable <= 0) {
-    return { date, reserve, reserveFlows, investable, error: 'insufficient', trades: [], conversions: [], sold: 0, heldAfter: cl.held, cashAfter: cash0, tax: { amount: 0 }, costs: { fees: 0, fx: 0, tax: 0, total: 0 }, before: beforeRows, after: beforeRows };
+    return { date, reserve, reserveFlows, investable, error: 'insufficient', trades: [], conversions: [], heldBack: [], sold: 0, heldAfter: cl.held, cashAfter: cash0, tax: { amount: 0 }, costs: { fees: 0, fx: 0, tax: 0, total: 0 }, before: beforeRows, after: beforeRows };
   }
 
   const trades = [];
-  // Prodeje
+  // Prodeje. Daňově šetrné pravidlo: lot osvobozený nebo ve ztrátě se prodává volně; zdanitelný lot
+  // se ziskem jen tehdy, když je pozice nad cílem o víc než taxableBandMult × pásmo, a jen o ten přesah.
+  // Zbytek nadváhy se srovná nákupy ostatních složek a vklady.
+  const heldBack = [];
+  const lotsOf = (t) => cl.lots.filter(l => l.ticker === t);
+  const take = (t, q) => takeLots(lotsOf(t), q, date, client.taxRegime, S.lotMethod);
+  const taxableGain = (lots) => sum(lots.filter(l => !l.exempt && l.gainCZK > 0), l => l.gainCZK);
   for (const t of cl.tickers) {
     const delta = tgt(t) - before.values[t];
     if (delta >= 0 || cl.held[t] === 0) continue;
-    const full = (client.targets[t] || 0) === 0;
-    if (!full && -delta < minTrade) continue;
-    const qty = full ? cl.held[t] : Math.min(cl.held[t], Math.round(-delta / inst[t].pCZK));
+    const exit = (client.targets[t] || 0) === 0;
+    if (!exit && -delta < minTrade) continue;
+    let qty = exit ? cl.held[t] : Math.min(cl.held[t], Math.round(-delta / inst[t].pCZK));
     if (qty <= 0) continue;
-    const lots = takeLots(cl.lots.filter(l => l.ticker === t), qty, date, client.taxRegime, S.lotMethod);
-    trades.push({ ticker: t, side: 'sell', qty, lots });
+    if (S.taxableBandMult > 0 && !exit) {
+      let free = 0;
+      for (const l of orderLots(lotsOf(t), date, client.taxRegime, S.lotMethod)) { if (l.exempt || l.gps <= 0) free += l.qty; else break; }
+      const row = beforeRows.find(r => r.key === t);
+      const ceiling = row.target + S.taxableBandMult * row.band; // v % majetku
+      const excess = Math.max(0, Math.ceil((before.values[t] - (ceiling / 100) * investable) / inst[t].pCZK));
+      const cap = Math.min(qty, Math.max(free, excess));
+      if (cap < qty) {
+        heldBack.push({ ticker: t, wanted: qty, qty: qty - cap, diff: row.diff, band: row.band, target: row.target, mult: S.taxableBandMult, ceiling, forLiquidity: 0 });
+        qty = cap * inst[t].pCZK >= minTrade ? cap : 0;
+        heldBack.at(-1).qty = heldBack.at(-1).wanted - qty;
+      }
+    }
+    if (qty > 0) trades.push({ ticker: t, side: 'sell', qty, lots: take(t, qty) });
+  }
+  const netOf = () => sum(trades, tr => tr.qty * inst[tr.ticker].pCZK - fee(tr.qty * inst[tr.ticker].pCZK, ctx));
+  // Výběry mají přednost před daní: když hotovost nepokryje rezervu, prodat i zadržené zdanitelné kusy
+  let shortfall = reserve - (before.cashCZK + netOf());
+  for (const h of [...heldBack].sort((a, b) => b.diff - a.diff)) {
+    if (shortfall <= 0) break;
+    const pz = inst[h.ticker].pCZK;
+    const add = Math.min(h.qty, Math.ceil(shortfall / (pz * (1 - S.feePct / 100))));
+    let tr = trades.find(x => x.ticker === h.ticker && x.side === 'sell');
+    if (!tr) { tr = { ticker: h.ticker, side: 'sell', qty: 0, lots: [] }; trades.push(tr); }
+    tr.qty += add; tr.lots = take(h.ticker, tr.qty);
+    h.qty -= add; h.forLiquidity = add;
+    shortfall = reserve - (before.cashCZK + netOf());
+  }
+  for (const h of heldBack) {
+    const sold = h.wanted - h.qty;
+    h.sold = sold;
+    const rest = take(h.ticker, h.wanted); // loty, které by šly při plném prodeji
+    h.taxAvoided = (taxableGain(take(h.ticker, h.wanted)) - taxableGain(sold > 0 ? take(h.ticker, sold) : [])) * (client.taxRegime === 'PO' ? S.taxPO : S.taxFO) / 100;
+    const ex = rest.filter(l => !l.exempt && l.exemptFrom).map(l => l.exemptFrom).sort();
+    h.exemptFrom = ex.length ? nextBusinessDay(ex[0]) : null;
   }
   // Nákupy: rozpočet = hotovost po prodejích − rezerva − cílová hotovost
   const buyWish = cl.tickers.map(t => [t, tgt(t) - before.values[t]]).filter(([, d]) => d >= minTrade);
-  const sellNet = sum(trades, tr => tr.qty * inst[tr.ticker].pCZK - fee(tr.qty * inst[tr.ticker].pCZK, ctx));
+  const sellNet = netOf();
   const budget = before.cashCZK + sellNet - reserve - tgt('CASH');
   const wish = sum(buyWish, ([, d]) => d);
   const scale = wish > 0 ? Math.min(1, Math.max(0, budget) / wish) : 0;
@@ -346,6 +398,7 @@ function planAt(date, cl, ctx) {
   return {
     date, reserve, reserveFlows, investable,
     trades: finalTrades, conversions: fx.conversions, cashAfter: cash, heldAfter,
+    heldBack: heldBack.filter(h => h.qty > 0 || h.forLiquidity > 0),
     sold: sum(finalTrades.filter(tr => tr.side === 'sell'), tr => tr.valueCZK),
     tax, costs: { fees, fx: fxCost, tax: tax.amount, total: fees + fxCost + tax.amount },
     turnover: sum(finalTrades, tr => tr.valueCZK),

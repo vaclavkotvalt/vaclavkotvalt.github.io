@@ -147,7 +147,6 @@
   }
   .grid2 { display: grid; gap: 0 2rem; grid-template-columns: 1fr; }
   .grid2 > div { min-width: 0; }
-  @media (min-width: 900px) { .grid2 { grid-template-columns: 1fr 1fr; } }
 
   .method { color: var(--muted); }
   .method > div { max-width: 48rem; }
@@ -315,6 +314,7 @@
         <li><strong>Když už obchodovat, tak na cíl.</strong> Při zásahu se portfolio vrací na cílové váhy (ne jen na okraj pásma), počítané z majetku bez rezervy. Obchody pod 20 000 Kč nebo pod 0,5 % majetku se vynechají – jsou to šum, který nestojí za poplatek.</li>
         <li><strong>Nejdřív peněžní toky.</strong> Vklad v příštích 30 dnech: počkat na něj a nakoupit z něj, takže se prodává méně. Výběry se kryjí prodejem toho, čeho je v portfoliu nejvíc navíc.</li>
         <li><strong>Daně.</strong> U fyzických osob se prodávají nejdřív loty osvobozené časovým testem (držené déle než 3 roky), pak ztrátové a nakonec ty s nejmenším ziskem. Když se prodávaný lot do 60 dní osvobodí a čekání ušetří aspoň 10 000 Kč, nástroj doporučí počkat. Pro s.r.o. žádné osvobození neplatí (21 %), proto se rebalancuje hlavně vklady.</li>
+        <li><strong>Zdanitelné loty se ziskem se drží.</strong> Prodávají se jen tehdy, když je pozice nad cílem o víc než dvojnásobek tolerance, a jen o ten přesah – pozice se vrátí na hranici dvojnásobku, ne až na cíl. Zbytek nadváhy se srovná nákupy ostatních složek a vklady, dokud se loty neosvobodí. Platit desítky tisíc na dani kvůli pár procentním bodům se nevyplatí. Výjimkou jsou výběry: když na ně hotovost nestačí, prodá se i zdanitelný lot.</li>
         <li><strong>Náklady.</strong> Poplatek 0,1 % z objemu, minimálně 2 EUR za obchod; konverze měny 0,25 %. Vše se dá změnit v nastavení výše.</li>
       </ol>
       <h3>Předpoklady</h3>
@@ -341,6 +341,7 @@
         <li><strong>If trading, trade to target.</strong> Once triggered, the portfolio goes back to its target weights (not just to the edge of the band), measured on assets net of the reserve. Trades under CZK 20,000 or under 0.5% of assets are skipped – noise that isn’t worth the fee.</li>
         <li><strong>Cash flows first.</strong> A deposit in the next 30 days: wait for it and buy with it, so fewer sales are needed. Withdrawals are funded by selling what is most overweight.</li>
         <li><strong>Taxes.</strong> For individuals, lots exempt under the time test (held over 3 years) are sold first, then lots at a loss, then those with the smallest gain. If a lot being sold becomes exempt within 60 days and waiting saves at least CZK 10,000, the tool recommends waiting. Companies (s.r.o.) get no exemption (21%), so they rebalance mainly with deposits.</li>
+        <li><strong>Taxable lots with a gain are held.</strong> They are sold only when the holding is above target by more than twice its band, and only by that excess – the holding goes back to the edge of the doubled band, not all the way to target. The rest of the overweight is corrected by buying the other holdings and with deposits until the lots become exempt. Paying tens of thousands in tax for a few percentage points isn’t worth it. Withdrawals are the exception: if cash can’t cover them, a taxable lot is sold too.</li>
         <li><strong>Costs.</strong> Broker fee 0.1% of the amount, at least EUR 2 per trade; currency conversion 0.25%. Everything can be changed in the settings above.</li>
       </ol>
       <h3>Assumptions</h3>
@@ -405,6 +406,7 @@ const PARAMS = [
   ['taxFO', 'Daň FO (%)', 'Tax, individuals (%)', 1],
   ['taxPO', 'Daň s.r.o. (%)', 'Tax, companies (%)', 1],
   ['valueTestLimit', 'Hodnotový test FO (Kč)', 'Value test, individuals (CZK)', 1000],
+  ['taxableBandMult', 'Zdanitelné loty prodat až nad (× tolerance, 0 = vždy)', 'Sell taxable lots only beyond (× band, 0 = always)', 0.5],
 ];
 
 // RAW = pozice z Excelu, MARKET = denní ceny a kurzy (market.json), DATA = to, co jde do enginu
@@ -566,6 +568,7 @@ function recoItems(c) {
       case 'inflowNotWorthWaiting': items.push(L(`Na vklad ${czk(r.amount)} (${date(r.date)}) se nečeká: zásah hned a jeho pozdější zainvestování vyjde levněji (${czk(r.costNow + r.costFollow)} proti ${czk(r.costWait)}).`, `No point waiting for the ${czk(r.amount)} deposit (${date(r.date)}): trading now and investing it later is cheaper (${czk(r.costNow + r.costFollow)} vs ${czk(r.costWait)}).`)); break;
       case 'waitTax': items.push(L(`Počkat do ${date(r.date)}: prodávané loty se do té doby osvobodí časovým testem – viz srovnání níže.`, `Wait until ${date(r.date)}: the lots to be sold become exempt under the time test by then – see the comparison below.`)); break;
       case 'taxNotWorthWaiting': items.push(L(`Čekání do ${date(r.date)} by ušetřilo jen ${czk(r.saving)} nebo by nevyšlo na výběry – obchodovat hned.`, `Waiting until ${date(r.date)} would save only ${czk(r.saving)} or would not fit the withdrawals – trade now.`)); break;
+      case 'holdTaxable': items.push(L(`Nic neprodávat: nadváhu tvoří jen zdanitelné loty se ziskem a odchylka je pod dvojnásobkem tolerance. Srovná se nákupy a vklady${r.date ? `, loty se osvobodí od ${date(r.date)}` : ''}.`, `Sell nothing: the overweight consists only of taxable lots with a gain and the drift is below twice the band. It will be corrected with purchases and deposits${r.date ? `; the lots become exempt from ${date(r.date)}` : ''}.`)); break;
       case 'taxDue': items.push(L(`Odhadovaná daň z prodejů: ${czk(r.amount)}.`, `Estimated tax on the sales: ${czk(r.amount)}.`)); break;
       case 'poSellTaxable': items.push(L(`Klient je s.r.o.: každý zisk z prodeje se daní ${S.taxPO} %, osvobození neplatí.`, `The client is a company: every gain on a sale is taxed at ${S.taxPO}%, no exemption applies.`)); break;
     }
@@ -578,6 +581,19 @@ function recoItems(c) {
     if (sells.length) parts.push(L(`prodat ${list(sells)}`, `sell ${list(sells)}`));
     if (buys.length) parts.push(L(`koupit ${list(buys)}`, `buy ${list(buys)}`));
     if (parts.length) items.push(`${when}: ${parts.join(L(' a ', ' and '))}. ${L('Náklady celkem', 'Total cost')} ${czk(c.plan.costs.total)}.`);
+    for (const h of c.plan.heldBack) {
+      const ceil = pct(h.ceiling);
+      const m2 = h.mult === 2, mx = nf(h.mult, 1);
+      const edgeCs = m2 ? 'dvojnásobku tolerance' : `${mx}× tolerance`, edgeEn = m2 ? 'twice the band' : `${mx}× the band`;
+      const belowCs = m2 ? 'pod dvojnásobkem tolerance' : `pod ${mx}× tolerancí`, belowEn = m2 ? 'below twice the band' : `below ${mx}× the band`;
+      const exTxt = h.exemptFrom ? L(` Loty se osvobodí od ${date(h.exemptFrom)}.`, ` The lots become exempt from ${date(h.exemptFrom)}.`) : '';
+      if (h.forLiquidity) items.push(L(`${h.ticker}: kvůli plánovaným výběrům se prodá i ${nf(h.forLiquidity)} ks ze zdanitelných lotů – hotovost by jinak nestačila.`, `${h.ticker}: because of planned withdrawals, ${nf(h.forLiquidity)} units from taxable lots are sold too – cash wouldn’t cover them otherwise.`));
+      if (h.qty > 0) items.push(h.sold > 0
+        ? L(`${h.ticker}: prodat jen ${nf(h.sold)} ks místo ${nf(h.wanted)} – zbytek jsou zdanitelné loty se ziskem. Pozice klesne na hranici ${edgeCs} (${ceil}), ne až na cíl ${pct(h.target, 0)}. Ušetří to přibližně ${czk(h.taxAvoided)} na dani.${exTxt}`,
+            `${h.ticker}: sell only ${nf(h.sold)} units instead of ${nf(h.wanted)} – the rest are taxable lots with a gain. The holding drops to the edge of ${edgeEn} (${ceil}), not all the way to the ${pct(h.target, 0)} target. This saves about ${czk(h.taxAvoided)} in tax.${exTxt}`)
+        : L(`${h.ticker}: neprodávat – odchylka v den obchodu ${pp(h.diff)} je ${belowCs} (±${nf(h.mult * h.band, 1)} p. b.) a prodej by zasáhl zdanitelné loty se ziskem (daň přibližně ${czk(h.taxAvoided)}). Nadváha se srovná nákupy ostatních složek.${exTxt}`,
+            `${h.ticker}: don’t sell – the ${pp(h.diff)} drift on the trade date is ${belowEn} (±${nf(h.mult * h.band, 1)} pp) and a sale would hit taxable lots with a gain (tax of about ${czk(h.taxAvoided)}). The overweight is corrected by buying the other holdings.${exTxt}`));
+    }
     if (c.plan.reserve > 0) items.push(L(`V hotovosti zůstane rezerva ${czk(c.plan.reserve)} na výběry do ${date(c.plan.reserveFlows.at(-1).date)}.`, `A cash reserve of ${czk(c.plan.reserve)} stays for withdrawals until ${date(c.plan.reserveFlows.at(-1).date)}.`));
     if (c.plan.tax.overCap) items.push(L('Prodeje překračují strop osvobození 40 mil. Kč – rozložit do více let.', 'Sales exceed the CZK 40m exemption cap – spread them over several years.'));
   }
