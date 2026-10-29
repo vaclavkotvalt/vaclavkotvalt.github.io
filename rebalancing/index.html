@@ -110,7 +110,7 @@
   .tile .v { font-size: 1.5rem; font-weight: 500; line-height: 1.2; }
   .tile .k { font-size: 0.8rem; color: var(--muted); }
 
-  .tbl-wrap { overflow-x: auto; }
+  .tbl-wrap { overflow-x: auto; overflow-y: hidden; }
   table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
   th, td { text-align: left; padding: 0.55rem 0.6rem; border-bottom: 1px solid var(--line); white-space: nowrap; vertical-align: top; }
   th { color: var(--muted); font-weight: 500; font-size: 0.8rem; }
@@ -171,7 +171,10 @@
   .js .reveal { opacity: 0; transform: translateY(18px); }
   .js .reveal.in { opacity: 1; transform: none; transition: opacity 0.7s ease, transform 0.8s cubic-bezier(0.2, 0.7, 0.2, 1); transition-delay: var(--d, 0ms); }
   @keyframes riseIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
-  .intro .reveal.in .tile, .intro .reveal.in #cRows tr { animation: riseIn 0.5s ease both; animation-delay: calc(var(--d, 0ms) + 250ms + var(--i, 0) * 70ms); }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  .intro .reveal.in .tile { animation: riseIn 0.5s ease both; animation-delay: calc(var(--d, 0ms) + 250ms + var(--i, 0) * 70ms); }
+  /* řádky tabulky jen zprůhlednit – posun by v rolovacím obalu tabulky na chvíli ukázal posuvník */
+  .intro .reveal.in #cRows tr { animation: fadeIn 0.5s ease both; animation-delay: calc(var(--d, 0ms) + 250ms + var(--i, 0) * 70ms); }
   @media (prefers-reduced-motion: reduce) {
     .js .reveal { opacity: 1; transform: none; }
     .js .reveal.in { transition: none; }
@@ -497,12 +500,13 @@ Promise.all([SAMPLE, MARKET_P, HISTORY_P]).then(([sample, market, history]) => {
 }).catch(() => { $('status').textContent = L('Data se nepodařilo načíst.', 'Could not load the data.'); });
 
 function setMode(mode) {
-  MODE = mode === 'market' && MARKET ? 'market' : 'brief';
+  // vlastní Excel jde použít i bez tržních dat (pak s cenami ze souboru, pokud je obsahuje)
+  MODE = mode === 'market' && (MARKET || STORED) ? 'market' : 'brief';
   const own = MODE === 'market' && STORED;
   RAW = { ...(own ? fromSheets(STORED.sheets) : SAMPLE_RAW), fxHistory: FX_HISTORY };
   FILE = own ? STORED.name : null;
   selected = null;
-  MERGE = MODE === 'market' ? applyMarket(RAW, MARKET) : null;
+  MERGE = MODE === 'market' && MARKET ? applyMarket(RAW, MARKET) : null;
   DATA = MERGE ? MERGE.data : RAW;
   render();
 }
@@ -567,7 +571,7 @@ function issueText(i) {
     case 'targetsSum': return L(`${i.client}: cílové váhy dávají ${nf(i.sum, 1)} %, ne 100 %`, `${clientName(i.client)}: targets sum to ${nf(i.sum, 1)}%, not 100%`);
     case 'unknownTicker': return L(`${i.client}: neznámý ticker ${i.ticker}`, `${clientName(i.client)}: unknown ticker ${i.ticker}`);
     case 'missingFx': return L(`chybí kurz ${i.currency}`, `missing FX rate for ${i.currency}`);
-    case 'badPrice': return L(`chybí cena ${i.ticker}`, `missing price for ${i.ticker}`);
+    case 'badPrice': return L(`${i.ticker}: chybí cena a pro tento ticker nejsou tržní data – doplňte cenu a měnu do listu Instrumenty`, `${i.ticker}: no price and no market data for this ticker – add the price and currency to the Instrumenty sheet`);
     case 'unknownClient': return L(`pozice neznámého klienta ${i.client}`, `holdings of unknown client ${i.client}`);
     case 'badLot': return L(`${i.client}: neplatná pozice ${i.ticker}`, `${clientName(i.client)}: invalid lot ${i.ticker}`);
     case 'badFlow': return L(`${i.client}: neplatný pohyb hotovosti`, `${clientName(i.client)}: invalid cash flow`);

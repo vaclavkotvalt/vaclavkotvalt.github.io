@@ -64,7 +64,7 @@ export function validate(data) {
   const issues = [];
   const tickers = new Set(data.instruments.map(i => i.ticker));
   for (const i of data.instruments) {
-    if (!(i.price > 0)) issues.push({ code: 'badPrice', ticker: i.ticker });
+    if (!(i.price > 0) || !i.currency) { issues.push({ code: 'badPrice', ticker: i.ticker }); continue; }
     if (!(data.fx[i.currency] > 0)) issues.push({ code: 'missingFx', currency: i.currency });
   }
   const ids = new Set(data.clients.map(c => c.id));

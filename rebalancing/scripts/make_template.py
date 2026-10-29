@@ -47,16 +47,15 @@ def main():
     readme.title = "Čti mě"
     lines = [
         ("Šablona pro nástroj Rebalancování portfolií", Font(bold=True, size=14)),
-        ("Ocenění k datu: " + dt.date.today().strftime("%-d. %-m. %Y"), Font(bold=True)),
         ("", None),
         ("Jak vyplnit", Font(bold=True)),
         ("1. Šedé kurzívou psané řádky jsou vzor – přepište je vlastními údaji nebo smažte.", None),
         ("2. Názvy listů a záhlaví sloupců neměňte, nástroj podle nich data čte.", None),
-        ("3. Instrumenty: všechny ETF, které klienti drží nebo mají v cílech. Ceny a kurzy se při tržním ocenění doplní automaticky, vyplněné ale být musí (stačí poslední známé).", None),
+        ("3. Ceny ETF, kurzy měn ani datum ocenění se nevyplňují – nástroj je stáhne automaticky (závěrečné ceny ETF a kurzy ČNB z posledního obchodního dne). List Instrumenty je jen přehled; cenu a měnu do něj doplňte jen u ETF, pro které tržní data nejsou.", None),
         ("4. Klienti: cílové váhy v % celkového majetku včetně hotovosti, součet musí být 100. Daňový režim FO = fyzická osoba, s.r.o. = právnická osoba.", None),
         ("5. Pozice: každý nákup zvlášť (kvůli časovému testu a FIFO) – datum nákupu, počet kusů a cena v měně instrumentu.", None),
         ("6. Hotovost: zůstatky podle měny. Cash flow: plánované vklady (kladné) a výběry (záporné) v CZK.", None),
-        ("7. Řádek „Ocenění k datu“ výše je datum, ke kterému platí pozice a hotovost. Při tržním ocenění se ceny vezmou k poslednímu obchodnímu dni.", None),
+        ("7. Pozice a hotovost vyplňte podle aktuálního výpisu od brokera. Vklady a výběry, které už proběhly, patří do hotovosti, ne do Cash flow.", None),
         ("", None),
         ("Soubor se nikam neodesílá – zpracuje se jen ve vašem prohlížeči.", Font(italic=True, color="55667E")),
     ]
@@ -70,13 +69,13 @@ def main():
 
     sheet(wb, "Instrumenty",
           ["Ticker", "Název", "ISIN", "Měna", "Třída aktiv", "Cena (v měně instrumentu)"],
-          [["VWCE", "Vanguard FTSE All-World UCITS ETF (Acc)", "IE00BK5BQT80", "EUR", "Akcie (globální)", 142.5],
-           ["AVWS", "Avantis Global Small Cap Value UCITS ETF (Acc)", "IE0003R87OG3", "EUR", "Akcie (small cap value)", 12.6],
-           ["EUNA", "iShares Core Global Aggregate Bond UCITS ETF EUR Hedged (Acc)", "IE00BDBRDM35", "EUR", "Dluhopisy", 4.62],
-           ["IGLN", "iShares Physical Gold ETC", "IE00B4ND3602", "USD", "Zlato", 78.4]],
+          [["VWCE", "Vanguard FTSE All-World UCITS ETF (Acc)", "IE00BK5BQT80", "EUR", "Akcie (globální)", None],
+           ["AVWS", "Avantis Global Small Cap Value UCITS ETF (Acc)", "IE0003R87OG3", "EUR", "Akcie (small cap value)", None],
+           ["EUNA", "iShares Core Global Aggregate Bond UCITS ETF EUR Hedged (Acc)", "IE00BDBRDM35", "EUR", "Dluhopisy", None],
+           ["IGLN", "iShares Physical Gold ETC", "IE00B4ND3602", "USD", "Zlato", None]],
           [10, 58, 16, 8, 24, 16],
-          {"A": "Ticker musí odpovídat sloupcům „Cíl … %“ v listu Klienti. Denní tržní ceny se stahují pro VWCE, AVWS, EUNA a IGLN."})
-    sheet(wb, "Kurzy", ["Měnový pár", "Kurz (CZK za 1 jednotku)"], [["EUR/CZK", 24.3], ["USD/CZK", 21.0]], [14, 24])
+          {"A": "Ticker musí odpovídat sloupcům „Cíl … %“ v listu Klienti. Denní tržní ceny se stahují pro VWCE, AVWS, EUNA a IGLN.",
+           "F": "Nevyplňuje se – cena se stáhne automaticky. Vyplňte jen u ETF, pro které tržní data nejsou (spolu se sloupcem Měna)."})
     ws = sheet(wb, "Klienti",
                ["Klient", "Profil", "Daňový režim", "Cíl VWCE %", "Cíl AVWS %", "Cíl EUNA %", "Cíl IGLN %", "Cíl hotovost %", "Poznámka"],
                [["Klient 1", "Růstový, horizont 15+ let", "FO", 60, 20, 20, 0, 0, "Vzorový řádek"]],

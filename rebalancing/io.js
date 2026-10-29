@@ -10,19 +10,26 @@ function sheet(sheets, name) {
   return sheets[key];
 }
 
-// Řádky listu jako objekty podle hlavičky; sloupce hledá podle začátku názvu
+const hasSheet = (sheets, name) => Object.keys(sheets).some(k => norm(k) === norm(name));
+
+// Řádky listu jako objekty podle hlavičky; sloupce hledá podle začátku názvu.
+// Sloupec s „?“ na začátku je nepovinný (chybí-li, hodnota je null).
 function table(sheets, name, cols) {
-  const [head, ...rows] = sheet(sheets, name);
+  const [head = [], ...rows] = sheet(sheets, name);
   const idx = {};
-  for (const [key, prefix] of Object.entries(cols)) {
+  for (const [key, spec] of Object.entries(cols)) {
+    const optional = spec.startsWith('?'), prefix = spec.replace(/^\?/, '');
     const i = head.findIndex(h => norm(h).startsWith(norm(prefix)));
-    if (i < 0) throw new Error(`List „${name}“: chybí sloupec „${prefix}“ / Sheet "${name}": missing column "${prefix}"`);
+    if (i < 0 && !optional) throw new Error(`List „${name}“: chybí sloupec „${prefix}“ / Sheet "${name}": missing column "${prefix}"`);
     idx[key] = i;
   }
+  const first = idx[Object.keys(cols)[0]];
   return rows
-    .filter(r => r[idx[Object.keys(cols)[0]]] != null && r[idx[Object.keys(cols)[0]]] !== '')
-    .map(r => Object.fromEntries(Object.entries(idx).map(([k, i]) => [k, r[i]])));
+    .filter(r => r[first] != null && r[first] !== '')
+    .map(r => Object.fromEntries(Object.entries(idx).map(([k, i]) => [k, i < 0 ? null : r[i]])));
 }
+
+const blank = (v) => v == null || String(v).trim() === '';
 
 export function isoDate(v) {
   if (v instanceof Date) return new Date(Date.UTC(v.getFullYear(), v.getMonth(), v.getDate())).toISOString().slice(0, 10);
@@ -47,11 +54,17 @@ export function fromSheets(sheets) {
     }
   } catch (e) { /* list je nepovinný */ }
 
-  const instruments = table(sheets, 'Instrumenty', { ticker: 'Ticker', name: 'Název', currency: 'Měna', assetClass: 'Třída', price: 'Cena' })
-    .map(r => ({ ticker: String(r.ticker).trim(), name: r.name, currency: String(r.currency).trim().toUpperCase(), assetClass: r.assetClass, price: num(r.price) }));
+  // Ceny, měny a kurzy jsou nepovinné – při tržním ocenění je doplní applyMarket z denních dat
+  const instruments = hasSheet(sheets, 'Instrumenty')
+    ? table(sheets, 'Instrumenty', { ticker: 'Ticker', name: '?Název', currency: '?Měna', assetClass: '?Třída', price: '?Cena' })
+      .map(r => ({ ticker: String(r.ticker).trim(), name: r.name ?? '', assetClass: r.assetClass ?? '',
+        currency: blank(r.currency) ? null : String(r.currency).trim().toUpperCase(), price: blank(r.price) ? null : num(r.price) }))
+    : [];
 
   const fx = { CZK: 1 };
-  for (const r of table(sheets, 'Kurzy', { pair: 'Měnový', rate: 'Kurz' })) fx[String(r.pair).split('/')[0].trim().toUpperCase()] = num(r.rate);
+  if (hasSheet(sheets, 'Kurzy')) {
+    for (const r of table(sheets, 'Kurzy', { pair: 'Měnový', rate: '?Kurz' })) if (!blank(r.rate)) fx[String(r.pair).split('/')[0].trim().toUpperCase()] = num(r.rate);
+  }
 
   // Cílové váhy: sloupce „Cíl XXX %“, hotovost jako CASH
   const [kHead, ...kRows] = sheet(sheets, 'Klienti');
@@ -75,6 +88,11 @@ export function fromSheets(sheets) {
   const flows = table(sheets, 'Cash flow', { client: 'Klient', date: 'Datum', amount: 'Částka', note: 'Poznámka' })
     .map(r => ({ client: String(r.client).trim(), date: isoDate(r.date), amount: num(r.amount), note: r.note ?? '' }));
 
+  // Tickery z cílů a pozic, které nejsou v listu Instrumenty, se doplní bez ceny (vezme se z trhu)
+  const known = new Set(instruments.map(i => i.ticker));
+  const used = [...clients.flatMap(c => Object.keys(c.targets).filter(t => t !== 'CASH')), ...lots.map(l => l.ticker)];
+  for (const t of used) if (!known.has(t)) { known.add(t); instruments.push({ ticker: t, name: '', assetClass: '', currency: null, price: null }); }
+
   return { asOf, fx, instruments, clients, lots, cash, flows };
 }
 
@@ -83,11 +101,15 @@ export function fromSheets(sheets) {
 export function applyMarket(data, market) {
   const fx = { ...data.fx }, applied = [], kept = [], dates = [];
   for (const [code, v] of Object.entries(market.fx || {})) {
-    if (code in fx && v.rate > 0) { fx[code] = v.rate; dates.push(v.date); }
+    if (v.rate > 0) { fx[code] = v.rate; dates.push(v.date); }
   }
   const instruments = data.instruments.map(i => {
     const m = (market.prices || {})[i.ticker];
-    if (m && m.price > 0 && m.currency === i.currency) { applied.push(i.ticker); dates.push(m.date); return { ...i, price: m.price, priceDate: m.date, priceSource: m.source }; }
+    // měna ze souboru musí sedět s tržní kotací; když v souboru chybí, převezme se z trhu
+    if (m && m.price > 0 && (!i.currency || m.currency === i.currency)) {
+      applied.push(i.ticker); dates.push(m.date);
+      return { ...i, currency: m.currency, price: m.price, priceDate: m.date, priceSource: m.source };
+    }
     kept.push(i.ticker); return i;
   });
   const asOf = dates.sort().at(-1) || data.asOf;

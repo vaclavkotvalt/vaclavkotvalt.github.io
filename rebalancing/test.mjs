@@ -145,3 +145,22 @@ test('nákupní cena kurzem ČNB ke dni nákupu, poplatek z prodeje jako výdaj,
   assert.deepEqual(alt.map(l => [l.date, l.qty, l.exempt]), [['2020-01-13', 180, true], ['2023-11-20', 620, false]]);
   near(e.alt.tax.amount, 0.15 * (620 * (142.5 * 24.3 - 98.7 * 24.545) - 0.001 * 800 * 142.5 * 24.3 * 620 / 800), 1);
 });
+
+test('Excel bez cen, kurzů a data ocenění: doplní se z tržních dat', async () => {
+  const { applyMarket } = await import('./io.js');
+  // listy bez „Kurzy“, „Čti mě“ a bez cen v „Instrumenty“
+  const sheets = Object.fromEntries(Object.entries(raw.sheets).filter(([k]) => !['Kurzy', 'Čti mě'].includes(k)));
+  sheets.Instrumenty = sheets.Instrumenty.map((r, i) => i === 0 ? r : [...r.slice(0, 5), null]);
+  const d = fromSheets(sheets);
+  assert.equal(d.asOf, null);
+  assert.deepEqual(d.fx, { CZK: 1 });
+  assert.ok(analyze(d).issues.some(x => x.code === 'badPrice'));
+  const market = { fx: { EUR: { rate: 24.3, date: '2026-10-23' }, USD: { rate: 21, date: '2026-10-23' } },
+    prices: { VWCE: { price: 142.5, currency: 'EUR', date: '2026-10-23' }, AVWS: { price: 12.6, currency: 'EUR', date: '2026-10-23' },
+      EUNA: { price: 4.62, currency: 'EUR', date: '2026-10-23' }, IGLN: { price: 78.4, currency: 'USD', date: '2026-10-23' } } };
+  const r = analyze(applyMarket(d, market).data);
+  assert.deepEqual(r.issues, []);
+  assert.equal(r.asOf, '2026-10-23');
+  // stejné ceny jako v zadání → stejné výsledky
+  assert.deepEqual(r.clients.map(c => c.status), res.clients.map(c => c.status));
+});
