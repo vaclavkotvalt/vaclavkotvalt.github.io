@@ -122,6 +122,10 @@
   .snap .k { font-size: 0.8rem; color: var(--muted); }
 
   .bt-table { margin-top: 1rem; }
+  .bt-part { border-top: 1px solid var(--line); margin-top: 1.5rem; padding-top: 1.25rem; }
+  .bt-part h3 { font-size: 1.1rem; font-weight: 500; margin: 0 0 0.25rem; }
+  .bt-best h4 { font-size: 0.95rem; font-weight: 500; margin: 1.25rem 0 0; }
+  .bt-ids { display: block; color: var(--muted); font-size: 0.8rem; margin-top: 0.15rem; }
   .bt-table td { white-space: normal; }
   .bt-opt { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem; margin-top: 1.25rem; }
   button.bt-run { font-size: 0.95rem; padding: 0.45rem 1rem; color: var(--text); border-color: var(--muted); }
@@ -332,18 +336,37 @@
 
     <section class="panel" id="btSec" aria-labelledby="btH">
       <h2 id="btH"><span class="cs">Spolehlivost nastavení</span><span class="en">Reliability of the settings</span></h2>
-      <p class="muted small"><span class="cs">Zpětný test: pro každý kvartál v historii nástroj s aktuálním nastavením najde podobné kvartály – ale jen mezi těmi, u kterých už tehdy bylo známo, co po nich následovalo (žádný pohled do budoucnosti). Podíl analogů, po kterých přišla recese, bere jako odhad pravděpodobnosti recese a porovná ho s tím, co se opravdu stalo.</span><span class="en">Backtest: for every quarter in history the tool finds similar quarters with the current settings – but only among quarters whose aftermath was already known at that time (no look-ahead). The share of analogues followed by a recession is taken as the estimated recession probability and compared with what actually happened.</span></p>
-      <div class="summary num" id="btTiles"></div>
-      <div class="chart" id="btChart"></div>
-      <div class="legend" id="btLegend"></div>
-      <div class="tbl-wrap"><table class="num bt-table" id="btCal"></table></div>
-      <div class="bt-opt">
-        <button type="button" class="lnk bt-run" id="btRun"><span class="cs">Najít historicky nejpřesnější nastavení</span><span class="en">Find the historically most accurate settings</span></button>
-        <button type="button" class="lnk bt-run" id="btReset"><span class="cs">Výchozí nastavení</span><span class="en">Default settings</span></button>
-        <span class="muted small" id="btStatus"></span>
+      <p class="muted small"><span class="cs">Zpětný test: pro každý kvartál v historii nástroj s aktuálním nastavením najde podobné kvartály a podíl těch, po kterých přišla recese, bere jako odhad pravděpodobnosti recese. Ten pak porovná s tím, co se opravdu stalo.</span><span class="en">Backtest: for every quarter in history the tool finds similar quarters with the current settings and takes the share of those followed by a recession as the estimated recession probability, then compares it with what actually happened.</span></p>
+
+      <div class="bt-part" data-mode="hist">
+        <h3><span class="cs">Historicky – jen data dostupná v daném okamžiku</span><span class="en">Historically – only data available at the time</span></h3>
+        <p class="muted small"><span class="cs">Analogy se hledají jen mezi kvartály, u kterých už tehdy bylo známo, co po nich následovalo. Žádný pohled do budoucnosti – takhle by nástroj fungoval, kdyby ho někdo používal v reálném čase.</span><span class="en">Analogues are searched only among quarters whose aftermath was already known at the time. No look-ahead – this is how the tool would have worked if used in real time.</span></p>
+        <div class="summary num bt-tiles"></div>
+        <div class="chart bt-chart"></div>
+        <div class="legend bt-legend"></div>
+        <div class="tbl-wrap"><table class="num bt-table bt-cal"></table></div>
       </div>
-      <div class="tbl-wrap"><table class="num bt-table" id="btBest" hidden></table></div>
-      <p class="muted small" id="btNote" hidden><span class="cs">Pozor: nejlepší nastavení je vybrané na stejných datech, na kterých se hodnotí, takže do budoucna bude jeho spolehlivost spíš nižší. Recesí bylo od roku 1947 jen <span class="recN"></span>, výsledky proto berte jako orientační.</span><span class="en">Note: the best settings are chosen on the same data they are scored on, so their future reliability will likely be lower. There have been only <span class="recN"></span> recessions since 1947, so treat the results as indicative.</span></p>
+
+      <div class="bt-part" data-mode="gen">
+        <h3><span class="cs">Obecně – včetně pozdějších dat</span><span class="en">In general – including later data</span></h3>
+        <p class="muted small"><span class="cs">Analogy se hledají v celé historii, tedy i mezi kvartály, které přišly až později (vyloučené je jen okolí vybraného kvartálu). Ukazuje, jak dobře srovnání funguje, když se může „naučit“ ze všech dostupných dat – výsledek je proto optimističtější než historický.</span><span class="en">Analogues are searched across the whole history, including quarters that came later (only the neighbourhood of the quarter is excluded). It shows how well the comparison works when it can “learn” from all available data, so the result is more optimistic than the historical one.</span></p>
+        <div class="summary num bt-tiles"></div>
+        <div class="chart bt-chart"></div>
+        <div class="legend bt-legend"></div>
+        <div class="tbl-wrap"><table class="num bt-table bt-cal"></table></div>
+      </div>
+
+      <div class="bt-part">
+        <h3><span class="cs">Nejpřesnější nastavení</span><span class="en">Most accurate settings</span></h3>
+        <p class="muted small" id="btSearchInfo"></p>
+        <div class="bt-opt">
+          <button type="button" class="lnk bt-run" id="btRun"><span class="cs">Najít historicky nejpřesnější nastavení</span><span class="en">Find the historically most accurate settings</span></button>
+          <button type="button" class="lnk bt-run" id="btReset"><span class="cs">Výchozí nastavení</span><span class="en">Default settings</span></button>
+          <span class="muted small" id="btStatus"></span>
+        </div>
+        <div id="btBest" hidden></div>
+        <p class="muted small" id="btNote" hidden><span class="cs">Pozor: z tolika nastavení vždy některé vyjde dobře i náhodou a nejlepší je vybrané na stejných datech, na kterých se hodnotí. Do budoucna bude jeho spolehlivost téměř jistě nižší. Recesí bylo od roku 1947 jen <span class="recN"></span>, výsledky proto berte jako orientační.</span><span class="en">Note: out of so many settings some will always score well by chance, and the best ones are chosen on the same data they are scored on. Their future reliability will almost certainly be lower. There have been only <span class="recN"></span> recessions since 1947, so treat the results as indicative.</span></p>
+      </div>
     </section>
 
     <section class="method cs" aria-labelledby="mH">
@@ -412,6 +435,8 @@
 
   let D, IND = {}, Z = {}, T = 0, sel = new Set(DEFAULT), lastScores = null, analog = null;
 
+  let BEST = null;   // výsledky úplného prohledání (kvartaly/best.json), nepovinné
+  fetch('best.json', { cache: 'no-cache' }).then(r => r.ok ? r.json() : null).then(b => { BEST = b; if (D) renderSearchInfo(); }).catch(() => {});
   fetch('data.json', { cache: 'no-cache' })
     .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
     .then(init)
@@ -428,7 +453,7 @@
     document.querySelectorAll('[data-cs][data-en]').forEach(e => { e.textContent = e.dataset[l]; });
     document.querySelectorAll('[data-cs-label]').forEach(e => e.setAttribute('aria-label', e.getAttribute(`data-${l}-label`)));
     document.querySelectorAll('[data-cs-title]').forEach(e => e.setAttribute('title', e.getAttribute(`data-${l}-title`)));
-    if (D) { renderInds(); syncChecks(); setSrcNote(); update(false); renderBest(); }
+    if (D) { renderInds(); syncChecks(); setSrcNote(); update(false); renderSearchInfo(); }
   }
   document.querySelectorAll('.lang button').forEach(b => b.addEventListener('click', () => applyLang(b.dataset.set)));
   applyLang(LANG);
@@ -482,7 +507,8 @@
       syncChecks(); update();
     }));
     ['w', 'ex', 'n', 'ep', 'shape', 'rh'].forEach(id => $(id).addEventListener('change', update));
-    $('btRun').addEventListener('click', runSearch);
+    $('btRun').addEventListener('click', renderBest);
+    renderSearchInfo();
     $('btReset').addEventListener('click', resetDefaults);
     window.addEventListener('hashchange', () => { if (readHash()) { syncChecks(); update(false); } });
 
@@ -801,7 +827,7 @@
   let resizeT;
   window.addEventListener('resize', () => {
     clearTimeout(resizeT);
-    resizeT = setTimeout(() => { if (lastScores) { renderSp(); renderTimeline(); if (lastBt) renderBtChart(lastBt); } }, 150);
+    resizeT = setTimeout(() => { if (lastScores) { renderSp(); renderTimeline(); if (lastBt) MODES.forEach(mode => renderBtChart(lastBt[mode], part(mode).querySelector('.bt-chart'))); } }, 150);
   });
 
   // Tržní grafy přes celou historii (S&P 500 log. osa, výnos 10Y lineárně) s tečkami u nejpodobnějších kvartálů
@@ -879,8 +905,11 @@
   }
 
   // ---------- Zpětný test spolehlivosti nastavení ----------
-  // Pro každý kvartál t: analogy jen z kvartálů c, u kterých bylo v čase t známo, co následovalo (c + H <= t).
-  // Odhad = podíl analogů s recesí do H kvartálů; porovná se se skutečností po t.
+  // Pro každý kvartál t se najdou analogy a odhad = podíl analogů s recesí do H kvartálů; porovná se se skutečností po t.
+  //   hist: analogy jen z kvartálů c, u kterých bylo v čase t známo, co následovalo (c + H <= t),
+  //   gen:  analogy z celé historie včetně pozdějších kvartálů (kromě okolí ±ex).
+  // Stejný výpočet dělá kvartaly/scripts/search.c pro úplné prohledání nastavení.
+  const MODES = ['hist', 'gen'];
   let lastBt = null, btTimer = null;
   const curConfig = () => ({
     ids: [...sel], W: +$('w').value, shape: $('shape').checked && +$('w').value > 1,
@@ -888,14 +917,18 @@
   });
   function scheduleBacktest() {
     clearTimeout(btTimer);
-    btTimer = setTimeout(() => { lastBt = backtest(curConfig()); renderBt(lastBt); }, 60);
+    btTimer = setTimeout(() => {
+      const cfg = curConfig();
+      lastBt = Object.fromEntries(MODES.map(mode => [mode, backtest(cfg, mode)]));
+      MODES.forEach(mode => renderBt(lastBt[mode], mode));
+    }, 60);
   }
   function recWithin(c, H) {
     if (c + H >= T) return null;
     for (let k = 1; k <= H; k++) if (D.recession[c + k]) return 1;
     return 0;
   }
-  function backtest(cfg) {
+  function backtest(cfg, mode) {
     const { ids, W, shape, N, ep, ex, H } = cfg;
     const V = [], avail = [];
     for (let t = 0; t < T; t++) {
@@ -907,15 +940,16 @@
       const actual = recWithin(t, H);
       if (actual == null || !avail[t]) continue;
       const tv = V[t], need = Math.max(1, 0.6 * avail[t]), cands = [];
-      for (let c = W - 1; c + H <= t; c++) {
-        if (Math.abs(c - t) <= ex) continue;
+      const last = mode === 'hist' ? t - H : T - 1;
+      for (let c = W - 1; c <= last; c++) {
+        if (Math.abs(c - t) <= ex || (mode === 'gen' && recWithin(c, H) == null)) continue;
         const cv = V[c];
         let s = 0, n = 0;
         for (let j = 0; j < tv.length; j++) { const a = tv[j], b = cv[j]; if (a === a && b === b) { s += (a - b) * (a - b); n++; } }
         if (n >= need) cands.push([s / n, c]);
       }
       if (cands.length < N) continue;
-      cands.sort((a, b) => a[0] - b[0]);
+      cands.sort((a, b) => a[0] - b[0] || a[1] - b[1]);
       const picked = [];
       for (const [, c] of cands) {
         if (picked.length >= N) break;
@@ -926,7 +960,7 @@
       const p = picked.reduce((a, c) => a + recWithin(c, H), 0) / picked.length;
       out.push({ t, p, a: actual });
     }
-    return { cfg, rows: out, m: btMetrics(out) };
+    return { cfg, mode, rows: out, m: btMetrics(out) };
   }
   function btMetrics(rows) {
     const n = rows.length;
@@ -936,38 +970,41 @@
     const ref = rows.reduce((s, r) => s + (base - r.a) ** 2, 0) / n;
     let tp = 0, fp = 0, tn = 0, fn = 0;
     for (const r of rows) { const yes = r.p >= 0.5; if (yes && r.a) tp++; else if (yes) fp++; else if (r.a) fn++; else tn++; }
-    const zero = rows.filter(r => r.p === 0), all = rows.filter(r => r.p === 1);
+    const zero = rows.filter(r => r.p === 0);
     return {
       n, base, brier, bss: ref > 0 ? 1 - brier / ref : 0,
-      acc: (tp + tn) / n, prec: tp + fp ? tp / (tp + fp) : null, rec: tp + fn ? tp / (tp + fn) : null, tp, fp, fn,
-      zeroN: zero.length, zeroOk: zero.filter(r => !r.a).length, allN: all.length, allOk: all.filter(r => r.a).length,
-      from: rows[0].t,
+      acc: (tp + tn) / n, prec: tp + fp ? tp / (tp + fp) : null, tp, fp, fn,
+      zeroN: zero.length, zeroOk: zero.filter(r => !r.a).length, from: rows[0].t,
     };
   }
   const pct0 = (x) => x == null ? '–' : fmt(100 * x, 0) + PCT();
-  function renderBt(bt) {
-    const m = bt.m, H = bt.cfg.H, yrs = recLabel(H / 4);
-    if (!m) {
-      $('btTiles').innerHTML = `<p class="muted small">${L('S tímto nastavením nejde zpětný test spočítat (málo srovnatelných kvartálů).', 'The backtest cannot be computed with these settings (too few comparable quarters).')}</p>`;
-      $('btChart').innerHTML = ''; $('btCal').innerHTML = ''; $('btLegend').innerHTML = '';
-      return;
-    }
-    $('btTiles').innerHTML = `
+  const part = (mode) => document.querySelector(`.bt-part[data-mode="${mode}"]`);
+  function btTilesHtml(m, yrs) {
+    return `
       <div class="tile"><div class="v">${pct0(m.acc)}</div><div class="k">${L(`správných odhadů „recese do ${yrs}: ano/ne“ (hranice 50 %), ${m.n} kvartálů od ${ql(D.quarters[m.from])}; tip „${m.base < 0.5 ? 'nikdy' : 'vždy'} recese“ by trefil ${pct0(Math.max(m.base, 1 - m.base))}`, `correct “recession within ${yrs}: yes/no” calls (50% threshold), ${m.n} quarters since ${ql(D.quarters[m.from])}; always guessing “${m.base < 0.5 ? 'no' : 'yes'}” would score ${pct0(Math.max(m.base, 1 - m.base))}`)}</div></div>
       <div class="tile"><div class="v">${pct0(m.prec)}</div><div class="k">${L(`když většina analogů měla recesi, recese do ${yrs} opravdu přišla (${m.tp} z ${m.tp + m.fp})`, `when most analogues had a recession, one really came within ${yrs} (${m.tp} of ${m.tp + m.fp})`)}</div></div>
       <div class="tile"><div class="v">${m.zeroN ? pct0(m.zeroOk / m.zeroN) : '–'}</div><div class="k">${L(`když žádný z analogů recesi neměl, opravdu nepřišla (${m.zeroOk} z ${m.zeroN})`, `when none of the analogues had a recession, none came (${m.zeroOk} of ${m.zeroN})`)}</div></div>
       <div class="tile"><div class="v">${sgn(100 * m.bss, 0)}${PCT()}</div><div class="k">${L('zlepšení přesnosti oproti prostému odhadu podle průměrné četnosti recesí (Brier skill score; nad nulou = lepší)', 'accuracy gain over a naive forecast from the average recession frequency (Brier skill score; above zero = better)')}</div></div>`;
-    renderBtChart(bt);
-    $('btLegend').innerHTML = `<span><i class="sw t"></i>${L(`odhad pravděpodobnosti recese do ${yrs}`, `estimated probability of a recession within ${yrs}`)}</span><span><i class="sw r"></i>${L('recese (podle NBER)', 'recession (according to NBER)')}</span>`;
+  }
+  function renderBt(bt, mode) {
+    const el_ = part(mode), q = (c) => el_.querySelector(c);
+    const m = bt.m, yrs = recLabel(bt.cfg.H / 4);
+    if (!m) {
+      q('.bt-tiles').innerHTML = `<p class="muted small">${L('S tímto nastavením nejde zpětný test spočítat (málo srovnatelných kvartálů).', 'The backtest cannot be computed with these settings (too few comparable quarters).')}</p>`;
+      q('.bt-chart').innerHTML = ''; q('.bt-cal').innerHTML = ''; q('.bt-legend').innerHTML = '';
+      return;
+    }
+    q('.bt-tiles').innerHTML = btTilesHtml(m, yrs);
+    renderBtChart(bt, q('.bt-chart'));
+    q('.bt-legend').innerHTML = `<span><i class="sw t"></i>${L(`odhad pravděpodobnosti recese do ${yrs}`, `estimated probability of a recession within ${yrs}`)}</span><span><i class="sw r"></i>${L('recese (podle NBER)', 'recession (according to NBER)')}</span>`;
     const buckets = [[0, 0, '0 %'], [0.001, 0.399, '1–39 %'], [0.4, 0.599, '40–59 %'], [0.6, 0.999, '60–99 %'], [1, 1, '100 %']];
-    $('btCal').innerHTML = `<thead><tr><th>${L('Podíl analogů s recesí', 'Share of analogues with a recession')}</th><th class="r">${L('Počet kvartálů', 'Quarters')}</th><th class="r">${L(`Recese do ${yrs} opravdu přišla`, `Recession within ${yrs} actually came`)}</th></tr></thead><tbody>` +
+    q('.bt-cal').innerHTML = `<thead><tr><th>${L('Podíl analogů s recesí', 'Share of analogues with a recession')}</th><th class="r">${L('Počet kvartálů', 'Quarters')}</th><th class="r">${L(`Recese do ${yrs} opravdu přišla`, `Recession within ${yrs} actually came`)}</th></tr></thead><tbody>` +
       buckets.map(([lo, hi, lab]) => {
         const rs = bt.rows.filter(r => r.p >= lo - 1e-9 && r.p <= hi + 1e-9), k = rs.filter(r => r.a).length;
         return `<tr><td>${LANG === 'en' ? lab.replace(' %', '%') : lab}</td><td class="r">${rs.length}</td><td class="r">${rs.length ? pct0(k / rs.length) + ` <span class="muted small">(${k})</span>` : '–'}</td></tr>`;
       }).join('') + '</tbody>';
   }
-  function renderBtChart(bt) {
-    const box = $('btChart');
+  function renderBtChart(bt, box) {
     box.innerHTML = '';
     if (!bt.m) return;
     const byT = new Map(bt.rows.map(r => [r.t, r]));
@@ -1006,36 +1043,47 @@
     hit.addEventListener('pointerleave', () => { tip.style.display = 'none'; cross.setAttribute('visibility', 'hidden'); dot.setAttribute('visibility', 'hidden'); });
   }
 
-  // Hledání historicky nejpřesnějšího nastavení (mřížka sad ukazatelů, oken, počtu výsledků a epizod)
-  const SETS = () => [
-    ['default', L('výchozí ukazatele', 'default indicators'), DEFAULT],
-    ['real', L('reálná ekonomika', 'real economy'), PRESETS.real],
-    ['fin', L('sazby a trhy', 'rates and markets'), PRESETS.fin],
-    ['all', L('všechny ukazatele', 'all indicators'), Object.keys(IND)],
-  ].map(([k, lab, ids]) => [k, lab, ids.filter(id => IND[id])]);
-  let bestRows = null;
-  function cfgLabel(c) {
-    return [c.setLabel, L(`okno ${c.W}`, `window ${c.W}`), L(`${c.N} výsledků`, `${c.N} results`), c.ep ? L('1 z epizody', '1 per episode') : L('bez omezení epizod', 'no episode limit')].join(' · ');
+  // ---------- Nejpřesnější nastavení z úplného prohledání (kvartaly/best.json) ----------
+  let showBest = false;
+  const nf = (x) => x.toLocaleString(L('cs-CZ', 'en-US'));
+  function renderSearchInfo() {
+    if (!BEST) {
+      $('btSearchInfo').textContent = L('Výsledky úplného prohledání zatím nejsou k dispozici.', 'Results of the full search are not available yet.');
+      $('btRun').disabled = true;
+      return;
+    }
+    const nInd = D.indicators.length, combos = (() => { let s = 0, c = 1; for (let k = 0; k <= nInd; k++) { if (k >= BEST.min_k) s += c; c = c * (nInd - k) / (k + 1); } return Math.round(s); })();
+    $('btSearchInfo').textContent = L(
+      `Úplné prohledání: všech ${nf(combos)} kombinací ${BEST.min_k} až ${nInd} ukazatelů × okno ${BEST.windows.join('/')} kvartálů × ${BEST.N.join('/')} výsledků × s omezením epizod i bez, celkem ${nf(BEST.evaluated)} nastavení v každém režimu. Počítá se pro „recese do ${recLabel(BEST.H / 4)}“ a vyloučené okolí ±${BEST.ex}, naposledy ${new Date(BEST.computed).toLocaleDateString('cs-CZ')}.`,
+      `Full search: all ${nf(combos)} combinations of ${BEST.min_k} to ${nInd} indicators × a ${BEST.windows.join('/')}-quarter window × ${BEST.N.join('/')} results × with and without the episode limit, ${nf(BEST.evaluated)} settings in each mode. Computed for “recession within ${recLabel(BEST.H / 4)}” and a ±${BEST.ex} neighbourhood, last run ${new Date(BEST.computed).toLocaleDateString('en-US')}.`);
+    $('btRun').disabled = false;
+    if (showBest) renderBest();
   }
-  function runSearch() {
-    const base = curConfig(), grid = [];
-    for (const [key, setLabel, ids] of SETS()) for (const W of [1, 4, 8]) for (const N of [5, 10, 20]) for (const ep of [true, false])
-      grid.push({ ...base, ids, W, N, ep, shape: false, set: key, setLabel });
-    const res = [];
-    $('btRun').disabled = true;
-    let i = 0;
-    const step = () => {
-      const until = performance.now() + 40;
-      while (i < grid.length && performance.now() < until) { const bt = backtest(grid[i]); if (bt.m) res.push({ c: grid[i], m: bt.m }); i++; }
-      $('btStatus').textContent = L(`Počítám ${i} z ${grid.length} nastavení…`, `Computing ${i} of ${grid.length} settings…`);
-      if (i < grid.length) { setTimeout(step, 0); return; }
-      res.sort((a, b) => b.m.bss - a.m.bss);
-      bestRows = res.slice(0, 5);
-      $('btRun').disabled = false;
-      $('btStatus').textContent = L(`Prověřeno ${grid.length} nastavení pro „recese do ${recLabel(base.H / 4)}“.`, `Tested ${grid.length} settings for “recession within ${recLabel(base.H / 4)}”.`);
-      renderBest();
-    };
-    step();
+  function cfgLabel(c) {
+    return [L(`${c.ids.length} ukazatelů`, `${c.ids.length} indicators`), L(`okno ${c.W}`, `window ${c.W}`), L(`${c.N} výsledků`, `${c.N} results`), c.ep ? L('1 z epizody', '1 per episode') : L('bez omezení epizod', 'no episode limit')].join(' · ');
+  }
+  function applyConfig(c) {
+    sel = new Set(c.ids.filter(id => IND[id]));
+    $('w').value = c.W; $('n').value = c.N; $('ep').checked = c.ep; $('shape').checked = false;
+    $('ex').value = BEST.ex; $('rh').value = BEST.H / 4;
+    renderInds(); syncChecks(); update();
+  }
+  function renderBest() {
+    if (!BEST) return;
+    showBest = true;
+    $('btBest').hidden = false; $('btNote').hidden = false;
+    const recN = D.recession.filter((r, i) => r && !D.recession[i - 1]).length;
+    document.querySelectorAll('.recN').forEach(e => { e.textContent = recN; });
+    const titles = { hist: L('Historicky – jen data dostupná v daném okamžiku', 'Historically – only data available at the time'), gen: L('Obecně – včetně pozdějších dat', 'In general – including later data') };
+    $('btBest').className = 'bt-best';
+    $('btBest').innerHTML = MODES.map(mode => `<h4>${titles[mode]}</h4><div class="tbl-wrap"><table class="num bt-table" style="margin-top:0.5rem">
+      <thead><tr><th>#</th><th>${L('Nastavení', 'Settings')}</th><th class="r">${L('Zlepšení (BSS)', 'Gain (BSS)')}</th><th class="r">${L('Správně', 'Correct')}</th><th></th></tr></thead><tbody>` +
+      BEST.best[mode].slice(0, 5).map((r, i) => `<tr><td class="muted">${i + 1}</td><td>${cfgLabel(r)}<span class="bt-ids">${r.ids.map(id => IND[id] ? iname(IND[id]) : id).join(', ')}</span></td>` +
+        `<td class="r">${sgn(100 * r.bss, 0)}${PCT()}</td><td class="r">${pct0(r.acc)}</td><td><button type="button" class="lnk" data-mode="${mode}" data-i="${i}">${L('Použít', 'Apply')}</button></td></tr>`).join('') +
+      '</tbody></table></div>').join('');
+    $('btBest').querySelectorAll('button[data-mode]').forEach(b => b.addEventListener('click', () => applyConfig(BEST.best[b.dataset.mode][+b.dataset.i])));
+    const differs = recYears() * 4 !== BEST.H || +$('ex').value !== BEST.ex;
+    $('btStatus').textContent = differs ? L(`„Použít“ nastaví i recese do ${recLabel(BEST.H / 4)} a okolí ±${BEST.ex}, pro které se prohledávalo.`, `“Apply” also sets recession within ${recLabel(BEST.H / 4)} and a ±${BEST.ex} neighbourhood used in the search.`) : '';
   }
   // Vrátí ukazatele i všechna další nastavení na výchozí hodnoty (vybraný kvartál zůstává)
   function resetDefaults() {
@@ -1043,20 +1091,6 @@
     $('w').value = '4'; $('ex').value = '8'; $('n').value = '10'; $('rh').value = '2';
     $('ep').checked = true; $('shape').checked = false;
     renderInds(); syncChecks(); update();
-  }
-  function renderBest() {
-    if (!bestRows) return;
-    $('btBest').hidden = false; $('btNote').hidden = false;
-    const recN = D.recession.filter((r, i) => r && !D.recession[i - 1]).length;
-    document.querySelectorAll('.recN').forEach(e => { e.textContent = recN; });
-    $('btBest').innerHTML = `<thead><tr><th>#</th><th>${L('Nastavení', 'Settings')}</th><th class="r">${L('Zlepšení (BSS)', 'Gain (BSS)')}</th><th class="r">${L('Správně', 'Correct')}</th><th></th></tr></thead><tbody>` +
-      bestRows.map((r, i) => `<tr><td class="muted">${i + 1}</td><td>${cfgLabel({ ...r.c, setLabel: SETS().find(s => s[0] === r.c.set)[1] })}</td><td class="r">${sgn(100 * r.m.bss, 0)}${PCT()}</td><td class="r">${pct0(r.m.acc)}</td>` +
-        `<td><button type="button" class="lnk" data-best="${i}">${L('Použít', 'Apply')}</button></td></tr>`).join('') + '</tbody>';
-    $('btBest').querySelectorAll('[data-best]').forEach(b => b.addEventListener('click', () => {
-      const c = bestRows[+b.dataset.best].c;
-      sel = new Set(c.ids); $('w').value = c.W; $('n').value = c.N; $('ep').checked = c.ep; $('shape').checked = false;
-      syncChecks(); renderInds(); update();
-    }));
   }
 
   function renderTimeline() {

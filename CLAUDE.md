@@ -9,6 +9,9 @@ Statický web na GitHub Pages (větev `main`), bez build kroku.
   Odkaz jen nenápadně v patičce hlavní stránky, `noindex` a záměrně **není** v sitemapě.
   Funguje offline: písma má v `hudba/fonts/` (ne z Google Fonts) a `hudba/sw.js` drží všechny soubory v cache.
   Při změně souborů zvyš verzi `CACHE` v `hudba/sw.js` a nový soubor přidej do jeho seznamu `FILES`.
+- `kvartaly/best.json` – nejpřesnější nastavení z úplného prohledání (`kvartaly/scripts/search.c`
+  + `search_settings.py`, workflow `.github/workflows/optimize-settings.yml`, ~1 h, jednou týdně).
+  Výpočet zpětného testu v `search.c` musí odpovídat funkci `backtest` v `kvartaly/index.html`.
 - Obě stránky jsou dvojjazyčné (CZ/EN, sdílený klíč `lang` v localStorage). Statický text
   přes `<span class="cs">…</span><span class="en">…</span>`, v `kvartaly/` dynamický text přes
   `L('česky', 'English')`. Každý nový text přidávej v obou jazycích.
