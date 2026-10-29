@@ -46,11 +46,11 @@
     </div>
 
     <div class="controls">
-      <button class="icon" id="shuffleBtn" data-cs-label="Náhodně" data-en-label="Shuffle">⤨</button>
-      <button class="icon" id="prevBtn" data-cs-label="Předchozí" data-en-label="Previous">⏮</button>
-      <button class="icon play" id="playBtn" data-cs-label="Přehrát" data-en-label="Play">▶</button>
-      <button class="icon" id="nextBtn" data-cs-label="Další" data-en-label="Next">⏭</button>
-      <button class="icon" id="repeatBtn">↻</button>
+      <button class="icon" id="shuffleBtn" data-cs-label="Náhodně" data-en-label="Shuffle"></button>
+      <button class="icon" id="prevBtn" data-cs-label="Předchozí" data-en-label="Previous"></button>
+      <button class="icon play" id="playBtn" data-cs-label="Přehrát" data-en-label="Play"></button>
+      <button class="icon" id="nextBtn" data-cs-label="Další" data-en-label="Next"></button>
+      <button class="icon" id="repeatBtn"></button>
     </div>
   </section>
 
@@ -68,6 +68,10 @@
       <span class="cs">Android nedovolí vybrat přímo celou složku <b>Stažené</b> (Download) ani kořen úložiště. Vyberte složku <b>Music</b> nebo jinou podsložku – případně si stažené písničky do jedné složky přesuňte.</span>
       <span class="en">Android doesn’t allow picking the whole <b>Download</b> folder or the storage root. Pick <b>Music</b> or another subfolder – or move your downloaded songs into one folder.</span>
     </p>
+    <p class="hint" id="apkHint" hidden>
+      <span class="cs">Přehrávač je i jako <a href="https://github.com/vaclavkotvalt/vaclavkotvalt.github.io/releases/download/hudba-apk/hudba.apk">aplikace pro Android</a> – přístup k hudbě se v ní povoluje jen jednou a najde i písničky ve složce Stažené.</span>
+      <span class="en">The player is also available as an <a href="https://github.com/vaclavkotvalt/vaclavkotvalt.github.io/releases/download/hudba-apk/hudba.apk">Android app</a> – you allow access to music only once and it finds songs in the Download folder too.</span>
+    </p>
   </section>
 
   <section class="list">
@@ -82,6 +86,7 @@
 <!-- dva přehrávače: při přeskočení začne hrát druhý dřív, než se první zastaví, takže ovládání v liště nezmizí -->
 <audio id="audioA" preload="auto"></audio>
 <audio id="audioB" preload="auto"></audio>
+<script src="icons.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

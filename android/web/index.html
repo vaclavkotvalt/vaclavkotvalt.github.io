@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="cs" data-lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hudba</title>
+<!-- Obrazovka aplikace pro Android. Styly, písma a ikony se při sestavení kopírují z hudba/. -->
+<link rel="stylesheet" href="fonts/fonts.css">
+<link rel="stylesheet" href="style.css">
+<script>
+  (function () {
+    var l = null;
+    try { l = localStorage.getItem('lang'); } catch (e) {}
+    l = l || ((navigator.language || 'cs').toLowerCase().indexOf('cs') === 0 ? 'cs' : 'en');
+    document.documentElement.setAttribute('data-lang', l);
+    document.documentElement.setAttribute('lang', l);
+  })();
+</script>
+</head>
+<body>
+<header class="bar"><div class="bar-in">
+  <span class="name">Václav Kotvalt</span>
+  <div class="lang" role="group" aria-label="Jazyk / Language">
+    <button type="button" data-set="cs" aria-pressed="true">CZ</button>
+    <button type="button" data-set="en" aria-pressed="false">EN</button>
+  </div>
+</div></header>
+
+<main>
+  <h1><span class="cs">Hudba</span><span class="en">Music</span></h1>
+
+  <section class="panel now">
+    <div class="cover" id="cover"><span>♪</span></div>
+    <div class="meta">
+      <div class="title" id="title"></div>
+      <div class="artist" id="artist"></div>
+    </div>
+
+    <div class="progress">
+      <input id="seek" type="range" min="0" max="0" step="0.1" value="0" data-cs-label="Pozice ve skladbě" data-en-label="Position in track">
+      <div class="times"><span id="cur">0:00</span><span id="dur">0:00</span></div>
+    </div>
+
+    <div class="controls">
+      <button class="icon" id="shuffleBtn" data-cs-label="Náhodně" data-en-label="Shuffle"></button>
+      <button class="icon" id="prevBtn" data-cs-label="Předchozí" data-en-label="Previous"></button>
+      <button class="icon play" id="playBtn" data-cs-label="Přehrát" data-en-label="Play"></button>
+      <button class="icon" id="nextBtn" data-cs-label="Další" data-en-label="Next"></button>
+      <button class="icon" id="repeatBtn"></button>
+    </div>
+  </section>
+
+  <section class="panel source">
+    <div id="sourceInfo" class="source-info"></div>
+    <div class="source-actions">
+      <button class="btn primary" id="permBtn" hidden><span class="cs">Povolit přístup k hudbě</span><span class="en">Allow access to music</span></button>
+      <button class="btn" id="rescanBtn" hidden><span class="cs">Načíst znovu</span><span class="en">Rescan</span></button>
+    </div>
+  </section>
+
+  <section class="list">
+    <div class="list-head">
+      <h2><span class="cs">Skladby</span><span class="en">Tracks</span> <span id="count"></span></h2>
+      <input id="filter" type="search" data-cs-label="Hledat" data-en-label="Search">
+    </div>
+    <ol id="tracks"></ol>
+  </section>
+</main>
+
+<script src="icons.js"></script>
+<script src="native.js"></script>
+</body>
+</html>

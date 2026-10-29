@@ -9,6 +9,7 @@ let audio = players[0];
 let LANG = document.documentElement.getAttribute('data-lang') || 'cs';
 const L = (cs, en) => LANG === 'en' ? en : cs;
 
+const TAGS_VERSION = 2; // zvýšit, když se změní čtení tagů – názvy se pak načtou znovu
 const AUDIO_EXT = /\.(mp3|m4a|aac|ogg|oga|opus|flac|wav|webm)$/i;
 const canPickFolder = 'showDirectoryPicker' in window;
 
@@ -24,9 +25,16 @@ let currentId = null;
 let needsLoad = false;   // vybraná skladba, jejíž soubor se načte až při přehrání
 let artUrl = null;
 let selectToken = 0;
+let preloaded = null;    // další skladba už připravená v záložním přehrávači: { id, url, file, player }
+let plannedNext = null;  // při náhodném pořadí předem vybraná další skladba (aby šla připravit)
 let shuffle = load('hudba.shuffle', false);
 let repeat = load('hudba.repeat', 'all'); // off | all | one
 const history = [];
+
+$('shuffleBtn').innerHTML = ICONS.shuffle;
+$('prevBtn').innerHTML = ICONS.prev;
+$('nextBtn').innerHTML = ICONS.next;
+$('playBtn').innerHTML = ICONS.play;
 
 /* ---------- Úložiště (IndexedDB) ---------- */
 
@@ -97,8 +105,21 @@ async function readTags(file, withArt) {
 }
 
 function decodeText(enc, bytes) {
-  const label = ['latin1', 'utf-16', 'utf-16be', 'utf-8'][enc] || 'latin1';
-  return new TextDecoder(label).decode(bytes).replace(/\0+$/, '').split('\0')[0].trim();
+  let label = ['latin1', 'utf-16le', 'utf-16be', 'utf-8'][enc] || 'latin1';
+  if (enc === 1 || enc === 2) {
+    // pořadí bajtů podle značky BOM; bez ní podle toho, kde jsou nulové bajty (u latinky jich je hodně)
+    if (bytes[0] === 0xff && bytes[1] === 0xfe) { label = 'utf-16le'; bytes = bytes.subarray(2); }
+    else if (bytes[0] === 0xfe && bytes[1] === 0xff) { label = 'utf-16be'; bytes = bytes.subarray(2); }
+    else {
+      let even = 0, odd = 0;
+      for (let i = 0; i + 1 < bytes.length; i += 2) { if (bytes[i] === 0) even++; if (bytes[i + 1] === 0) odd++; }
+      if (even > odd) label = 'utf-16be'; else if (odd > even) label = 'utf-16le';
+    }
+  }
+  let text = new TextDecoder(label).decode(bytes);
+  if (label === 'utf-16le' || label === 'utf-16be') text = text.replace(/^\ufeff/, '').split('\u0000')[0];
+  else text = text.split('\0')[0];
+  return text.trim();
 }
 
 function parseApic(data) {
@@ -209,10 +230,10 @@ async function scanFolder() {
       let info = cache.get(path);
       try {
         const file = await handle.getFile();
-        if (!info || info.size !== file.size || info.mtime !== file.lastModified) {
+        if (!info || info.v !== TAGS_VERSION || info.size !== file.size || info.mtime !== file.lastModified) {
           const tags = await readTags(file, false);
           const guess = fromFilename(file.name);
-          info = { path, size: file.size, mtime: file.lastModified, title: tags.title || guess.title, artist: tags.artist || guess.artist };
+          info = { v: TAGS_VERSION, path, size: file.size, mtime: file.lastModified, title: tags.title || guess.title, artist: tags.artist || guess.artist };
           fresh.push(info);
         }
       } catch {
@@ -293,7 +314,9 @@ function rebuild(pickCurrent = true) {
 
 function clearPlayer(p) {
   const url = p.src;
+  if (preloaded && preloaded.player === p) preloaded = null;
   p.pause();
+  p.volume = 1;
   p.removeAttribute('src');
   p.load();
   if (url.startsWith('blob:')) URL.revokeObjectURL(url);
@@ -326,29 +349,38 @@ async function select(id, autoplay = true) {
     return;
   }
 
-  let file;
-  try {
-    if (t.kind === 'dir') {
-      if (!(await ensureAccess())) throw new Error('no access');
-      file = await (await fileHandleFor(t)).getFile();
-    } else {
-      file = t.blob;
-    }
-  } catch (e) {
-    console.warn(e);
-    if (token !== selectToken) return;
-    needsLoad = true;
-    $('artist').textContent = L('Soubor nejde otevřít – zkuste „Načíst znovu“.', 'Cannot open the file – try “Rescan”.');
-    return;
-  }
-  if (token !== selectToken) return;
-
-  // novou skladbu pustíme ve druhém přehrávači a ten dosavadní zastavíme až potom
+  // novou skladbu pustíme ve druhém přehrávači a ten dosavadní zastavíme až potom;
+  // do té doby stará jen ztichne (zastavit ji hned by Androidu schovalo ovládání v liště)
   const old = audio;
   const fresh = players.find((p) => p !== old);
-  const stale = fresh.src;
-  fresh.src = URL.createObjectURL(file);
-  if (stale.startsWith('blob:')) URL.revokeObjectURL(stale);
+  if (autoplay) old.volume = 0;
+  const ready = preloaded && preloaded.id === id && preloaded.player === fresh && fresh.src === preloaded.url;
+
+  let file;
+  if (ready) {
+    file = preloaded.file;
+  } else {
+    try {
+      if (t.kind === 'dir') {
+        if (!(await ensureAccess())) throw new Error('no access');
+        file = await (await fileHandleFor(t)).getFile();
+      } else {
+        file = t.blob;
+      }
+    } catch (e) {
+      console.warn(e);
+      if (token !== selectToken) return;
+      old.volume = 1;
+      needsLoad = true;
+      $('artist').textContent = L('Soubor nejde otevřít – zkuste „Načíst znovu“.', 'Cannot open the file – try “Rescan”.');
+      return;
+    }
+    if (token !== selectToken) return;
+    const stale = fresh.src;
+    fresh.src = URL.createObjectURL(file);
+    if (stale.startsWith('blob:')) URL.revokeObjectURL(stale);
+  }
+  preloaded = null;
   if (autoplay) {
     try { await fresh.play(); } catch (e) { console.warn(e); }
     if (token !== selectToken) return; // mezitím se přeskočilo dál, přehrávač už patří novější skladbě
@@ -358,6 +390,7 @@ async function select(id, autoplay = true) {
   clearPlayer(old);
   onMetadata();
   syncPlayState();
+  preloadNext();
 
   setCover(null);
   updateMediaSession(t, null);
@@ -392,21 +425,58 @@ async function togglePlay() {
   audio.paused ? audio.play().catch(() => {}) : audio.pause();
 }
 
+// která skladba přijde po té aktuální (u náhodného pořadí se vybere předem a pamatuje)
+function upcomingId() {
+  if (!tracks.length) return null;
+  const idx = tracks.findIndex((x) => x.id === currentId);
+  if (shuffle && tracks.length > 1) {
+    if (!plannedNext || plannedNext === currentId || !tracks.some((x) => x.id === plannedNext)) {
+      let n;
+      do { n = Math.floor(Math.random() * tracks.length); } while (n === idx);
+      plannedNext = tracks[n].id;
+    }
+    return plannedNext;
+  }
+  return tracks[(idx + 1) % tracks.length].id;
+}
+
 function next(fromEnded = false) {
   if (!tracks.length) return;
   if (fromEnded && repeat === 'one') { audio.currentTime = 0; audio.play(); return; }
   const idx = tracks.findIndex((x) => x.id === currentId);
-  let nextIdx;
-  if (shuffle && tracks.length > 1) {
-    do { nextIdx = Math.floor(Math.random() * tracks.length); } while (nextIdx === idx);
-  } else {
-    nextIdx = idx + 1;
-    if (nextIdx >= tracks.length) {
-      if (fromEnded && repeat === 'off') { audio.currentTime = 0; syncPlayState(); return; }
-      nextIdx = 0;
-    }
+  if (fromEnded && repeat === 'off' && !shuffle && idx === tracks.length - 1) {
+    audio.currentTime = 0; syncPlayState(); return;
   }
-  select(tracks[nextIdx].id);
+  const id = upcomingId();
+  plannedNext = null;
+  select(id);
+}
+
+// Další skladbu načteme do záložního přehrávače už během hraní, takže přeskočení je hned.
+async function preloadNext() {
+  const token = selectToken;
+  const id = upcomingId();
+  if (!id || id === currentId || (preloaded && preloaded.id === id)) return;
+  const t = tracks.find((x) => x.id === id);
+  let file;
+  try {
+    if (t.kind === 'dir') {
+      if (!(await hasAccess())) return;
+      file = await (await fileHandleFor(t)).getFile();
+    } else {
+      file = t.blob;
+    }
+  } catch (e) {
+    console.warn(e);
+    return;
+  }
+  if (token !== selectToken) return; // mezitím se přeskakovalo, záložní přehrávač je obsazený
+  const standby = players.find((p) => p !== audio);
+  const stale = standby.src;
+  const url = URL.createObjectURL(file);
+  standby.src = url;
+  if (stale.startsWith('blob:')) URL.revokeObjectURL(stale);
+  preloaded = { id, url, file, player: standby };
 }
 
 function prev() {
@@ -456,7 +526,7 @@ $('seek').addEventListener('change', () => {
 
 function syncPlayState() {
   const playing = !audio.paused;
-  $('playBtn').textContent = playing ? '⏸' : '▶';
+  $('playBtn').innerHTML = playing ? ICONS.pause : ICONS.play;
   $('playBtn').setAttribute('aria-label', playing ? L('Pozastavit', 'Pause') : L('Přehrát', 'Play'));
   if ('mediaSession' in navigator) navigator.mediaSession.playbackState = playing ? 'playing' : 'paused';
   updatePositionState();
@@ -513,7 +583,7 @@ if ('mediaSession' in navigator) {
 $('playBtn').addEventListener('click', togglePlay);
 $('nextBtn').addEventListener('click', () => next());
 $('prevBtn').addEventListener('click', prev);
-$('shuffleBtn').addEventListener('click', () => { shuffle = !shuffle; save('hudba.shuffle', shuffle); syncModes(); });
+$('shuffleBtn').addEventListener('click', () => { shuffle = !shuffle; save('hudba.shuffle', shuffle); syncModes(); plannedNext = null; if (!needsLoad && currentId) preloadNext(); });
 $('repeatBtn').addEventListener('click', () => {
   repeat = { off: 'all', all: 'one', one: 'off' }[repeat];
   save('hudba.repeat', repeat);
@@ -526,7 +596,7 @@ $('rescanBtn').addEventListener('click', async () => { if (await hasAccess()) sc
 function syncModes() {
   $('shuffleBtn').classList.toggle('on', shuffle);
   $('repeatBtn').classList.toggle('on', repeat !== 'off');
-  $('repeatBtn').textContent = repeat === 'one' ? '↻1' : '↻';
+  $('repeatBtn').innerHTML = repeat === 'one' ? ICONS.repeatOne : ICONS.repeat;
   const label = { off: L('Neopakovat', 'Repeat off'), all: L('Opakovat vše', 'Repeat all'), one: L('Opakovat skladbu', 'Repeat one') }[repeat];
   $('repeatBtn').title = label;
   $('repeatBtn').setAttribute('aria-label', label);
@@ -623,6 +693,7 @@ document.querySelectorAll('.lang button').forEach((b) => b.addEventListener('cli
 /* ---------- Start ---------- */
 
 (async function init() {
+  if (/Android/i.test(navigator.userAgent)) $('apkHint').hidden = false;
   applyLang(LANG);
   storedTracks = ((await db('tracks', 'readonly', (s) => s.getAll())) || []).sort((a, b) => a.added - b.added);
   if (canPickFolder) dirHandle = await db('meta', 'readonly', (s) => s.get('dir'));
