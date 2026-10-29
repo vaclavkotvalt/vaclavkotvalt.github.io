@@ -218,7 +218,9 @@
     font-size: clamp(1.6rem, 6vw, 3rem); line-height: 1.1; margin: 0 0 1.5rem; word-break: break-word;
   }
   .contact-big a { color: var(--text); text-decoration-color: var(--accent); text-decoration-thickness: 2px; }
-  footer { max-width: 68rem; margin: 0 auto; padding: 2rem 1.25rem 3rem; color: var(--muted); font-size: 0.9rem; border-top: 1px solid var(--line); }
+  footer { max-width: 68rem; margin: 0 auto; padding: 2rem 1.25rem 3rem; color: var(--muted); font-size: 0.9rem; border-top: 1px solid var(--line); display: flex; justify-content: space-between; }
+  /* Nenápadný odkaz na /hudba/ */
+  footer .quiet { color: var(--line); text-decoration: none; padding: 0 0.25rem; }
 </style>
 </head>
 <body>
@@ -467,7 +469,7 @@
   </section>
 </main>
 
-<footer>© 2026 Václav Kotvalt</footer>
+<footer>© 2026 Václav Kotvalt<a class="quiet" href="/hudba/" aria-label="Hudba / Music">♪</a></footer>
 
 <script>
   (function () {

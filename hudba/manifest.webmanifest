@@ -1,0 +1,16 @@
+{
+  "name": "Hudba",
+  "short_name": "Hudba",
+  "lang": "cs",
+  "start_url": "/hudba/",
+  "scope": "/hudba/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0d1a2b",
+  "theme_color": "#0d1a2b",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
