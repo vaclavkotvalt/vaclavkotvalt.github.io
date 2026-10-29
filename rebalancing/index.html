@@ -51,7 +51,7 @@
   h1 { font-family: var(--font-heading); font-weight: 300; font-size: clamp(2.3rem, 7vw, 4rem); line-height: 1; letter-spacing: -0.02em; margin: 3rem 0 1rem; }
   h2 { font-family: var(--font-text); font-weight: 400; font-size: 1.6rem; margin: 0 0 0.25rem; }
   h3 { font-size: 1rem; font-weight: 600; margin: 1.5rem 0 0.5rem; }
-  .lead { color: var(--muted); max-width: 46rem; font-size: 1.1rem; margin: 0 0 2rem; }
+  .lead { color: var(--muted); font-size: 1.1rem; margin: 0 0 2rem; }
   .muted { color: var(--muted); }
   .small { font-size: 0.875rem; }
   .num { font-variant-numeric: tabular-nums; }
@@ -210,11 +210,11 @@
           <button class="btn primary" type="button" id="csv" aria-haspopup="menu" aria-expanded="false" aria-controls="csvMenu"><span class="cs">Stáhnout příkazy (CSV)</span><span class="en">Download orders (CSV)</span><span class="caret" aria-hidden="true">▾</span></button>
           <div class="menu" id="csvMenu" role="menu" hidden></div>
         </div>
-        <a class="btn" href="sablona.xlsx" download><span class="cs">Šablona Excelu</span><span class="en">Excel template</span></a>
+        <a class="btn" href="sablona.xlsx" download><span class="cs">Stáhnout šablonu Excelu</span><span class="en">Download Excel template</span></a>
       </div>
       <p class="src err" id="srcWarn" hidden></p>
       <details class="more">
-        <summary><span class="cs">Data, pravidla a parametry <span class="muted small">– zdroj dat, tolerance, náklady, daně, čekání</span></span><span class="en">Data, rules and parameters <span class="muted small">– data source, bands, costs, taxes, waiting</span></span></summary>
+        <summary><span class="cs">Data, pravidla a parametry</span><span class="en">Data, rules and parameters</span></summary>
         <p class="src src-in" id="src"></p>
         <div class="controls" id="settings"></div>
         <p style="margin:1rem 0 0"><button class="btn" type="button" id="reset"><span class="cs">Obnovit výchozí</span><span class="en">Reset to defaults</span></button></p>
@@ -481,7 +481,8 @@ function forgetFile() { STORED = null; try { localStorage.removeItem('rb-file');
 
 function renderSourceUi() {
   const mDate = MARKET ? Object.values(MARKET.prices).map(p => p.date).sort().at(-1) : null;
-  $('valLabel').textContent = MODE === 'market' ? `${L('aktuální trh', 'current market')} (${date(mDate)})` : `${L('ze zadání', 'from the brief')} (${date(SAMPLE_RAW.asOf)})`;
+  // datum je v nabídce a v sekci Data – na tlačítku by se nevešlo
+  $('valLabel').textContent = MODE === 'market' ? L('aktuální trh', 'current market') : L('ze zadání', 'from the brief');
   const parts = [];
   parts.push(FILE
     ? `${L('Pozice', 'Holdings')}: ${esc(FILE)} – ${L('uloženo jen v tomto prohlížeči, nikam se neodesílá', 'stored only in this browser, never uploaded')} · <button type="button" class="lnk" id="forget">${L('zapomenout', 'forget')}</button>`
@@ -520,7 +521,7 @@ function render() {
   if (RES.issues.length) {
     $('ovNote').innerHTML = `<span class="err">${RES.issues.map(issueText).map(esc).join(' · ')}</span>`;
   } else {
-    $('ovNote').textContent = L('Klikněte na klienta pro detail. Stav: zasáhnout teď, počkat (s datem) nebo v pořádku.', 'Click a client for details. Status: act now, wait (with a date) or fine.');
+    $('ovNote').textContent = L('Klikněte na klienta pro detail.', 'Click a client for details.');
   }
   if (!RES.summary) { $('tiles').innerHTML = ''; $('cRows').innerHTML = ''; $('detail').hidden = true; return; }
   renderOverview(); renderDetail();
