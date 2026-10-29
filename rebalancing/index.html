@@ -57,7 +57,12 @@
   .num { font-variant-numeric: tabular-nums; }
 
   .panel { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 1.25rem; margin-bottom: 1.5rem; }
-  .toolbar { display: flex; flex-wrap: wrap; gap: 0.75rem 1.25rem; align-items: end; }
+  /* čtyři stejně široká tlačítka (na mobilu 2 × 2) */
+  .toolbar { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.75rem; }
+  .toolbar > .btn, .toolbar .dl > .btn { width: 100%; text-align: center; text-decoration: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  @media (max-width: 860px) { .toolbar { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 560px) { .toolbar { grid-template-columns: minmax(0, 1fr); } }
+  .src-in { margin: 0 0 1rem; }
   label.f { display: flex; flex-direction: column; gap: 0.3rem; font-size: 0.85rem; color: var(--muted); }
   select, input[type="number"], input[type="date"] {
     font: inherit; font-size: 1rem; color: var(--text); background: var(--bg);
@@ -205,10 +210,12 @@
           <button class="btn primary" type="button" id="csv" aria-haspopup="menu" aria-expanded="false" aria-controls="csvMenu"><span class="cs">Stáhnout příkazy (CSV)</span><span class="en">Download orders (CSV)</span><span class="caret" aria-hidden="true">▾</span></button>
           <div class="menu" id="csvMenu" role="menu" hidden></div>
         </div>
+        <a class="btn" href="sablona.xlsx" download><span class="cs">Šablona Excelu</span><span class="en">Excel template</span></a>
       </div>
-      <p class="src" id="src"></p>
+      <p class="src err" id="srcWarn" hidden></p>
       <details class="more">
-        <summary><span class="cs">Pravidla a parametry <span class="muted small">– tolerance, náklady, daně, čekání</span></span><span class="en">Rules and parameters <span class="muted small">– bands, costs, taxes, waiting</span></span></summary>
+        <summary><span class="cs">Data, pravidla a parametry <span class="muted small">– zdroj dat, tolerance, náklady, daně, čekání</span></span><span class="en">Data, rules and parameters <span class="muted small">– data source, bands, costs, taxes, waiting</span></span></summary>
+        <p class="src src-in" id="src"></p>
         <div class="controls" id="settings"></div>
         <p style="margin:1rem 0 0"><button class="btn" type="button" id="reset"><span class="cs">Obnovit výchozí</span><span class="en">Reset to defaults</span></button></p>
       </details>
@@ -478,16 +485,19 @@ function renderSourceUi() {
   const parts = [];
   parts.push(FILE
     ? `${L('Pozice', 'Holdings')}: ${esc(FILE)} – ${L('uloženo jen v tomto prohlížeči, nikam se neodesílá', 'stored only in this browser, never uploaded')} · <button type="button" class="lnk" id="forget">${L('zapomenout', 'forget')}</button>`
-    : `${L('Pozice', 'Holdings')}: ${L('ukázková data ze zadání (smyšlená)', 'sample data from the brief (fictional)')} · <a href="sablona.xlsx" download>${L('šablona Excelu pro vlastní data', 'Excel template for your own data')}</a>`);
+    : `${L('Pozice', 'Holdings')}: ${L('ukázková data ze zadání (smyšlená)', 'sample data from the brief (fictional)')}`);
   if (MERGE) {
     const fx = Object.entries(MARKET.fx || {}).map(([c, v]) => `${c} ${nf(v.rate, 3)}`).join(', ');
     const fxDate = Object.values(MARKET.fx || {})[0]?.date;
     const src = [...new Set(MERGE.applied.map(t => (MARKET.prices[t].source || '').replace(/ \(.*\)$/, '')))].join(', ');
     parts.push(`${L('Ceny', 'Prices')}: ${MERGE.applied.join(', ')} – ${src} ${L('k', 'as of')} ${date(mDate)}${MERGE.kept.length ? ` · ${MERGE.kept.join(', ')} ${L('ze souboru (bez tržní ceny)', 'from the file (no market price)')}` : ''} · ${L('kurzy ČNB', 'CNB rates')} ${fxDate ? date(fxDate) : ''}: ${fx}`);
+    // zastaralá data zůstávají vidět i se sbalenými parametry
     const age = Math.round((Date.now() - new Date(mDate + 'T18:00:00Z')) / 864e5);
-    if (age > 4) parts.push(`<span class="err">${L(`Tržní data jsou ${age} dní stará – automatická aktualizace se možná nepovedla.`, `Market data are ${age} days old – the automatic update may have failed.`)}</span>`);
+    $('srcWarn').hidden = age <= 4;
+    $('srcWarn').textContent = L(`Tržní data jsou ${age} dní stará – automatická aktualizace se možná nepovedla.`, `Market data are ${age} days old – the automatic update may have failed.`);
     if (!FILE) parts.push(L('Bez vlastního Excelu se počítá s pozicemi ze zadání. Ty jsou smyšlené, takže s dnešními cenami jde jen o ilustraci – pro aktuální ocenění nahrajte vlastní Excel.', 'Without your own Excel file the brief’s holdings are used. They are fictional, so with today’s prices this is only an illustration – upload your own Excel for a current valuation.'));
   } else {
+    $('srcWarn').hidden = true;
     parts.push(`${L('Ceny a kurzy', 'Prices and FX')}: ${L('ze zadání', 'from the brief')}${RAW.asOf ? ` ${L('k', 'as of')} ${date(RAW.asOf)}` : ''}${STORED ? ` · ${L(`vlastní Excel (${esc(STORED.name)}) se použije při aktuálním tržním ocenění`, `your Excel file (${esc(STORED.name)}) is used with the current market valuation`)}` : ''}`);
   }
   $('src').innerHTML = parts.join('<br>');
