@@ -36,7 +36,8 @@ Správná odpověď vypadá zhruba takto:
 
 ## 4. Zapojení do stránky
 
-Pošli adresu Workeru (bez `/quotes…`) – doplním ji do `rebalancing/index.html`
+Adresa je zapojená v `rebalancing/index.html` (`https://rebalancing-ceny.vaclav-kotvalt.workers.dev`).
+Při změně adresy ji stačí upravit
 do konstanty `WORKER_URL`. Do té doby se dá vyzkoušet i bez úpravy kódu:
 
 ```

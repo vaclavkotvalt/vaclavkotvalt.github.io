@@ -482,7 +482,7 @@ const HISTORY_P = fetch('fx_history.json', { cache: 'no-cache' }).then(r => r.ok
 const ISIN_P = fetch('isin_prices.json', { cache: 'no-cache' }).then(r => r.ok ? r.json() : null).catch(() => null);
 // adresa Cloudflare Workeru (rebalancing/worker/NAVOD.md); prázdná = jen denně stahované ceny.
 // Pro vyzkoušení jiné adresy jde použít parametr ?worker=https://… v adrese stránky.
-const WORKER_URL = new URLSearchParams(location.search).get('worker') || '';
+const WORKER_URL = new URLSearchParams(location.search).get('worker') || 'https://rebalancing-ceny.vaclav-kotvalt.workers.dev';
 let FX_HISTORY = null, ISIN_PRICES = {}, LIVE = {};
 const TRIED = new Set();
 
