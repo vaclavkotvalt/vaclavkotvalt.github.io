@@ -483,7 +483,7 @@ const ISIN_P = fetch('isin_prices.json', { cache: 'no-cache' }).then(r => r.ok ?
 // adresa Cloudflare Workeru (rebalancing/worker/NAVOD.md); prázdná = jen denně stahované ceny.
 // Pro vyzkoušení jiné adresy jde použít parametr ?worker=https://… v adrese stránky.
 const WORKER_URL = new URLSearchParams(location.search).get('worker') || 'https://rebalancing-ceny.vaclav-kotvalt.workers.dev';
-let FX_HISTORY = null, ISIN_PRICES = {}, LIVE = {};
+let FX_HISTORY = null, ISIN_PRICES = {}, LIVE = {}, WORKER_DOWN = false;
 const TRIED = new Set();
 
 // Dva režimy ocenění:
@@ -535,7 +535,8 @@ async function lookupMissing() {
       const url = `${WORKER_URL.replace(/\/$/, '')}/quotes?isin=${b.map(i => i.isin).join(',')}&cur=${b.map(i => i.currency || '').join(',')}`;
       const res = await (await fetch(url)).json();
       for (const [isin, r] of Object.entries(res.results || {})) if (r.price > 0) LIVE[isin] = { ...r, live: true };
-    } catch (e) { /* bez odpovědi zůstane cena ze souboru nebo upozornění u klienta */ }
+      WORKER_DOWN = false;
+    } catch (e) { WORKER_DOWN = true; /* bez odpovědi zůstane cena ze souboru nebo upozornění u klienta */ }
   }));
   $('liveNote').hidden = true;
   setMode(MODE, true);
@@ -616,7 +617,12 @@ function issueText(i) {
     case 'targetsSum': return L(`${i.client}: cílové váhy dávají ${nf(i.sum, 1)} %, ne 100 %`, `${clientName(i.client)}: targets sum to ${nf(i.sum, 1)}%, not 100%`);
     case 'unknownTicker': return L(`${i.client}: neznámý ticker ${i.ticker}`, `${clientName(i.client)}: unknown ticker ${i.ticker}`);
     case 'missingFx': return L(`chybí kurz ${i.currency}`, `missing FX rate for ${i.currency}`);
-    case 'badPrice': return L(`${i.ticker}: chybí cena a pro tento ticker nejsou tržní data – doplňte cenu a měnu do listu Instrumenty`, `${i.ticker}: no price and no market data for this ticker – add the price and currency to the Instrumenty sheet`);
+    case 'badPrice': {
+      const inst = DATA?.instruments.find(x => x.ticker === i.ticker);
+      if (!inst?.isin) return L(`${i.ticker}: chybí ISIN i cena – doplňte do listu Instrumenty ISIN (cena se dohledá sama) nebo cenu a měnu`, `${i.ticker}: no ISIN and no price – add the ISIN to the Instrumenty sheet (the price is looked up automatically) or the price and currency`);
+      if (WORKER_DOWN) return L(`${i.ticker}: cenu podle ISIN se nepodařilo dohledat, služba pro ceny neodpověděla – zkuste to později, nebo doplňte cenu a měnu do listu Instrumenty`, `${i.ticker}: the price could not be looked up by ISIN, the price service did not respond – try again later, or add the price and currency to the Instrumenty sheet`);
+      return L(`${i.ticker}: pro ISIN ${inst.isin} se nenašla tržní cena – zkontrolujte ISIN, případně doplňte cenu a měnu do listu Instrumenty`, `${i.ticker}: no market price found for ISIN ${inst.isin} – check the ISIN, or add the price and currency to the Instrumenty sheet`);
+    }
     case 'unknownClient': return L(`pozice neznámého klienta ${i.client}`, `holdings of unknown client ${i.client}`);
     case 'badLot': return L(`${i.client}: neplatná pozice ${i.ticker}`, `${clientName(i.client)}: invalid lot ${i.ticker}`);
     case 'badFlow': return L(`${i.client}: neplatný pohyb hotovosti`, `${clientName(i.client)}: invalid cash flow`);
