@@ -1,22 +1,32 @@
 {
- "updated": "2026-10-29T12:54+00:00",
+ "updated": "2026-10-30T21:42+00:00",
  "fx": {
   "EUR": {
-   "rate": 24.34,
-   "date": "2026-10-27",
+   "rate": 24.36,
+   "date": "2026-10-30",
    "source": "ČNB"
   },
   "USD": {
-   "rate": 21.834,
-   "date": "2026-10-27",
+   "rate": 21.814,
+   "date": "2026-10-30",
+   "source": "ČNB"
+  },
+  "CHF": {
+   "rate": 26.495,
+   "date": "2026-10-30",
+   "source": "ČNB"
+  },
+  "GBP": {
+   "rate": 29.229,
+   "date": "2026-10-30",
    "source": "ČNB"
   }
  },
  "prices": {
   "VWCE": {
-   "price": 171.52,
+   "price": 168.9,
    "currency": "EUR",
-   "date": "2026-10-29",
+   "date": "2026-10-30",
    "source": "Yahoo Finance (VWCE.DE)",
    "isinCheck": {
     "isin": "IE00BK5BQT80",
@@ -29,9 +39,9 @@
    }
   },
   "AVWS": {
-   "price": 25.91,
+   "price": 25.745,
    "currency": "EUR",
-   "date": "2026-10-29",
+   "date": "2026-10-30",
    "source": "Yahoo Finance (AVWS.DE)",
    "isinCheck": {
     "isin": "IE0003R87OG3",
@@ -44,9 +54,9 @@
    }
   },
   "EUNA": {
-   "price": 4.8603,
+   "price": 4.8686,
    "currency": "EUR",
-   "date": "2026-10-29",
+   "date": "2026-10-30",
    "source": "Yahoo Finance (EUNA.DE)",
    "isinCheck": {
     "isin": "IE00BDBRDM35",
@@ -58,9 +68,9 @@
    }
   },
   "IGLN": {
-   "price": 78.19,
+   "price": 75.6375,
    "currency": "USD",
-   "date": "2026-10-29",
+   "date": "2026-10-30",
    "source": "Yahoo Finance (IGLN.L)",
    "isinCheck": {
     "isin": "IE00B4ND3602",
