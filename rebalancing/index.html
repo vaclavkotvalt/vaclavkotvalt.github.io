@@ -209,7 +209,7 @@
   <h1 class="reveal"><span class="cs">Rebalancování portfolií</span><span class="en">Portfolio Rebalancing</span></h1>
   <p class="lead reveal"><span class="cs">Nástroj pro portfolio manažera. Ukáže, kteří klienti se vzdálili od cílového portfolia, co konkrétně koupit a prodat, kolik zásah stojí na daních a poplatcích a kdy se vyplatí počkat na vklad nebo na osvobození od daně.</span><span class="en">A tool for a portfolio manager. It shows which clients have drifted from their target portfolio, exactly what to buy and sell, what the trades cost in taxes and fees, and when it pays to wait for a deposit or for a tax exemption.</span></p>
 
-  <p id="status"><span class="cs">Načítám data…</span><span class="en">Loading data…</span></p>
+  <p id="status" class="err" hidden></p>
 
   <div id="app" hidden>
     <section class="panel reveal" aria-labelledby="dataH">
@@ -497,7 +497,7 @@ Promise.all([SAMPLE, MARKET_P, HISTORY_P]).then(([sample, market, history]) => {
   document.addEventListener('keydown', endIntro, { once: true, capture: true });
   setMode(STORED && MARKET ? 'market' : 'brief');
   renderSettings();
-}).catch(() => { $('status').textContent = L('Data se nepodařilo načíst.', 'Could not load the data.'); });
+}).catch(() => { $('status').textContent = L('Data se nepodařilo načíst. Zkuste stránku obnovit.', 'Could not load the data. Please reload the page.'); $('status').hidden = false; });
 
 function setMode(mode) {
   // vlastní Excel jde použít i bez tržních dat (pak s cenami ze souboru, pokud je obsahuje)
