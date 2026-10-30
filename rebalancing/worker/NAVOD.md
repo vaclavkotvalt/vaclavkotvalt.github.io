@@ -37,8 +37,7 @@ Správná odpověď vypadá zhruba takto:
 ## 4. Zapojení do stránky
 
 Adresa je zapojená v `rebalancing/index.html` (`https://rebalancing-ceny.vaclav-kotvalt.workers.dev`).
-Při změně adresy ji stačí upravit
-do konstanty `WORKER_URL`. Do té doby se dá vyzkoušet i bez úpravy kódu:
+Při změně adresy ji stačí upravit v konstantě `WORKER_URL`. Jinou adresu jde vyzkoušet i bez úpravy kódu:
 
 ```
 https://vaclavkotvalt.cz/rebalancing/?worker=https://rebalancing-ceny.<tvoje-jmeno>.workers.dev
