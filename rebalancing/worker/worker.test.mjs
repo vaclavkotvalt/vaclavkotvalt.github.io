@@ -13,12 +13,13 @@ const charts = {
   'APC.DE': { currency: 'EUR', close: 231.2 },
   'CEZ.PR': { currency: 'CZK', close: 1105 },
   'BRK-B': { currency: 'USD', close: 501.3 },
+  '0R2V.L': { currency: 'USD', close: 343.4 },
 };
 const figi = {
   IE00B5BMR087: [{ ticker: 'SXR8', exchCode: 'GY' }, { ticker: 'CSPX', exchCode: 'LN' }, { ticker: 'CSPX', exchCode: 'XX' }],
   IE00B4ND3602: [{ ticker: 'IGLN', exchCode: 'LN' }],
   IE00B4VBMR80: [{ ticker: 'SGLN', exchCode: 'LN' }],
-  US0378331005: [{ ticker: 'APC', exchCode: 'GY' }, { ticker: 'AAPL', exchCode: 'US' }, { ticker: 'AAPL', exchCode: 'UW' }],
+  US0378331005: [{ ticker: 'APC', exchCode: 'GY' }, { ticker: '0R2V', exchCode: 'LN' }, { ticker: 'AAPL', exchCode: 'US' }, { ticker: 'AAPL', exchCode: 'UW' }],
   CZ0005112300: [{ ticker: 'CEZ', exchCode: 'CP' }],
   US0846707026: [{ ticker: 'BRK/B', exchCode: 'US' }],
 };
@@ -55,6 +56,7 @@ test('limit ISINů a CORS', async () => {
 });
 
 test('akcie: USA bez přípony, Praha .PR v CZK, třídy akcií', async () => {
+  // londýnská vedlejší kotace v USD nesmí vyhrát nad domácím Nasdaqem
   assert.equal((await call('isin=US0378331005&cur=USD')).results.US0378331005.symbol, 'AAPL');
   assert.equal((await call('isin=US0378331005&cur=EUR')).results.US0378331005.symbol, 'APC.DE');
   const cez = (await call('isin=CZ0005112300&cur=CZK')).results.CZ0005112300;

@@ -23,6 +23,10 @@ const UA = { 'User-Agent': 'Mozilla/5.0 (rebalancing tool; vaclavkotvalt.cz)' };
 const EXCHANGES = [['GY', '.DE'], ['LN', '.L'], ['US', ''], ['UN', ''], ['UW', ''], ['UQ', ''], ['CP', '.PR'],
   ['NA', '.AS'], ['IM', '.MI'], ['FP', '.PA'], ['SW', '.SW'], ['GS', '.SG'], ['GF', '.F'], ['GM', '.MU'], ['GD', '.DU']];
 const ISIN_RE = /^[A-Z]{2}[A-Z0-9]{9}[0-9]$/;
+// Domácí burza podle země v ISIN má přednost (likvidní hlavní kotace, ne vedlejší kotace v zahraničí).
+// ETF (IE, LU) domácí burzu nemají – tam platí pořadí EXCHANGES.
+const HOME = { US: '', CZ: '.PR', DE: '.DE', GB: '.L', NL: '.AS', FR: '.PA', IT: '.MI', CH: '.SW' };
+const suffixOf = (symbol) => (symbol.includes('.') ? '.' + symbol.split('.').pop() : '');
 
 const cors = {
   'Access-Control-Allow-Origin': '*',
@@ -84,8 +88,10 @@ async function yahooQuote(symbol) {
 
 async function quoteIsin(isin, hint, figi) {
   const seen = new Set();
+  const home = HOME[isin.slice(0, 2)];
   const cands = [...figi, ...(await yahooSearch(isin))]
     .filter(c => !seen.has(c.symbol) && seen.add(c.symbol))
+    .map(c => (home !== undefined && suffixOf(c.symbol) === home ? { ...c, rank: -1 } : c))
     .sort((a, b) => a.rank - b.rank)
     .slice(0, MAX_CANDIDATES);
   if (!cands.length) return { error: 'ISIN se nepodařilo najít na žádné burze' };
