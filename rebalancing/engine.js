@@ -145,7 +145,9 @@ function analyzeClient(client, data, ctx) {
 
   const warnings = clientWarnings(client, flows, state, ctx);
   // Pohyby mezi datem souboru a datem ocenění už měly proběhnout – nástroj je nezapočte, hotovost musí sedět ze souboru
-  const past = data.flows.filter(own).filter(f => f.date > (data.fileAsOf || data.asOf || '0000-00-00') && f.date <= asOf);
+  // u tržního ocenění se počítá od data souboru (bez data v souboru od počátku), jinak od data ocenění
+  const fileDate = 'fileAsOf' in data ? data.fileAsOf : data.asOf;
+  const past = data.flows.filter(own).filter(f => f.date > (fileDate || '0000-00-00') && f.date <= asOf);
   if (past.length) warnings.push({ code: 'pastFlows', flows: past });
   const base = {
     id: client.id, profile: client.profile, taxRegime: client.taxRegime, note: client.note,
@@ -155,6 +157,11 @@ function analyzeClient(client, data, ctx) {
   };
 
   const now = nextBusinessDay(addDays(asOf, 1));
+  // Chybné cíle (součet ≠ 100 %): žádné obchody, dokud se neopraví – jinak by se obchodovalo podle špatného zadání
+  const targetSum = sum(Object.values(client.targets));
+  if (Math.abs(targetSum - 100) > 0.01) {
+    return { ...base, status: 'act', decision: { date: null, reasons: [{ code: 'badTargets', sum: targetSum }] }, plan: null, alt: null, altFollow: null };
+  }
   const plan = (date) => planAt(date, { client, lots, held, cash, flows, tickers }, ctx);
   // plný rebalancing bez daňově šetrného pravidla – pro srovnání s čekáním na osvobození
   const ctxFull = { ...ctx, S: { ...S, taxableBandMult: 0 } };

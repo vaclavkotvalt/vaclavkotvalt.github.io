@@ -98,7 +98,7 @@
   .why tr.best td { color: var(--text); font-weight: 500; }
   .why tr:not(.best) td { color: var(--muted); }
   .src { font-size: 0.85rem; color: var(--muted); margin: 0.9rem 0 0; }
-  .src button.lnk { font: inherit; background: none; border: 0; padding: 0; color: var(--accent); cursor: pointer; text-decoration: underline; text-underline-offset: 0.2em; }
+  button.lnk { font: inherit; background: none; border: 0; padding: 0; color: var(--accent); cursor: pointer; text-decoration: underline; text-underline-offset: 0.2em; }
   details.more { margin-top: 1.5rem; border-top: 1px solid var(--line); padding-top: 1.25rem; }
   details.more > summary { cursor: pointer; font-weight: 500; }
   details.more[open] > summary { margin-bottom: 1.25rem; }
@@ -228,6 +228,7 @@
         <a class="btn" href="sablona.xlsx" download><span class="cs">Stáhnout šablonu Excelu</span><span class="en">Download Excel template</span></a>
       </div>
       <p class="src err" id="srcWarn" hidden></p>
+      <p class="src err" id="fileErr" role="alert" hidden></p>
       <details class="more">
         <summary><span class="cs">Data, pravidla a parametry</span><span class="en">Data, rules and parameters</span></summary>
         <p class="src src-in" id="src"></p>
@@ -513,8 +514,9 @@ function setMode(mode) {
 function loadFile(sheets, name) {
   fromSheets(sheets); // vyhodí chybu, pokud soubor nemá očekávané listy
   STORED = { name, sheets };
-  try { localStorage.setItem('rb-file', JSON.stringify(STORED)); } catch (e) {}
   setMode('market');
+  // do prohlížeče uložit jen soubor, se kterým jde počítat – chybný by se po obnovení načetl znovu
+  try { if (RES && RES.summary) localStorage.setItem('rb-file', JSON.stringify(STORED)); else localStorage.removeItem('rb-file'); } catch (e) {}
 }
 function forgetFile() { STORED = null; try { localStorage.removeItem('rb-file'); } catch (e) {} }
 
@@ -558,7 +560,9 @@ function render() {
   run();
   renderSourceUi();
   if (RES.issues.length) {
-    $('ovNote').innerHTML = `<span class="err">${RES.issues.map(issueText).map(esc).join(' · ')}</span>`;
+    $('ovNote').innerHTML = `<span class="err">${RES.issues.map(issueText).map(esc).join(' · ')}</span>`
+      + (FILE && !RES.summary ? ` <button type="button" class="lnk" id="forget2">${L('Zapomenout soubor a zobrazit data ze zadání', 'Forget the file and show the brief’s data')}</button>` : '');
+    $('forget2')?.addEventListener('click', () => { forgetFile(); setMode('brief'); });
   } else {
     $('ovNote').textContent = L('Klikněte na klienta pro detail.', 'Click a client for details.');
   }
@@ -622,6 +626,7 @@ function recoItems(c) {
   const rowsOut = (keys) => keys.map(k => { const r = c.rows.find(x => x.key === k); return `${keyName(k)} ${pp(r.diff)} (±${nf(r.band, 1)})`; }).join(', ');
   for (const r of c.decision.reasons) {
     switch (r.code) {
+      case 'badTargets': items.push(L(`Cílové váhy dávají dohromady ${nf(r.sum, 1)} %, ne 100 %. Dokud je v Excelu neopravíte, nástroj pro klienta nenavrhne žádné obchody.`, `Target weights add up to ${nf(r.sum, 1)}%, not 100%. Until you fix them in the Excel file, the tool won’t propose any trades for this client.`)); break;
       case 'inBand': items.push(L('Všechny složky jsou v toleranci. Není potřeba nic dělat; další kontrola při příští revizi.', 'All holdings are within their bands. No action needed; check again at the next review.')); break;
       case 'drift': items.push(L(`Mimo toleranci: ${rowsOut(r.keys)}.`, `Out of band: ${rowsOut(r.keys)}.`)); break;
       case 'liquidity': items.push(L(`Hotovost ${czk(r.cash)} nepokryje výběry v příštích ${S.horizonDays} dnech (${czk(r.reserve)}).`, `Cash of ${czk(r.cash)} doesn’t cover withdrawals in the next ${S.horizonDays} days (${czk(r.reserve)}).`)); break;
@@ -857,9 +862,11 @@ $('file').addEventListener('change', async () => {
     // data převedená na text (ISO), aby se dala uložit do prohlížeče bez posunu časových pásem
     const sheets = Object.fromEntries(wb.SheetNames.map(n => [n, window.XLSX.utils.sheet_to_json(wb.Sheets[n], { header: 1, blankrows: false, raw: true })
       .map(r => r.map(c => c instanceof Date ? isoDate(c) : c))]));
+    $('fileErr').hidden = true;
     loadFile(sheets, f.name);
   } catch (e) {
-    alert(L('Soubor se nepodařilo načíst: ', 'Could not read the file: ') + (e.message || e));
+    $('fileErr').textContent = L(`Soubor ${f.name} se nepodařilo načíst: `, `Could not read ${f.name}: `) + (e.message || e) + L(' Vyjděte ze šablony (tlačítko Stáhnout šablonu Excelu).', ' Start from the template (Download Excel template button).');
+    $('fileErr').hidden = false;
   }
   $('file').value = '';
 });

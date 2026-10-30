@@ -164,3 +164,21 @@ test('Excel bez cen, kurzů a data ocenění: doplní se z tržních dat', async
   // stejné ceny jako v zadání → stejné výsledky
   assert.deepEqual(r.clients.map(c => c.status), res.clients.map(c => c.status));
 });
+
+test('Excel bez data ocenění: prošlé vklady a výběry se nahlásí', async () => {
+  const { applyMarket } = await import('./io.js');
+  const d = { ...data, asOf: null, flows: [...data.flows, { client: 'Klient C', date: '2026-10-01', amount: 50000, note: 'už proběhl' }] };
+  const r = analyze(applyMarket(d, { fx: {}, prices: { VWCE: { price: 142.5, currency: 'EUR', date: '2026-10-23' } } }).data);
+  const w = r.clients.find(c => c.id === 'Klient C').warnings.find(x => x.code === 'pastFlows');
+  assert.ok(w && w.flows.length === 1 && w.flows[0].date === '2026-10-01');
+});
+
+test('cílové váhy se součtem ≠ 100 %: klient bez obchodů a s upozorněním', () => {
+  const d = { ...data, clients: data.clients.map(c => c.id === 'Klient A' ? { ...c, targets: { ...c.targets, VWCE: 55 } } : c) };
+  const r = analyze(d);
+  const a = r.clients.find(c => c.id === 'Klient A');
+  assert.equal(a.plan, null);
+  assert.equal(a.decision.reasons[0].code, 'badTargets');
+  assert.ok(r.issues.some(i => i.code === 'targetsSum'));
+  assert.ok(r.clients.find(c => c.id === 'Klient B').plan); // ostatní klienti se počítají dál
+});
