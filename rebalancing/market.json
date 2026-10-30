@@ -1,5 +1,5 @@
 {
- "updated": "2026-10-30T22:56+00:00",
+ "updated": "2026-10-30T23:01+00:00",
  "fx": {
   "EUR": {
    "rate": 24.36,
@@ -24,9 +24,9 @@
  },
  "prices": {
   "VWCE": {
-   "price": 168.9,
+   "price": 171.44,
    "currency": "EUR",
-   "date": "2026-10-30",
+   "date": "2026-10-29",
    "source": "Yahoo Finance (VWCE.DE)",
    "isinCheck": {
     "isin": "IE00BK5BQT80",
@@ -39,9 +39,9 @@
    }
   },
   "AVWS": {
-   "price": 25.745,
+   "price": 25.98,
    "currency": "EUR",
-   "date": "2026-10-30",
+   "date": "2026-10-29",
    "source": "Yahoo Finance (AVWS.DE)",
    "isinCheck": {
     "isin": "IE0003R87OG3",
@@ -54,9 +54,9 @@
    }
   },
   "EUNA": {
-   "price": 4.8686,
+   "price": 4.8652,
    "currency": "EUR",
-   "date": "2026-10-30",
+   "date": "2026-10-29",
    "source": "Yahoo Finance (EUNA.DE)",
    "isinCheck": {
     "isin": "IE00BDBRDM35",
