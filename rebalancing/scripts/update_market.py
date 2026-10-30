@@ -26,7 +26,7 @@ INSTRUMENTS = {
     "EUNA": {"isin": "IE00BDBRDM35", "currency": "EUR", "yahoo": ["EUNA.DE"], "stooq": ["euna.de"]},
     "IGLN": {"isin": "IE00B4ND3602", "currency": "USD", "yahoo": ["IGLN.L"], "stooq": ["igln.uk"]},
 }
-FX = ["EUR", "USD"]
+FX = ["EUR", "USD", "GBP", "CHF"]  # GBP a CHF pro ETF kótované v Londýně a Curychu
 MAX_JUMP = 0.25  # denní změna nad 25 % = podezřelý údaj, ponechat předchozí
 
 
@@ -112,7 +112,8 @@ def cnb_year(year):
 def update_history():
     """Historie kurzů pro přepočet nákupních cen: chybějící roky + vždy aktuální rok."""
     hist = json.loads(HIST.read_text()) if HIST.exists() else {"source": "ČNB, kurzy devizového trhu", "rates": {c: {} for c in FX}}
-    have = {d[:4] for d in hist["rates"].get("EUR", {})}
+    # rok se stáhne znovu, pokud v něm chybí kterákoli měna (např. po přidání nové)
+    have = set.intersection(*[{d[:4] for d in hist["rates"].get(c, {})} for c in FX])
     this_year = dt.date.today().year
     for year in range(HIST_FROM, this_year + 1):
         if str(year) in have and year != this_year:
