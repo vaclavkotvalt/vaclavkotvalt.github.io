@@ -51,7 +51,9 @@ def main():
         ("Jak vyplnit", Font(bold=True)),
         ("1. Šedé kurzívou psané řádky jsou vzor – přepište je vlastními údaji nebo smažte.", None),
         ("2. Názvy listů a záhlaví sloupců neměňte, nástroj podle nich data čte.", None),
-        ("3. Ceny ETF, kurzy měn ani datum ocenění se nevyplňují – nástroj je stáhne automaticky (závěrečné ceny ETF a kurzy ČNB z posledního obchodního dne). List Instrumenty je jen přehled; cenu a měnu do něj doplňte jen u ETF, pro které tržní data nejsou.", None),
+        ("3. Ceny ETF, kurzy měn ani datum ocenění se nevyplňují – nástroj je stáhne automaticky (závěrečné ceny a kurzy ČNB z posledního obchodního dne).", None),
+        ("   V listu Instrumenty uveďte u každého ETF ISIN – podle něj se dohledá aktuální cena, i u fondů mimo vzor. Měna = měna, ve které jsou nákupní ceny v listu Pozice.", None),
+        ("   Cenu vyplňte jen tehdy, když ji nástroj podle ISIN nenajde (ohlásí to).", None),
         ("4. Klienti: cílové váhy v % celkového majetku včetně hotovosti, součet musí být 100. Daňový režim FO = fyzická osoba, s.r.o. = právnická osoba.", None),
         ("5. Pozice: každý nákup zvlášť (kvůli časovému testu a FIFO) – datum nákupu, počet kusů a cena v měně instrumentu.", None),
         ("6. Hotovost: zůstatky podle měny. Cash flow: plánované vklady (kladné) a výběry (záporné) v CZK.", None),
@@ -74,8 +76,10 @@ def main():
            ["EUNA", "iShares Core Global Aggregate Bond UCITS ETF EUR Hedged (Acc)", "IE00BDBRDM35", "EUR", "Dluhopisy", None],
            ["IGLN", "iShares Physical Gold ETC", "IE00B4ND3602", "USD", "Zlato", None]],
           [10, 58, 16, 8, 24, 16],
-          {"A": "Ticker musí odpovídat sloupcům „Cíl … %“ v listu Klienti. Denní tržní ceny se stahují pro VWCE, AVWS, EUNA a IGLN.",
-           "F": "Nevyplňuje se – cena se stáhne automaticky. Vyplňte jen u ETF, pro které tržní data nejsou (spolu se sloupcem Měna)."})
+          {"A": "Ticker je jen váš název ETF – musí odpovídat sloupcům „Cíl … %“ v listu Klienti a listu Pozice.",
+           "C": "ISIN fondu (12 znaků, např. IE00B5BMR087). Podle něj se automaticky dohledá aktuální cena.",
+           "D": "Měna, ve které jsou nákupní ceny v listu Pozice (EUR, USD, GBP, CHF). Tržní cena se do ní přepočte kurzem ČNB.",
+           "F": "Nevyplňuje se – cena se dohledá podle ISIN. Vyplňte jen, když ji nástroj nenajde."})
     ws = sheet(wb, "Klienti",
                ["Klient", "Profil", "Daňový režim", "Cíl VWCE %", "Cíl AVWS %", "Cíl EUNA %", "Cíl IGLN %", "Cíl hotovost %", "Poznámka"],
                [["Klient 1", "Růstový, horizont 15+ let", "FO", 60, 20, 20, 0, 0, "Vzorový řádek"]],

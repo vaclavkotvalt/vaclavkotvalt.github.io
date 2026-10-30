@@ -56,8 +56,9 @@ export function fromSheets(sheets) {
 
   // Ceny, měny a kurzy jsou nepovinné – při tržním ocenění je doplní applyMarket z denních dat
   const instruments = hasSheet(sheets, 'Instrumenty')
-    ? table(sheets, 'Instrumenty', { ticker: 'Ticker', name: '?Název', currency: '?Měna', assetClass: '?Třída', price: '?Cena' })
+    ? table(sheets, 'Instrumenty', { ticker: 'Ticker', name: '?Název', isin: '?ISIN', currency: '?Měna', assetClass: '?Třída', price: '?Cena' })
       .map(r => ({ ticker: String(r.ticker).trim(), name: r.name ?? '', assetClass: r.assetClass ?? '',
+        isin: blank(r.isin) ? null : String(r.isin).replace(/\s/g, '').toUpperCase(),
         currency: blank(r.currency) ? null : String(r.currency).trim().toUpperCase(), price: blank(r.price) ? null : num(r.price) }))
     : [];
 
@@ -91,15 +92,17 @@ export function fromSheets(sheets) {
   // Tickery z cílů a pozic, které nejsou v listu Instrumenty, se doplní bez ceny (vezme se z trhu)
   const known = new Set(instruments.map(i => i.ticker));
   const used = [...clients.flatMap(c => Object.keys(c.targets).filter(t => t !== 'CASH')), ...lots.map(l => l.ticker)];
-  for (const t of used) if (!known.has(t)) { known.add(t); instruments.push({ ticker: t, name: '', assetClass: '', currency: null, price: null }); }
+  for (const t of used) if (!known.has(t)) { known.add(t); instruments.push({ ticker: t, name: '', assetClass: '', isin: null, currency: null, price: null }); }
 
   return { asOf, fx, instruments, clients, lots, cash, flows };
 }
 
 // Přepíše ceny a kurzy aktuálními tržními daty (market.json). Instrumenty, pro které
 // tržní cena chybí nebo je v jiné měně, si ponechají cenu ze souboru.
-export function applyMarket(data, market) {
-  const fx = { ...data.fx }, applied = [], kept = [], dates = [];
+// isinPrices: { ISIN: {price, currency, date, symbol, source} } – denně předstažené běžné ETF
+// a ceny dohledané Workerem. Použijí se, když pro ticker není cena z denního stažení.
+export function applyMarket(data, market, isinPrices = {}) {
+  const fx = { ...data.fx }, applied = [], kept = [], viaIsin = [], dates = [];
   for (const [code, v] of Object.entries(market.fx || {})) {
     if (v.rate > 0) { fx[code] = v.rate; dates.push(v.date); }
   }
@@ -110,8 +113,17 @@ export function applyMarket(data, market) {
       applied.push(i.ticker); dates.push(m.date);
       return { ...i, currency: m.currency, price: m.price, priceDate: m.date, priceSource: m.source };
     }
+    // Cena podle ISIN. Stejný fond se kotuje v různých měnách; nákupní ceny v Excelu jsou v měně
+    // ze sloupce Měna, proto se tržní cena přepočte do ní (kurzy ČNB). Bez měny v Excelu platí měna kotace.
+    const q = i.isin ? isinPrices[i.isin] : null;
+    const cur = i.currency || q?.currency;
+    if (q && q.price > 0 && fx[q.currency] > 0 && fx[cur] > 0) {
+      applied.push(i.ticker); viaIsin.push(i.ticker); dates.push(q.date);
+      const price = cur === q.currency ? q.price : q.price * fx[q.currency] / fx[cur];
+      return { ...i, currency: cur, price, priceDate: q.date, priceSource: `${q.source || 'Yahoo Finance'} (${q.symbol})`, priceConverted: cur !== q.currency ? q.currency : null };
+    }
     kept.push(i.ticker); return i;
   });
   const asOf = dates.sort().at(-1) || data.asOf;
-  return { data: { ...data, fx, instruments, asOf, fileAsOf: data.asOf }, applied, kept, asOf };
+  return { data: { ...data, fx, instruments, asOf, fileAsOf: data.asOf }, applied, kept, viaIsin, asOf };
 }

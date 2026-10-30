@@ -65,7 +65,7 @@ export function validate(data) {
   const tickers = new Set(data.instruments.map(i => i.ticker));
   for (const i of data.instruments) {
     if (!(i.price > 0) || !i.currency) { issues.push({ code: 'badPrice', ticker: i.ticker }); continue; }
-    if (!(data.fx[i.currency] > 0)) issues.push({ code: 'missingFx', currency: i.currency });
+    if (!(data.fx[i.currency] > 0)) issues.push({ code: 'missingFx', currency: i.currency, ticker: i.ticker });
   }
   const ids = new Set(data.clients.map(c => c.id));
   for (const c of data.clients) {
@@ -88,16 +88,18 @@ export function analyze(data, settings = {}) {
   const S = { ...DEFAULTS, ...settings };
   const asOf = settings.asOf || data.asOf;
   const issues = validate(data);
-  const fatal = issues.filter(i => ['badPrice', 'missingFx', 'unknownTicker', 'badLot'].includes(i.code));
+  // Chybějící cena nebo kurz u jednoho ETF zastaví jen klienty, kteří ho drží nebo mají v cílech
+  const badTickers = new Set(issues.filter(i => i.ticker && ['badPrice', 'missingFx'].includes(i.code)).map(i => i.ticker));
+  const fatal = issues.filter(i => i.code === 'badLot' || i.code === 'unknownTicker' || (i.code === 'missingFx' && !i.ticker));
   if (fatal.length) return { asOf, settings: S, issues, clients: [], summary: null };
 
-  const inst = Object.fromEntries(data.instruments.map(i => [i.ticker, { ...i, pCZK: i.price * data.fx[i.currency] }]));
+  const inst = Object.fromEntries(data.instruments.filter(i => !badTickers.has(i.ticker)).map(i => [i.ticker, { ...i, pCZK: i.price * data.fx[i.currency] }]));
   const fxAt = historicFx(data.fxHistory);
-  const ctx = { S, asOf, fx: data.fx, inst, fxAt, feeMinCZK: S.feeMinEur * (data.fx.EUR || 25) };
+  const ctx = { S, asOf, fx: data.fx, inst, fxAt, badTickers, feeMinCZK: S.feeMinEur * (data.fx.EUR || 25) };
   const clients = data.clients.map(c => analyzeClient(c, data, ctx));
 
   const summary = {
-    aum: sum(clients, c => c.total),
+    aum: sum(clients, c => c.total || 0),
     count: { act: 0, wait: 0, ok: 0 },
     costs: sum(clients, c => c.plan ? c.plan.costs.total : 0),
     taxSaved: sum(clients, c => c.decision.taxSaved || 0),
@@ -107,8 +109,16 @@ export function analyze(data, settings = {}) {
 }
 
 function analyzeClient(client, data, ctx) {
-  const { S, asOf, fx, inst, fxAt } = ctx;
+  const { S, asOf, fx, inst, fxAt, badTickers } = ctx;
   const own = (x) => x.client === client.id;
+  // ETF bez ceny vadí jen tomu, kdo ho drží nebo ho má v cílech s nenulovou váhou
+  const uses = [...data.lots.filter(own).map(l => l.ticker), ...Object.entries(client.targets).filter(([, w]) => w > 0).map(([t]) => t)];
+  const missing = [...new Set(uses)].filter(t => badTickers.has(t));
+  if (missing.length) {
+    return { id: client.id, profile: client.profile, taxRegime: client.taxRegime, note: client.note, targets: client.targets,
+      total: null, cash: {}, cashCZK: null, rows: [], lots: [], flows: [], maxDrift: null, triggers: [], warnings: [],
+      status: 'act', decision: { date: null, reasons: [{ code: 'missingPrice', tickers: missing }] }, plan: null, alt: null, altFollow: null };
+  }
   const cash = {};
   for (const c of data.cash.filter(own)) cash[c.currency] = (cash[c.currency] || 0) + c.amount;
   const flows = data.flows.filter(own).filter(f => f.date > asOf).sort((a, b) => a.date.localeCompare(b.date))
@@ -130,7 +140,8 @@ function analyzeClient(client, data, ctx) {
     };
   });
 
-  const tickers = [...new Set([...Object.keys(client.targets).filter(k => k !== 'CASH'), ...lots.map(l => l.ticker)])];
+  // ETF s nulovým cílem bez ceny (a bez pozic) se vynechá – nemá co ocenit
+  const tickers = [...new Set([...Object.keys(client.targets).filter(k => k !== 'CASH'), ...lots.map(l => l.ticker)])].filter(t => inst[t]);
   const held = Object.fromEntries(tickers.map(t => [t, sum(lots.filter(l => l.ticker === t), l => l.qty)]));
   const state = valuation(held, cash, ctx);
   const rows = weightRows(state, client.targets, tickers, 0, S);

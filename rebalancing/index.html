@@ -229,6 +229,7 @@
       </div>
       <p class="src err" id="srcWarn" hidden></p>
       <p class="src err" id="fileErr" role="alert" hidden></p>
+      <p class="src" id="liveNote" aria-live="polite" hidden></p>
       <details class="more">
         <summary><span class="cs">Data, pravidla a parametry</span><span class="en">Data, rules and parameters</span></summary>
         <p class="src src-in" id="src"></p>
@@ -354,7 +355,7 @@
       </ul>
       <h3>Co nástroj neumí</h3>
       <ul>
-        <li>Nenapojuje se na brokera – pozice, hotovost a plánované pohyby bere z nahraného Excelu, který je potřeba udržovat aktuální. Ceny ETF (Yahoo Finance, záložně Stooq) a kurzy ČNB se stahují automaticky každý pracovní den večer; jde o závěrečné ceny, ne o ceny v okamžiku obchodu.</li>
+        <li>Nenapojuje se na brokera – pozice, hotovost a plánované pohyby bere z nahraného Excelu, který je potřeba udržovat aktuální. Ceny ETF se hledají podle ISIN: zhruba 40 běžných fondů a kurzy ČNB se stahují každý pracovní den večer, ostatní ISINy z nahraného Excelu dohledá služba na Cloudflare (odesílají se jí jen ISINy). Jde o závěrečné ceny z Yahoo Finance, ne o ceny v okamžiku obchodu; kotace v jiné měně se přepočte kurzem ČNB do měny nákupních cen.</li>
         <li>Nepočítá se sazbou 23 % pro část základu daně nad 36násobkem průměrné mzdy ani s dalšími příjmy klienta. U s.r.o. je daň jen odhad dopadu na základ daně (účetní ocenění cenných papírů nástroj neřeší).</li>
         <li>Neověří, jestli jsou historické údaje o pozicích převedených od jiného brokera správné – to musí udělat manažer.</li>
       </ul>
@@ -383,7 +384,7 @@
       </ul>
       <h3>What the tool doesn’t do</h3>
       <ul>
-        <li>It doesn’t connect to a broker – holdings, cash and planned flows come from the uploaded Excel file, which has to be kept up to date. ETF prices (Yahoo Finance, with Stooq as a fallback) and CNB rates are fetched automatically every business day in the evening; they are closing prices, not prices at the moment of the trade.</li>
+        <li>It doesn’t connect to a broker – holdings, cash and planned flows come from the uploaded Excel file, which has to be kept up to date. ETF prices are looked up by ISIN: about 40 common funds and CNB rates are fetched every business day in the evening, other ISINs from the uploaded Excel file are looked up by a service on Cloudflare (only the ISINs are sent). They are closing prices from Yahoo Finance, not prices at the moment of the trade; a quote in another currency is converted at the CNB rate into the currency of the purchase prices.</li>
         <li>It ignores the 23% rate on the part of the tax base above 36 times the average wage and the client’s other income. For companies the tax is only an estimate of the impact on the tax base (the tool doesn’t handle accounting valuation of securities).</li>
         <li>It can’t verify historical records of positions transferred from another broker – the manager has to.</li>
       </ul>
@@ -477,14 +478,21 @@ const SAMPLE = fetch('data.json', { cache: 'no-cache' }).then(r => { if (!r.ok) 
 const MARKET_P = fetch('market.json', { cache: 'no-cache' }).then(r => r.ok ? r.json() : null).catch(() => null);
 // denní kurzy ČNB od roku 2010 – nákupní cena lotu se přepočítá kurzem ze dne nákupu
 const HISTORY_P = fetch('fx_history.json', { cache: 'no-cache' }).then(r => r.ok ? r.json() : null).catch(() => null);
-let FX_HISTORY = null;
+// ceny běžných ETF podle ISIN (denně) a služba, která dohledá ostatní ISINy z nahraného Excelu
+const ISIN_P = fetch('isin_prices.json', { cache: 'no-cache' }).then(r => r.ok ? r.json() : null).catch(() => null);
+// adresa Cloudflare Workeru (rebalancing/worker/NAVOD.md); prázdná = jen denně stahované ceny.
+// Pro vyzkoušení jiné adresy jde použít parametr ?worker=https://… v adrese stránky.
+const WORKER_URL = new URLSearchParams(location.search).get('worker') || '';
+let FX_HISTORY = null, ISIN_PRICES = {}, LIVE = {};
+const TRIED = new Set();
 
 // Dva režimy ocenění:
 //  'brief'  = data ze zadání s jejich cenami a kurzy (výstup pro zadání)
 //  'market' = vlastní Excel (pokud je nahraný, jinak data ze zadání) s aktuálními tržními cenami a kurzy
 let SAMPLE_RAW = null, STORED = null;
-Promise.all([SAMPLE, MARKET_P, HISTORY_P]).then(([sample, market, history]) => {
+Promise.all([SAMPLE, MARKET_P, HISTORY_P, ISIN_P]).then(([sample, market, history, isinPrices]) => {
   FX_HISTORY = history;
+  ISIN_PRICES = isinPrices?.prices || {};
   MARKET = market && market.prices && Object.keys(market.prices).length ? market : null;
   SAMPLE_RAW = fromSheets(sample.sheets);
   try { STORED = JSON.parse(localStorage.getItem('rb-file') || 'null'); } catch (e) {}
@@ -500,16 +508,37 @@ Promise.all([SAMPLE, MARKET_P, HISTORY_P]).then(([sample, market, history]) => {
   renderSettings();
 }).catch(() => { $('status').textContent = L('Data se nepodařilo načíst. Zkuste stránku obnovit.', 'Could not load the data. Please reload the page.'); $('status').hidden = false; });
 
-function setMode(mode) {
+function setMode(mode, keepSelected = false) {
   // vlastní Excel jde použít i bez tržních dat (pak s cenami ze souboru, pokud je obsahuje)
   MODE = mode === 'market' && (MARKET || STORED) ? 'market' : 'brief';
   const own = MODE === 'market' && STORED;
   RAW = { ...(own ? fromSheets(STORED.sheets) : SAMPLE_RAW), fxHistory: FX_HISTORY };
   FILE = own ? STORED.name : null;
-  selected = null;
-  MERGE = MODE === 'market' && MARKET ? applyMarket(RAW, MARKET) : null;
+  if (!keepSelected) selected = null;
+  MERGE = MODE === 'market' && MARKET ? applyMarket(RAW, MARKET, { ...ISIN_PRICES, ...LIVE }) : null;
   DATA = MERGE ? MERGE.data : RAW;
   render();
+  if (own && MERGE) lookupMissing();
+}
+
+// ETF z Excelu bez tržní ceny: dohledat podle ISIN přes Worker (po 8 kusech), pak přepočítat
+async function lookupMissing() {
+  const want = DATA.instruments.filter(i => MERGE.kept.includes(i.ticker) && i.isin && !TRIED.has(i.isin));
+  if (!WORKER_URL || !want.length) return;
+  want.forEach(i => TRIED.add(i.isin));
+  $('liveNote').textContent = L(`Dohledávám aktuální ceny podle ISIN: ${want.map(i => i.ticker).join(', ')}…`, `Looking up current prices by ISIN: ${want.map(i => i.ticker).join(', ')}…`);
+  $('liveNote').hidden = false;
+  const batches = [];
+  for (let k = 0; k < want.length; k += 8) batches.push(want.slice(k, k + 8));
+  await Promise.all(batches.map(async (b) => {
+    try {
+      const url = `${WORKER_URL.replace(/\/$/, '')}/quotes?isin=${b.map(i => i.isin).join(',')}&cur=${b.map(i => i.currency || '').join(',')}`;
+      const res = await (await fetch(url)).json();
+      for (const [isin, r] of Object.entries(res.results || {})) if (r.price > 0) LIVE[isin] = { ...r, live: true };
+    } catch (e) { /* bez odpovědi zůstane cena ze souboru nebo upozornění u klienta */ }
+  }));
+  $('liveNote').hidden = true;
+  setMode(MODE, true);
 }
 function loadFile(sheets, name) {
   fromSheets(sheets); // vyhodí chybu, pokud soubor nemá očekávané listy
@@ -531,8 +560,20 @@ function renderSourceUi() {
   if (MERGE) {
     const fx = Object.entries(MARKET.fx || {}).map(([c, v]) => `${c} ${nf(v.rate, 3)}`).join(', ');
     const fxDate = Object.values(MARKET.fx || {})[0]?.date;
-    const src = [...new Set(MERGE.applied.map(t => (MARKET.prices[t].source || '').replace(/ \(.*\)$/, '')))].join(', ');
-    parts.push(`${L('Ceny', 'Prices')}: ${MERGE.applied.join(', ')} – ${src} ${L('k', 'as of')} ${date(mDate)}${MERGE.kept.length ? ` · ${MERGE.kept.join(', ')} ${L('ze souboru (bez tržní ceny)', 'from the file (no market price)')}` : ''} · ${L('kurzy ČNB', 'CNB rates')} ${fxDate ? date(fxDate) : ''}: ${fx}`);
+    const byTicker = MERGE.applied.filter(t => !MERGE.viaIsin.includes(t));
+    const src = [...new Set(byTicker.map(t => (MARKET.prices[t].source || '').replace(/ \(.*\)$/, '')))].join(', ');
+    const inst = (t) => DATA.instruments.find(i => i.ticker === t);
+    const isinTxt = MERGE.viaIsin.map(t => { const i = inst(t); return `${t} (${esc(i.priceSource)}${i.priceConverted ? `, ${L('přepočteno z', 'converted from')} ${i.priceConverted}` : ''})`; });
+    const noPrice = MERGE.kept.filter(t => !(inst(t)?.price > 0));
+    const filePrice = MERGE.kept.filter(t => inst(t)?.price > 0);
+    const pieces = [
+      byTicker.length ? `${byTicker.join(', ')} – ${src} ${L('k', 'as of')} ${date(mDate)}` : '',
+      isinTxt.length ? `${L('podle ISIN', 'by ISIN')}: ${isinTxt.join(', ')}` : '',
+      filePrice.length ? `${filePrice.join(', ')} ${L('ze souboru (bez tržní ceny)', 'from the file (no market price)')}` : '',
+      noPrice.length ? `<span class="err">${noPrice.join(', ')} ${L('bez ceny', 'no price')}</span>` : '',
+      `${L('kurzy ČNB', 'CNB rates')} ${fxDate ? date(fxDate) : ''}: ${fx}`,
+    ].filter(Boolean);
+    parts.push(`${L('Ceny', 'Prices')}: ${pieces.join(' · ')}`);
     // zastaralá data zůstávají vidět i se sbalenými parametry
     const age = Math.round((Date.now() - new Date(mDate + 'T18:00:00Z')) / 864e5);
     $('srcWarn').hidden = age <= 4;
@@ -607,8 +648,8 @@ function renderOverview() {
       <td><b style="font-weight:500">${esc(clientName(c.id))}</b><br><span class="muted small">${c.taxRegime === 'FO' ? L('FO', 'individual') : L('s.r.o.', 'company')}</span></td>
       <td>${chip(c.status)}</td>
       <td>${c.decision.date ? date(c.decision.date) : '–'}</td>
-      <td class="r">${mczk(c.total)}</td>
-      <td class="r">${pp(c.rows.reduce((m, r) => Math.abs(r.diff) > Math.abs(m) ? r.diff : m, 0))}</td>
+      <td class="r">${c.total == null ? '–' : mczk(c.total)}</td>
+      <td class="r">${c.rows.length ? pp(c.rows.reduce((m, r) => Math.abs(r.diff) > Math.abs(m) ? r.diff : m, 0)) : '–'}</td>
       <td class="wrap">${trades}</td>
       <td class="r">${c.plan ? czk(c.plan.costs.total) : '–'}</td>
     </tr>`;
@@ -626,6 +667,7 @@ function recoItems(c) {
   const rowsOut = (keys) => keys.map(k => { const r = c.rows.find(x => x.key === k); return `${keyName(k)} ${pp(r.diff)} (±${nf(r.band, 1)})`; }).join(', ');
   for (const r of c.decision.reasons) {
     switch (r.code) {
+      case 'missingPrice': items.push(L(`Pro ${r.tickers.join(', ')} není aktuální cena, proto nástroj klienta nepočítá. Doplňte do listu Instrumenty ISIN (cena se dohledá automaticky) nebo cenu a měnu.`, `There is no current price for ${r.tickers.join(', ')}, so the tool can’t evaluate this client. Add the ISIN to the Instrumenty sheet (the price is then looked up automatically) or the price and currency.`)); break;
       case 'badTargets': items.push(L(`Cílové váhy dávají dohromady ${nf(r.sum, 1)} %, ne 100 %. Dokud je v Excelu neopravíte, nástroj pro klienta nenavrhne žádné obchody.`, `Target weights add up to ${nf(r.sum, 1)}%, not 100%. Until you fix them in the Excel file, the tool won’t propose any trades for this client.`)); break;
       case 'inBand': items.push(L('Všechny složky jsou v toleranci. Není potřeba nic dělat; další kontrola při příští revizi.', 'All holdings are within their bands. No action needed; check again at the next review.')); break;
       case 'drift': items.push(L(`Mimo toleranci: ${rowsOut(r.keys)}.`, `Out of band: ${rowsOut(r.keys)}.`)); break;
@@ -681,7 +723,7 @@ function renderDetail() {
   if (!c) return;
   $('dH').textContent = clientName(c.id);
   $('dChip').innerHTML = chip(c.status) + (c.decision.date ? ` <span class="muted small">${date(c.decision.date)}</span>` : '');
-  $('dProfile').textContent = `${c.profile} · ${c.taxRegime === 'FO' ? L('fyzická osoba', 'individual') : L('s.r.o.', 'company')} · ${mczk(c.total)}`;
+  $('dProfile').textContent = `${c.profile} · ${c.taxRegime === 'FO' ? L('fyzická osoba', 'individual') : L('s.r.o.', 'company')} ${c.total == null ? '' : ` · ${mczk(c.total)}`}`;
   const { items, warn } = recoItems(c);
   $('reco').innerHTML = items.map(t => `<li>${esc(t)}</li>`).join('') + warn.map(t => `<li class="warn">${esc(t)}</li>`).join('');
   renderWhy(c);
@@ -772,6 +814,10 @@ function renderWhy(c) {
 // Graf: pro každou složku pás tolerance kolem cíle, váha teď a po zásahu
 function drawChart(c) {
   const box = $('chart'); box.innerHTML = '';
+  // bez vah (chybí cena) graf i jeho nadpis a legendu schovat
+  const legend = box.previousElementSibling, head = legend?.previousElementSibling;
+  [legend, head].forEach(e => { if (e) e.hidden = !c.rows.length; });
+  if (!c.rows.length) return;
   const NS = 'http://www.w3.org/2000/svg';
   const el = (n, a, p) => { const e = document.createElementNS(NS, n); for (const k in a) e.setAttribute(k, a[k]); p.appendChild(e); return e; };
   const rows = c.rows.filter(r => r.target > 0 || Math.abs(r.weight) > 0.05 || (c.plan && Math.abs(c.plan.after.find(a => a.key === r.key).weight) > 0.05));

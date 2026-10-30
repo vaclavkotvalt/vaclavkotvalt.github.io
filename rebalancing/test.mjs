@@ -182,3 +182,33 @@ test('cílové váhy se součtem ≠ 100 %: klient bez obchodů a s upozornění
   assert.ok(r.issues.some(i => i.code === 'targetsSum'));
   assert.ok(r.clients.find(c => c.id === 'Klient B').plan); // ostatní klienti se počítají dál
 });
+
+test('cena podle ISIN, přepočet do měny z Excelu a chybějící cena jen u dotčeného klienta', async () => {
+  const { applyMarket } = await import('./io.js');
+  const d = structuredClone(data);
+  d.instruments.push({ ticker: 'CSPX', name: '', isin: 'IE00B5BMR087', currency: 'USD', price: null });
+  d.instruments.push({ ticker: 'XYZ', name: '', isin: null, currency: null, price: null });
+  d.clients[2].targets = { VWCE: 40, CSPX: 10, AVWS: 10, EUNA: 30, IGLN: 10, CASH: 0 };   // Klient C drží CSPX
+  d.lots.push({ client: 'Klient C', ticker: 'CSPX', date: '2023-01-03', qty: 50, cost: 380 });
+  d.clients[3].targets = { ...d.clients[3].targets, VWCE: 50, XYZ: 5 };                   // Klient D má XYZ v cílech (5 %)
+  const market = { fx: { EUR: { rate: 24.3, date: '2026-10-30' }, USD: { rate: 21, date: '2026-10-30' } }, prices: {} };
+  // kotace v EUR, nákupní ceny v Excelu v USD → cena se přepočte do USD
+  const m = applyMarket(d, market, { IE00B5BMR087: { price: 600, currency: 'EUR', date: '2026-10-30', symbol: 'SXR8.DE' } });
+  const cspx = m.data.instruments.find(i => i.ticker === 'CSPX');
+  assert.equal(cspx.currency, 'USD');
+  near(cspx.price, 600 * 24.3 / 21, 1e-9);
+  assert.deepEqual(m.viaIsin, ['CSPX']);
+  const r = analyze(m.data);
+  assert.ok(r.summary, 'jedno ETF bez ceny nesmí zastavit celý výpočet');
+  assert.equal(r.clients.find(c => c.id === 'Klient D').decision.reasons[0].code, 'missingPrice');
+  assert.ok(r.clients.find(c => c.id === 'Klient C').rows.some(x => x.key === 'CSPX'));
+  assert.ok(r.clients.find(c => c.id === 'Klient A').plan);
+});
+
+test('ETF bez ceny s nulovým cílem nevadí', async () => {
+  const d = structuredClone(data);
+  d.instruments.push({ ticker: 'XYZ', name: '', isin: null, currency: null, price: null });
+  d.clients = d.clients.map(c => ({ ...c, targets: { ...c.targets, XYZ: 0 } }));
+  const r = analyze(d);
+  assert.deepEqual(r.clients.map(c => c.status), res.clients.map(c => c.status));
+});
