@@ -1,5 +1,5 @@
 {
- "updated": "2026-10-30T22:14:29.947Z",
+ "updated": "2026-10-30T22:56:06.696Z",
  "prices": {
   "IE00B5BMR087": {
    "price": 734.86,
@@ -299,11 +299,11 @@
    "source": "Yahoo Finance"
   },
   "IE000BI8OT95": {
-   "price": 162.89,
-   "currency": "EUR",
+   "price": 181.83,
+   "currency": "USD",
    "date": "2026-10-30",
-   "symbol": "MWRD.MI",
-   "exchange": "MIL",
+   "symbol": "MWRU.L",
+   "exchange": "LSE",
    "name": "AM CORE MSCI WORLD U ETF ACC",
    "source": "Yahoo Finance"
   },
