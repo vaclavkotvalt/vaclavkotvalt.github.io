@@ -19,7 +19,9 @@ const CACHE_SECONDS = 6 * 3600;
 const CURRENCIES = ['EUR', 'USD', 'GBP', 'CHF', 'CZK']; // měny, pro které má stránka kurzy ČNB
 const UA = { 'User-Agent': 'Mozilla/5.0 (rebalancing tool; vaclavkotvalt.cz)' };
 // Kód burzy v OpenFIGI → přípona symbolu na Yahoo, v pořadí preference
-const EXCHANGES = [['GY', '.DE'], ['LN', '.L'], ['NA', '.AS'], ['IM', '.MI'], ['FP', '.PA'], ['SW', '.SW'], ['GS', '.SG'], ['GF', '.F'], ['GM', '.MU'], ['GD', '.DU']];
+// (US burzy mají na Yahoo symbol bez přípony, Praha .PR – kvůli akciím, nejen ETF)
+const EXCHANGES = [['GY', '.DE'], ['LN', '.L'], ['US', ''], ['UN', ''], ['UW', ''], ['UQ', ''], ['CP', '.PR'],
+  ['NA', '.AS'], ['IM', '.MI'], ['FP', '.PA'], ['SW', '.SW'], ['GS', '.SG'], ['GF', '.F'], ['GM', '.MU'], ['GD', '.DU']];
 const ISIN_RE = /^[A-Z]{2}[A-Z0-9]{9}[0-9]$/;
 
 const cors = {
@@ -49,7 +51,8 @@ async function figiSymbols(isins) {
       res.forEach((r, j) => {
         for (const d of r.data || []) {
           const ex = EXCHANGES.findIndex(([code]) => code === d.exchCode);
-          if (ex >= 0 && d.ticker) out[chunk[j]].push({ symbol: d.ticker.replace(/\s+/g, '') + EXCHANGES[ex][1], rank: ex, name: d.name });
+          // třídy akcií: BRK/B → BRK-B (zápis Yahoo)
+          if (ex >= 0 && d.ticker) out[chunk[j]].push({ symbol: d.ticker.replace(/\s+/g, '').replace(/[/.]/g, '-') + EXCHANGES[ex][1], rank: ex, name: d.name });
         }
       });
     } catch (e) { /* OpenFIGI je jen jeden ze zdrojů kandidátů */ }

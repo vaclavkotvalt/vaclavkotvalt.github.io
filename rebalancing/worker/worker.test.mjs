@@ -9,11 +9,18 @@ const charts = {
   'CSPX.L': { currency: 'USD', close: 680.2 },
   'IGLN.L': { currency: 'USD', close: 78.19 },
   'SGLN.L': { currency: 'GBp', close: 4512 },
+  'AAPL': { currency: 'USD', close: 268.5 },
+  'APC.DE': { currency: 'EUR', close: 231.2 },
+  'CEZ.PR': { currency: 'CZK', close: 1105 },
+  'BRK-B': { currency: 'USD', close: 501.3 },
 };
 const figi = {
   IE00B5BMR087: [{ ticker: 'SXR8', exchCode: 'GY' }, { ticker: 'CSPX', exchCode: 'LN' }, { ticker: 'CSPX', exchCode: 'XX' }],
   IE00B4ND3602: [{ ticker: 'IGLN', exchCode: 'LN' }],
   IE00B4VBMR80: [{ ticker: 'SGLN', exchCode: 'LN' }],
+  US0378331005: [{ ticker: 'APC', exchCode: 'GY' }, { ticker: 'AAPL', exchCode: 'US' }, { ticker: 'AAPL', exchCode: 'UW' }],
+  CZ0005112300: [{ ticker: 'CEZ', exchCode: 'CP' }],
+  US0846707026: [{ ticker: 'BRK/B', exchCode: 'US' }],
 };
 const day = Math.floor(Date.parse('2026-10-29T16:00:00Z') / 1000);
 globalThis.fetch = async (url, init = {}) => {
@@ -45,4 +52,12 @@ test('limit ISINů a CORS', async () => {
   const resp = await worker.fetch(new Request('https://w.test/quotes?isin=' + many), {}, null);
   assert.equal(resp.status, 400);
   assert.equal(resp.headers.get('Access-Control-Allow-Origin'), '*');
+});
+
+test('akcie: USA bez přípony, Praha .PR v CZK, třídy akcií', async () => {
+  assert.equal((await call('isin=US0378331005&cur=USD')).results.US0378331005.symbol, 'AAPL');
+  assert.equal((await call('isin=US0378331005&cur=EUR')).results.US0378331005.symbol, 'APC.DE');
+  const cez = (await call('isin=CZ0005112300&cur=CZK')).results.CZ0005112300;
+  assert.equal(cez.symbol, 'CEZ.PR'); assert.equal(cez.currency, 'CZK');
+  assert.equal((await call('isin=US0846707026&cur=USD')).results.US0846707026.symbol, 'BRK-B');
 });
