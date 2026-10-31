@@ -379,6 +379,20 @@
     </section>
   </div>
 
+  <section class="panel reveal" id="stress" aria-labelledby="sH">
+    <h2 id="sH"><span class="cs">Co když trh spadne</span><span class="en">What if the market falls</span></h2>
+    <p class="muted small"><span class="cs">Kteří klienti by se po poklesu akcií dostali mimo toleranci. Ostatní složky (dluhopisy, zlato) se nemění; akcie se poznají podle třídy aktiv nebo názvu v Excelu.</span><span class="en">Which clients would end up out of band after an equity fall. Other holdings (bonds, gold) stay unchanged; equities are recognised by the asset class or name in the Excel file.</span></p>
+    <div class="seg" id="shock" role="group">
+      <button type="button" data-s="10" aria-pressed="true">−10 %</button><button type="button" data-s="20" aria-pressed="false">−20 %</button><button type="button" data-s="30" aria-pressed="false">−30 %</button>
+    </div>
+    <div class="tbl-wrap" style="margin-top:1rem">
+      <table class="num">
+        <thead><tr><th><span class="cs">Klient</span><span class="en">Client</span></th><th><span class="cs">Dnes</span><span class="en">Today</span></th><th><span class="cs">Po poklesu</span><span class="en">After the fall</span></th><th class="r"><span class="cs">Majetek po poklesu</span><span class="en">Assets after</span></th><th><span class="cs">Mimo toleranci</span><span class="en">Out of band</span></th></tr></thead>
+        <tbody id="shockRows"></tbody>
+      </table>
+    </div>
+  </section>
+
   <section class="panel method reveal" aria-labelledby="mH">
     <h2 id="mH"><span class="cs">Jak nástroj rozhoduje</span><span class="en">How the tool decides</span></h2>
     <div class="cs">
@@ -441,19 +455,6 @@
     </div>
   </section>
 
-  <section class="panel reveal" id="stress" aria-labelledby="sH">
-    <h2 id="sH"><span class="cs">Co když trh spadne</span><span class="en">What if the market falls</span></h2>
-    <p class="muted small"><span class="cs">Kteří klienti by se po poklesu akcií dostali mimo toleranci. Ostatní složky (dluhopisy, zlato) se nemění; akcie se poznají podle třídy aktiv nebo názvu v Excelu.</span><span class="en">Which clients would end up out of band after an equity fall. Other holdings (bonds, gold) stay unchanged; equities are recognised by the asset class or name in the Excel file.</span></p>
-    <div class="seg" id="shock" role="group">
-      <button type="button" data-s="10" aria-pressed="true">−10 %</button><button type="button" data-s="20" aria-pressed="false">−20 %</button><button type="button" data-s="30" aria-pressed="false">−30 %</button>
-    </div>
-    <div class="tbl-wrap" style="margin-top:1rem">
-      <table class="num">
-        <thead><tr><th><span class="cs">Klient</span><span class="en">Client</span></th><th><span class="cs">Dnes</span><span class="en">Today</span></th><th><span class="cs">Po poklesu</span><span class="en">After the fall</span></th><th class="r"><span class="cs">Majetek po poklesu</span><span class="en">Assets after</span></th><th><span class="cs">Mimo toleranci</span><span class="en">Out of band</span></th></tr></thead>
-        <tbody id="shockRows"></tbody>
-      </table>
-    </div>
-  </section>
 </main>
 
 <footer class="reveal">
