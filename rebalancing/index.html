@@ -161,23 +161,25 @@
   .grid2 > div { min-width: 0; }
   /* koláč rozložení majetku (barvy podle referenční kategorické palety pro tmavé pozadí) */
   :root { --c1: #3987e5; --c2: #d95926; --c3: #199e70; --c4: #c98500; --c5: #d55181; --c6: #9085e9; --c7: #2bb3c0; --c-cash: #7d8794; }
-  .pie { display: flex; flex-wrap: wrap; gap: 1.5rem 2.5rem; align-items: center; }
+  .pie { display: flex; flex-wrap: wrap; gap: 1.5rem 2.5rem; align-items: center; justify-content: center; }
   .pie-svg { width: 190px; flex: 0 0 190px; }
   .pie-svg svg { display: block; width: 100%; height: auto; }
   .pie-legend { width: auto; flex: 1 1 18rem; max-width: 34rem; }
   .pie-legend td { border-bottom: 1px solid var(--line); }
   .pie-legend .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 0.5rem; vertical-align: 0; }
   /* časová osa klienta */
-  .tline { list-style: none; margin: 0; padding: 0; }
-  .tline li { position: relative; padding: 0 0 1rem 1.6rem; border-left: 1px solid var(--line); margin-left: 5px; }
-  .tline li:last-child { padding-bottom: 0; }
-  .tline li::before { content: ""; position: absolute; left: -6px; top: 0.35rem; width: 11px; height: 11px; border-radius: 50%; background: var(--bg); border: 2px solid var(--muted); }
+  /* vodorovná osa: události vedle sebe na čáře, při větším počtu se dá posouvat do strany */
+  .tline { list-style: none; margin: 0; padding: 0.6rem 0 0.75rem; display: flex; overflow-x: auto; }
+  .tline li { position: relative; flex: 0 0 9.5rem; padding: 1.1rem 0.9rem 0 0; border-top: 2px solid var(--line); }
+  .tline li:last-child { border-top-color: transparent; background: linear-gradient(var(--line), var(--line)) top left / 1rem 2px no-repeat; }
+  .tline li::before { content: ""; position: absolute; left: 0; top: -7px; width: 12px; height: 12px; border-radius: 50%; background: var(--surface); border: 2px solid var(--muted); }
   .tline li.trade::before { background: var(--accent); border-color: var(--accent); }
   .tline li.in::before { border-color: var(--st-ok); }
   .tline li.out::before { border-color: var(--st-act); }
   .tline li.free::before { border-color: var(--st-wait); border-style: dashed; }
   .tline .when { font-size: 0.85rem; color: var(--muted); }
-  .tline .what { font-size: 0.92rem; }
+  .tline .what { font-size: 0.88rem; line-height: 1.4; }
+  .tline .sub { font-size: 0.78rem; color: var(--muted); line-height: 1.35; margin-top: 0.15rem; }
 
   .method { color: var(--muted); }
   .method > div { max-width: 48rem; }
@@ -889,15 +891,15 @@ function drawPie(c) {
 function renderTimeline(c) {
   const ev = [];
   if (c.plan && c.plan.trades.length) ev.push({ d: c.plan.date, cls: 'trade', t: c.status === 'act' ? L('Obchod podle návrhu', 'Proposed trades') : L('Obchod po čekání', 'Trades after waiting') });
-  for (const f of c.flows) ev.push({ d: f.date, cls: f.amount > 0 ? 'in' : 'out', t: `${f.amount > 0 ? L('Vklad', 'Deposit') : L('Výběr', 'Withdrawal')} ${czk(Math.abs(f.amount))}${f.note ? ` – ${esc(f.note)}` : ''}` });
+  for (const f of c.flows) ev.push({ d: f.date, cls: f.amount > 0 ? 'in' : 'out', t: `${f.amount > 0 ? L('Vklad', 'Deposit') : L('Výběr', 'Withdrawal')} ${czk(Math.abs(f.amount))}`, sub: esc(f.note || '') });
   for (const l of c.lots) if (c.taxRegime === 'FO' && !l.exemptNow && l.exemptFrom) {
-    ev.push({ d: nextBusinessDay(l.exemptFrom), cls: 'free', t: L(`Osvobození lotu ${l.ticker} z ${date(l.date)} (${nf(l.qty)} ks) – od tohoto dne se prodává bez daně`, `${l.ticker} lot from ${date(l.date)} (${nf(l.qty)} units) becomes tax-exempt`) });
+    ev.push({ d: nextBusinessDay(l.exemptFrom), cls: 'free', t: L(`Osvobození ${l.ticker}`, `${l.ticker} exempt`), sub: L(`lot z ${date(l.date)}, ${nf(l.qty)} ks – dál bez daně`, `lot from ${date(l.date)}, ${nf(l.qty)} units – tax-free from now`) });
   }
   // téhož dne: nejdřív osvobození (je důvodem obchodu), pak pohyby peněz, nakonec obchod
   const order = { free: 0, in: 1, out: 1, trade: 2 };
   ev.sort((a, b) => a.d.localeCompare(b.d) || order[a.cls] - order[b.cls]);
   $('tline').innerHTML = ev.length
-    ? ev.map(e => `<li class="${e.cls}"><div class="when">${date(e.d)}</div><div class="what">${e.t}</div></li>`).join('')
+    ? ev.map(e => `<li class="${e.cls}"><div class="when">${date(e.d)}</div><div class="what">${e.t}</div>${e.sub ? `<div class="sub">${e.sub}</div>` : ''}</li>`).join('')
     : `<li><div class="what muted">${L('Žádné plánované události', 'No upcoming events')}</div></li>`;
 }
 
