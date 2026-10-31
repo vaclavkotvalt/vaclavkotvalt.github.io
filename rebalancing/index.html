@@ -58,8 +58,14 @@
 
   .panel { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 1.75rem; margin-bottom: 2.5rem; }
   /* čtyři stejně široká tlačítka (na mobilu 2 × 2) */
-  .toolbar { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.75rem; }
+  .toolbar { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 0.6rem; }
+  .toolbar .btn { font-size: 0.86rem; padding: 0.55rem 0.6rem; }
+  .menu-right { left: auto; right: 0; }
+  .seg { display: inline-flex; gap: 4px; padding: 4px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); }
+  .seg button { font: inherit; font-size: 0.92rem; padding: 0.4rem 0.9rem; border: 0; border-radius: 7px; background: transparent; color: var(--muted); cursor: pointer; }
+  .seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
   .toolbar > .btn, .toolbar .dl > .btn { width: 100%; text-align: center; text-decoration: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  @media (max-width: 1100px) { .toolbar { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
   @media (max-width: 860px) { .toolbar { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
   @media (max-width: 560px) { .toolbar { grid-template-columns: minmax(0, 1fr); } }
   .src-in { margin: 0 0 1rem; }
@@ -153,6 +159,25 @@
   }
   .grid2 { display: grid; gap: 0 2rem; grid-template-columns: 1fr; }
   .grid2 > div { min-width: 0; }
+  /* koláč rozložení majetku (barvy podle referenční kategorické palety pro tmavé pozadí) */
+  :root { --c1: #3987e5; --c2: #d95926; --c3: #199e70; --c4: #c98500; --c5: #d55181; --c6: #9085e9; --c7: #2bb3c0; --c-cash: #7d8794; }
+  .pie { display: flex; flex-wrap: wrap; gap: 1.5rem 2.5rem; align-items: center; }
+  .pie-svg { width: 190px; flex: 0 0 190px; }
+  .pie-svg svg { display: block; width: 100%; height: auto; }
+  .pie-legend { width: auto; flex: 1 1 18rem; max-width: 34rem; }
+  .pie-legend td { border-bottom: 1px solid var(--line); }
+  .pie-legend .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 0.5rem; vertical-align: 0; }
+  /* časová osa klienta */
+  .tline { list-style: none; margin: 0; padding: 0; }
+  .tline li { position: relative; padding: 0 0 1rem 1.6rem; border-left: 1px solid var(--line); margin-left: 5px; }
+  .tline li:last-child { padding-bottom: 0; }
+  .tline li::before { content: ""; position: absolute; left: -6px; top: 0.35rem; width: 11px; height: 11px; border-radius: 50%; background: var(--bg); border: 2px solid var(--muted); }
+  .tline li.trade::before { background: var(--accent); border-color: var(--accent); }
+  .tline li.in::before { border-color: var(--st-ok); }
+  .tline li.out::before { border-color: var(--st-act); }
+  .tline li.free::before { border-color: var(--st-wait); border-style: dashed; }
+  .tline .when { font-size: 0.85rem; color: var(--muted); }
+  .tline .what { font-size: 0.92rem; }
 
   .method { color: var(--muted); }
   .method > div { max-width: 48rem; }
@@ -219,13 +244,17 @@
           <button class="btn" type="button" id="val" aria-haspopup="menu" aria-expanded="false" aria-controls="valMenu"><span class="muted vpre"><span class="cs">Ocenění:</span><span class="en">Valuation:</span> </span><span id="valLabel"></span><span class="caret" aria-hidden="true">▾</span></button>
           <div class="menu" id="valMenu" role="menu" hidden></div>
         </div>
+        <a class="btn" href="sablona.xlsx" download><span class="cs">Stáhnout šablonu Excelu</span><span class="en">Download Excel template</span></a>
         <button class="btn" type="button" id="upload"><span class="cs">Nahrát vlastní Excel</span><span class="en">Upload your own Excel</span></button>
         <input type="file" id="file" accept=".xlsx,.xls" hidden>
         <div class="dl">
           <button class="btn primary" type="button" id="csv" aria-haspopup="menu" aria-expanded="false" aria-controls="csvMenu"><span class="cs">Stáhnout příkazy (CSV)</span><span class="en">Download orders (CSV)</span><span class="caret" aria-hidden="true">▾</span></button>
           <div class="menu" id="csvMenu" role="menu" hidden></div>
         </div>
-        <a class="btn" href="sablona.xlsx" download><span class="cs">Stáhnout šablonu Excelu</span><span class="en">Download Excel template</span></a>
+        <div class="dl">
+          <button class="btn" type="button" id="rep" aria-haspopup="menu" aria-expanded="false" aria-controls="repMenu"><span class="cs">Zpráva pro klienta</span><span class="en">Client report</span><span class="caret" aria-hidden="true">▾</span></button>
+          <div class="menu menu-right" id="repMenu" role="menu" hidden></div>
+        </div>
       </div>
       <p class="src err" id="srcWarn" hidden></p>
       <p class="src err" id="fileErr" role="alert" hidden></p>
@@ -274,6 +303,11 @@
         <span><i class="sw after"></i><span class="cs">po zásahu</span><span class="en">after trades</span></span>
       </div>
       <div class="chart" id="chart"></div>
+
+      <div id="pieBox">
+        <h3><span class="cs">Rozložení majetku</span><span class="en">Asset allocation</span></h3>
+        <div class="pie"><div class="pie-svg" id="pie"></div><table class="num pie-legend" id="pieLegend"></table></div>
+      </div>
 
       <div id="tradesBox">
         <h3 id="tradesH"></h3>
@@ -325,6 +359,8 @@
               <tbody id="fRows"></tbody>
             </table>
           </div>
+          <h3><span class="cs">Časová osa</span><span class="en">Timeline</span></h3>
+          <ol class="tline" id="tline"></ol>
         </div>
       </div>
     </section>
@@ -339,7 +375,7 @@
         <li><strong>Likvidita.</strong> Výběry plánované na příštích 90 dní se drží v hotovosti jako rezerva. Když na ně hotovost nestačí, je potřeba zasáhnout i bez odchylky.</li>
         <li><strong>Když už obchodovat, tak na cíl.</strong> Při zásahu se portfolio vrací na cílové váhy (ne jen na okraj pásma), počítané z majetku bez rezervy. Obchody pod 20 000 Kč nebo pod 0,5 % majetku se vynechají – jsou to šum, který nestojí za poplatek.</li>
         <li><strong>Nejdřív peněžní toky.</strong> Vklad v příštích 30 dnech: počkat na něj a nakoupit z něj, takže se prodává méně. Výběry se kryjí prodejem toho, čeho je v portfoliu nejvíc navíc.</li>
-        <li><strong>Daně fyzických osob.</strong> Loty se prodávají metodou FIFO (nejstarší první) – nejlépe se tak dokládá časový test. Lot držený déle než 3 roky je osvobozený (§ 4 odst. 1 písm. u) ZDP). Zisky ze zdanitelných lotů se sečtou se ztrátami ze zdanitelných lotů a daní se 15 %. Hodnotový test (písm. t): když úhrn příjmů ze všech prodejů cenných papírů za rok nepřesáhne 100 000 Kč, je osvobozeno vše. Když se prodávaný lot do 60 dní osvobodí a čekání ušetří aspoň 10 000 Kč, nástroj doporučí počkat. Strop 40 mil. Kč pro osvobození se od 1. 1. 2026 u cenných papírů neuplatní (zákon č. 360/2025 Sb.).</li>
+        <li><strong>Daně fyzických osob.</strong> Loty se prodávají metodou FIFO (nejstarší první) – nejlépe se tak dokládá časový test. Lot držený déle než 3 roky je osvobozený (§ 4 odst. 1 písm. u) ZDP). Zisky ze zdanitelných lotů se sečtou se ztrátami ze zdanitelných lotů a daní se 15 %. Hodnotový test (písm. t): když úhrn příjmů ze všech prodejů cenných papírů za rok nepřesáhne 100 000 Kč, je osvobozeno vše – nástroj s ním počítá až v prosinci, kdy je jasné, co se v roce prodalo, a v prosinci navrhne malý zdanitelný prodej rozdělit na prosinec a leden. Zdanitelný lot ve ztrátě navrhne prodat a znovu koupit, když je ve stejném roce zdanitelný zisk. Když se prodávaný lot do 60 dní osvobodí a čekání ušetří aspoň 10 000 Kč, nástroj doporučí počkat. Strop 40 mil. Kč pro osvobození se od 1. 1. 2026 u cenných papírů neuplatní (zákon č. 360/2025 Sb.).</li>
         <li><strong>Daně s.r.o.</strong> Žádné osvobození, zisk z prodeje se daní 21 %, proto se rebalancuje hlavně vklady.</li>
         <li><strong>Zdanitelné loty se ziskem se drží.</strong> Prodávají se jen tehdy, když je pozice nad cílem o víc než dvojnásobek tolerance, a jen o ten přesah – pozice se vrátí na hranici dvojnásobku, ne až na cíl. Zbytek nadváhy se srovná nákupy ostatních složek a vklady, dokud se loty neosvobodí. Platit desítky tisíc na dani kvůli pár procentním bodům se nevyplatí. Výjimkou jsou výběry: když na ně hotovost nestačí, prodá se i zdanitelný lot.</li>
         <li><strong>Náklady.</strong> Poplatek 0,1 % z objemu, minimálně 2 EUR za obchod; konverze měny 0,25 %. Vše se dá změnit v nastavení výše.</li>
@@ -368,7 +404,7 @@
         <li><strong>Liquidity.</strong> Withdrawals planned in the next 90 days are held in cash as a reserve. If cash cannot cover them, the client needs action even without drift.</li>
         <li><strong>If trading, trade to target.</strong> Once triggered, the portfolio goes back to its target weights (not just to the edge of the band), measured on assets net of the reserve. Trades under CZK 20,000 or under 0.5% of assets are skipped – noise that isn’t worth the fee.</li>
         <li><strong>Cash flows first.</strong> A deposit in the next 30 days: wait for it and buy with it, so fewer sales are needed. Withdrawals are funded by selling what is most overweight.</li>
-        <li><strong>Taxes for individuals.</strong> Lots are sold FIFO (oldest first), which is the easiest way to document the time test. A lot held for more than 3 years is exempt (Section 4(1)(u) of the Income Tax Act). Gains on taxable lots are netted against losses on taxable lots and taxed at 15%. Value test (letter t): if total proceeds from all securities sales in the year do not exceed CZK 100,000, everything is exempt. If a lot being sold becomes exempt within 60 days and waiting saves at least CZK 10,000, the tool recommends waiting. Since 1 January 2026 the CZK 40m cap on the exemption no longer applies to securities (Act No. 360/2025 Coll.).</li>
+        <li><strong>Taxes for individuals.</strong> Lots are sold FIFO (oldest first), which is the easiest way to document the time test. A lot held for more than 3 years is exempt (Section 4(1)(u) of the Income Tax Act). Gains on taxable lots are netted against losses on taxable lots and taxed at 15%. Value test (letter t): if total proceeds from all securities sales in the year do not exceed CZK 100,000, everything is exempt – the tool only relies on it in December, when the year’s sales are known, and in December it suggests splitting a small taxable sale between December and January. It suggests selling and buying back a taxable lot at a loss when there is a taxable gain in the same year. If a lot being sold becomes exempt within 60 days and waiting saves at least CZK 10,000, the tool recommends waiting. Since 1 January 2026 the CZK 40m cap on the exemption no longer applies to securities (Act No. 360/2025 Coll.).</li>
         <li><strong>Taxes for companies (s.r.o.).</strong> No exemption; gains are taxed at 21%, so they rebalance mainly with deposits.</li>
         <li><strong>Taxable lots with a gain are held.</strong> They are sold only when the holding is above target by more than twice its band, and only by that excess – the holding goes back to the edge of the doubled band, not all the way to target. The rest of the overweight is corrected by buying the other holdings and with deposits until the lots become exempt. Paying tens of thousands in tax for a few percentage points isn’t worth it. Withdrawals are the exception: if cash can’t cover them, a taxable lot is sold too.</li>
         <li><strong>Costs.</strong> Broker fee 0.1% of the amount, at least EUR 2 per trade; currency conversion 0.25%. Everything can be changed in the settings above.</li>
@@ -389,6 +425,20 @@
         <li>It can’t verify historical records of positions transferred from another broker – the manager has to.</li>
       </ul>
       <p>The calculation logic lives in a separate file, <a href="engine.js">engine.js</a> (pure functions with no ties to the page), with tests in <a href="test.mjs">test.mjs</a>; reading the Excel file is in <a href="io.js">io.js</a>.</p>
+    </div>
+  </section>
+
+  <section class="panel reveal" id="stress" aria-labelledby="sH">
+    <h2 id="sH"><span class="cs">Co když trh spadne</span><span class="en">What if the market falls</span></h2>
+    <p class="muted small"><span class="cs">Kteří klienti by se po poklesu akcií dostali mimo toleranci. Ostatní složky (dluhopisy, zlato) se nemění; akcie se poznají podle třídy aktiv nebo názvu v Excelu.</span><span class="en">Which clients would end up out of band after an equity fall. Other holdings (bonds, gold) stay unchanged; equities are recognised by the asset class or name in the Excel file.</span></p>
+    <div class="seg" id="shock" role="group">
+      <button type="button" data-s="10" aria-pressed="true">−10 %</button><button type="button" data-s="20" aria-pressed="false">−20 %</button><button type="button" data-s="30" aria-pressed="false">−30 %</button>
+    </div>
+    <div class="tbl-wrap" style="margin-top:1rem">
+      <table class="num">
+        <thead><tr><th><span class="cs">Klient</span><span class="en">Client</span></th><th><span class="cs">Dnes</span><span class="en">Today</span></th><th><span class="cs">Po poklesu</span><span class="en">After the fall</span></th><th class="r"><span class="cs">Majetek po poklesu</span><span class="en">Assets after</span></th><th><span class="cs">Mimo toleranci</span><span class="en">Out of band</span></th></tr></thead>
+        <tbody id="shockRows"></tbody>
+      </table>
     </div>
   </section>
 </main>
@@ -608,9 +658,33 @@ function render() {
   } else {
     $('ovNote').textContent = L('Klikněte na klienta pro detail.', 'Click a client for details.');
   }
-  if (!RES.summary) { $('tiles').innerHTML = ''; $('cRows').innerHTML = ''; $('detail').hidden = true; return; }
-  renderOverview(); renderDetail();
+  if (!RES.summary) { $('tiles').innerHTML = ''; $('cRows').innerHTML = ''; $('detail').hidden = true; $('stress').hidden = true; return; }
+  renderOverview(); renderDetail(); renderStress();
 }
+
+// Co když trh spadne: akcie (podle třídy aktiv nebo názvu) o X % níž, ostatní beze změny
+let SHOCK = 10;
+// rozhoduje třída aktiv z Excelu; bez ní název (pozor: „iShares … Bond“ akcie nejsou)
+const isEquity = (i) => {
+  const eq = /akci|equit|stock/i, other = /dluhop|bond|zlat|gold|komod|commod|reit|nemovit|money|peněž/i;
+  if (i.assetClass) return eq.test(i.assetClass) && !other.test(i.assetClass);
+  return eq.test(i.name || '') && !other.test(i.name || '');
+};
+function renderStress() {
+  $('stress').hidden = false;
+  document.querySelectorAll('#shock button').forEach(b => b.setAttribute('aria-pressed', String(+b.dataset.s === SHOCK)));
+  const shocked = { ...DATA, instruments: DATA.instruments.map(i => isEquity(i) && i.price > 0 ? { ...i, price: i.price * (1 - SHOCK / 100) } : i) };
+  const after = analyze(shocked, { ...SETTINGS, asOf: RES.asOf });
+  const state = (c) => !c.rows.length ? '–' : c.rows.some(r => r.out)
+    ? `<span class="chip act"><span aria-hidden="true">●</span>${L('mimo toleranci', 'out of band')}</span>`
+    : `<span class="chip ok"><span aria-hidden="true">✓</span>${L('v toleranci', 'within band')}</span>`;
+  $('shockRows').innerHTML = RES.clients.map(c => {
+    const c2 = after.clients.find(x => x.id === c.id) || c;
+    const out = c2.rows.filter(r => r.out).map(r => `${esc(keyName(r.key))} ${pp(r.diff)}`).join(', ') || '–';
+    return `<tr><td>${esc(clientName(c.id))}</td><td>${state(c)}</td><td>${state(c2)}</td><td class="r">${c2.total == null ? '–' : mczk(c2.total)}</td><td class="wrap">${out}</td></tr>`;
+  }).join('');
+}
+document.querySelectorAll('#shock button').forEach(b => b.addEventListener('click', () => { SHOCK = +b.dataset.s; renderStress(); }));
 
 function issueText(i) {
   switch (i.code) {
@@ -684,6 +758,9 @@ function recoItems(c) {
       case 'taxNotWorthWaiting': items.push(L(`Čekání do ${date(r.date)} by ušetřilo jen ${czk(r.saving)} nebo by nevyšlo na výběry – obchodovat hned.`, `Waiting until ${date(r.date)} would save only ${czk(r.saving)} or would not fit the withdrawals – trade now.`)); break;
       case 'holdTaxable': items.push(L(`Nic neprodávat: nadváhu tvoří jen zdanitelné loty se ziskem a odchylka je pod dvojnásobkem tolerance. Srovná se nákupy a vklady${r.date ? `, loty se osvobodí od ${date(r.date)}` : ''}.`, `Sell nothing: the overweight consists only of taxable lots with a gain and the drift is below twice the band. It will be corrected with purchases and deposits${r.date ? `; the lots become exempt from ${date(r.date)}` : ''}.`)); break;
       case 'taxDue': items.push(L(`Odhadovaná daň z prodejů: ${czk(r.amount)}.`, `Estimated tax on the sales: ${czk(r.amount)}.`)); break;
+      case 'valueTestLater': items.push(L(`Prodeje za ${czk(r.proceeds)} se vejdou do hodnotového testu (100 000 Kč za rok). Jestli se uplatní, je jisté až v prosinci – pokud klient do konce roku nic dalšího neprodá, daň ${czk(r.amount)} odpadne.`, `The sales of ${czk(r.proceeds)} fit within the value test (CZK 100,000 a year). Whether it applies is only certain in December – if the client sells nothing else this year, the ${czk(r.amount)} tax falls away.`)); break;
+      case 'splitYear': items.push(L(`Konec roku: prodej rozdělte – do 31. 12. za nejvýš ${czk(r.limit)}, zbytek v lednu. Každá část se vejde do hodnotového testu svého roku a daň ${czk(r.saving)} odpadne (pokud v daném roce nebudou další prodeje).`, `Year end: split the sale – at most ${czk(r.limit)} by 31 Dec, the rest in January. Each part fits within its year’s value test and the ${czk(r.saving)} tax falls away (if there are no other sales that year).`)); break;
+      case 'harvest': items.push(L(`Využití ztrát: ${r.lots.map(l => `${l.ticker} z ${date(l.date)} (ztráta ${czk(l.loss)})`).join(', ')} – prodej a zpětný nákup do konce roku započte ztrátu proti letošnímu zisku a sníží daň asi o ${czk(r.saving)}.${r.regime === 'FO' ? ' Pozor: u zpětně koupených kusů začne časový test běžet znovu.' : ''}`, `Loss harvesting: ${r.lots.map(l => `${l.ticker} from ${date(l.date)} (loss ${czk(l.loss)})`).join(', ')} – selling and buying back before year end offsets the loss against this year’s gain and cuts the tax by about ${czk(r.saving)}.${r.regime === 'FO' ? ' Note: the time test restarts for the repurchased units.' : ''}`)); break;
       case 'poSellTaxable': items.push(L(`Klient je s.r.o.: každý zisk z prodeje se daní ${S.taxPO} %, osvobození neplatí.`, `The client is a company: every gain on a sale is taxed at ${S.taxPO}%, no exemption applies.`)); break;
     }
   }
@@ -715,7 +792,7 @@ function recoItems(c) {
   }
   const warn = [];
   for (const w of c.warnings) {
-    if (w.code === 'withdrawalRate') warn.push(L(`Pravidelné výběry ${czk(w.yearly)} ročně odpovídají ${pct(w.rate)} majetku (po jednorázových výběrech). To je nad ${pct(S.withdrawalWarnPct, 0)} a portfolio se může postupně vyčerpat – probrat s klientem výši renty nebo profil.`, `Regular withdrawals of ${czk(w.yearly)} a year equal ${pct(w.rate)} of assets (after one-off withdrawals). That is above ${pct(S.withdrawalWarnPct, 0)} and may gradually deplete the portfolio – discuss the payout or profile with the client.`));
+    if (w.code === 'withdrawalRate') warn.push(L(`Pravidelné výběry ${czk(w.yearly)} ročně odpovídají ${pct(w.rate)} majetku (po jednorázových výběrech). To je nad ${pct(S.withdrawalWarnPct, 0)} a portfolio se může postupně vyčerpat – bez započtení výnosů vystačí zhruba na ${nf(w.years, 0)} let. Probrat s klientem výši renty nebo profil.`, `Regular withdrawals of ${czk(w.yearly)} a year equal ${pct(w.rate)} of assets (after one-off withdrawals). That is above ${pct(S.withdrawalWarnPct, 0)} and may gradually deplete the portfolio – ignoring returns, it lasts about ${nf(w.years, 0)} years. Discuss the payout or profile with the client.`));
     if (w.code === 'pastFlows') warn.push(L(`${w.flows.map(f => `${f.amount > 0 ? 'Vklad' : 'Výběr'} ${czk(Math.abs(f.amount))} (${date(f.date)})`).join(', ')} už měl proběhnout. Nástroj ho nezapočítá – zkontrolujte, že je v hotovosti, a nahrajte aktuální stav účtu.`, `${w.flows.map(f => `${f.amount > 0 ? 'Deposit' : 'Withdrawal'} of ${czk(Math.abs(f.amount))} (${date(f.date)})`).join(', ')} should already have happened. The tool ignores it – check that cash reflects it and upload the current account state.`));
     if (w.code === 'outflowsExceed') warn.push(L(`Plánované výběry (${czk(w.total)}) jsou vyšší než celý majetek.`, `Planned withdrawals (${czk(w.total)}) exceed total assets.`));
   }
@@ -775,6 +852,53 @@ function renderDetail() {
   const cashRows = Object.entries(c.cash).map(([cur, a]) => `<tr><td>${L('teď', 'now')}</td><td class="r">${nf(a)} ${cur}</td><td class="muted">${cur === 'CZK' ? '' : '≈ ' + czk(a * RES.fx[cur])}</td></tr>`);
   const flowRows = c.flows.map(f => `<tr><td>${date(f.date)}</td><td class="r ${f.amount > 0 ? 'side-buy' : 'side-sell'}">${f.amount > 0 ? '+' : '−'}${czk(Math.abs(f.amount))}</td><td class="muted">${esc(f.note)}</td></tr>`);
   $('fRows').innerHTML = cashRows.join('') + (flowRows.length ? flowRows.join('') : `<tr><td colspan="3" class="muted">${L('Žádné plánované pohyby', 'No planned flows')}</td></tr>`);
+  drawPie(c);
+  renderTimeline(c);
+}
+
+// Koláč rozložení majetku: barva patří složce (pořadí tickerů), ne velikosti
+function drawPie(c) {
+  const rows = c.rows.filter(r => r.value > 0.5);
+  $('pieBox').hidden = !rows.length;
+  if (!rows.length) return;
+  const keys = c.rows.map(r => r.key).filter(k => k !== 'CASH');
+  const color = (k) => k === 'CASH' ? 'var(--c-cash)' : `var(--c${(keys.indexOf(k) % 7) + 1})`;
+  const total = rows.reduce((t, r) => t + r.value, 0);
+  const R = 90, r0 = 56, cx = 95, cy = 95;
+  const pt = (a, rad) => [cx + rad * Math.sin(a), cy - rad * Math.cos(a)];
+  let a0 = 0, paths = '';
+  for (const r of rows) {
+    const share = r.value / total, a1 = a0 + share * 2 * Math.PI;
+    const tip = `${keyName(r.key)}: ${pct(share * 100)} · ${czk(r.value)}`;
+    if (share > 0.9999) {
+      paths += `<circle cx="${cx}" cy="${cy}" r="${(R + r0) / 2}" fill="none" stroke="${color(r.key)}" stroke-width="${R - r0}"><title>${esc(tip)}</title></circle>`;
+    } else {
+      const [x0, y0] = pt(a0, R), [x1, y1] = pt(a1, R), [x2, y2] = pt(a1, r0), [x3, y3] = pt(a0, r0), big = a1 - a0 > Math.PI ? 1 : 0;
+      paths += `<path d="M${x0} ${y0} A${R} ${R} 0 ${big} 1 ${x1} ${y1} L${x2} ${y2} A${r0} ${r0} 0 ${big} 0 ${x3} ${y3}Z" fill="${color(r.key)}" stroke="var(--surface)" stroke-width="2"><title>${esc(tip)}</title></path>`;
+    }
+    a0 = a1;
+  }
+  $('pie').innerHTML = `<svg viewBox="0 0 190 190" role="img" aria-label="${esc(L('Rozložení majetku', 'Asset allocation'))}">${paths}`
+    + `<text x="${cx}" y="${cy - 4}" text-anchor="middle" class="lab" style="font-size:15px">${esc(mczk(total))}</text>`
+    + `<text x="${cx}" y="${cy + 14}" text-anchor="middle" style="font-size:11px">${esc(L('celkem', 'total'))}</text></svg>`;
+  $('pieLegend').innerHTML = `<thead><tr><th></th><th class="r">${L('podíl', 'share')}</th><th class="r">${L('cíl', 'target')}</th><th class="r">${L('hodnota', 'value')}</th></tr></thead><tbody>`
+    + rows.map(r => `<tr><td><i class="dot" style="background:${color(r.key)}"></i>${esc(keyName(r.key))}</td><td class="r">${pct(r.value / total * 100)}</td><td class="r">${pct(r.target, 0)}</td><td class="r">${czk(r.value)}</td></tr>`).join('') + '</tbody>';
+}
+
+// Časová osa klienta: obchod, vklady a výběry, osvobození zdanitelných lotů
+function renderTimeline(c) {
+  const ev = [];
+  if (c.plan && c.plan.trades.length) ev.push({ d: c.plan.date, cls: 'trade', t: c.status === 'act' ? L('Obchod podle návrhu', 'Proposed trades') : L('Obchod po čekání', 'Trades after waiting') });
+  for (const f of c.flows) ev.push({ d: f.date, cls: f.amount > 0 ? 'in' : 'out', t: `${f.amount > 0 ? L('Vklad', 'Deposit') : L('Výběr', 'Withdrawal')} ${czk(Math.abs(f.amount))}${f.note ? ` – ${esc(f.note)}` : ''}` });
+  for (const l of c.lots) if (c.taxRegime === 'FO' && !l.exemptNow && l.exemptFrom) {
+    ev.push({ d: nextBusinessDay(l.exemptFrom), cls: 'free', t: L(`Osvobození lotu ${l.ticker} z ${date(l.date)} (${nf(l.qty)} ks) – od tohoto dne se prodává bez daně`, `${l.ticker} lot from ${date(l.date)} (${nf(l.qty)} units) becomes tax-exempt`) });
+  }
+  // téhož dne: nejdřív osvobození (je důvodem obchodu), pak pohyby peněz, nakonec obchod
+  const order = { free: 0, in: 1, out: 1, trade: 2 };
+  ev.sort((a, b) => a.d.localeCompare(b.d) || order[a.cls] - order[b.cls]);
+  $('tline').innerHTML = ev.length
+    ? ev.map(e => `<li class="${e.cls}"><div class="when">${date(e.d)}</div><div class="what">${e.t}</div></li>`).join('')
+    : `<li><div class="what muted">${L('Žádné plánované události', 'No upcoming events')}</div></li>`;
 }
 
 // Proč počkat: srovnání obou cest se stejným cílovým stavem
@@ -897,7 +1021,7 @@ function openValMenu(open) {
   valMenu.querySelectorAll('button').forEach(b => b.addEventListener('click', () => { openValMenu(false); valBtn.focus(); if (b.dataset.mode !== MODE) setMode(b.dataset.mode); }));
   valMenu.querySelector('[aria-checked="true"]')?.focus();
 }
-valBtn.addEventListener('click', (e) => { e.stopPropagation(); openMenu(false); openValMenu(valMenu.hidden); });
+valBtn.addEventListener('click', (e) => { e.stopPropagation(); openMenu(false); openRepMenu(false); openValMenu(valMenu.hidden); });
 document.addEventListener('click', (e) => { if (!valMenu.hidden && !valMenu.contains(e.target)) openValMenu(false); });
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !valMenu.hidden) { openValMenu(false); valBtn.focus(); } });
 $('file').addEventListener('change', async () => {
@@ -923,6 +1047,69 @@ $('file').addEventListener('change', async () => {
   $('file').value = '';
 });
 
+// Zpráva pro klienta: vybrat klienta → nové okno se zprávou k tisku / uložení do PDF
+const repMenu = $('repMenu'), repBtn = $('rep');
+function openRepMenu(open) {
+  repMenu.hidden = !open; repBtn.setAttribute('aria-expanded', String(open));
+  if (!open) return;
+  repMenu.innerHTML = RES.clients.map(c => {
+    const ok = c.rows.length && !c.decision.reasons.some(r => r.code === 'badTargets');
+    return `<button type="button" role="menuitem" data-id="${esc(c.id)}"${ok ? '' : ' disabled'}>${esc(clientName(c.id))}<small>${ok ? esc(c.profile || '') : L('chybí ceny nebo cíle', 'missing prices or targets')}</small></button>`;
+  }).join('');
+  repMenu.querySelectorAll('button').forEach(b => b.addEventListener('click', () => { openRepMenu(false); repBtn.focus(); printLetter(RES.clients.find(c => c.id === b.dataset.id)); }));
+  repMenu.querySelector('button:not(:disabled)')?.focus();
+}
+repBtn.addEventListener('click', (e) => { e.stopPropagation(); openMenu(false); openValMenu(false); openRepMenu(repMenu.hidden); });
+document.addEventListener('click', (e) => { if (!repMenu.hidden && !repMenu.contains(e.target)) openRepMenu(false); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !repMenu.hidden) { openRepMenu(false); repBtn.focus(); } });
+
+// Text pro klienta: srozumitelně, bez odborných zkratek, s konkrétními čísly
+function letterHtml(c) {
+  const p = c.plan, has = (code) => c.decision.reasons.find(r => r.code === code);
+  const name = clientName(c.id);
+  const intro = c.status === 'ok'
+    ? L('Vaše portfolio odpovídá dohodnuté investiční strategii. Rozložení majetku se od cílového liší jen nepatrně, a proto v tuto chvíli nedoporučujeme žádné obchody – zbytečně by stály poplatky.', 'Your portfolio matches the agreed investment strategy. The allocation differs from the target only slightly, so we do not recommend any trades at the moment – they would only cost fees.')
+    : L('Při pravidelné kontrole jsme porovnali Vaše portfolio s dohodnutou investiční strategií a navrhujeme následující úpravu.', 'In our regular review we compared your portfolio with the agreed investment strategy and propose the following adjustment.');
+  const why = [];
+  if (has('drift')) why.push(L('Vývoj trhů posunul rozložení majetku mimo dohodnuté rozmezí – úprava vrátí portfolio k cílovým vahám a tím i k dohodnuté míře rizika.', 'Market moves have pushed the allocation outside the agreed range – the adjustment brings the portfolio back to its target weights and agreed level of risk.'));
+  if (has('liquidity')) why.push(L('Připravujeme peníze na Vaše plánované výběry, aby byly k dispozici v termínu.', 'We are setting aside cash for your planned withdrawals so it is available on time.'));
+  const wi = has('waitInflow'); if (wi) why.push(L(`S úpravou počkáme na Váš vklad ${czk(wi.amount)} (${date(wi.date)}), abychom ho rovnou zainvestovali a nemuseli zbytečně prodávat.`, `We will wait for your deposit of ${czk(wi.amount)} (${date(wi.date)}) so we can invest it straight away and avoid unnecessary sales.`));
+  const wt = has('waitTax'); if (wt) why.push(L(`S úpravou počkáme do ${date(wt.date)}, kdy budou prodávané podíly drženy déle než 3 roky a jejich prodej bude osvobozen od daně. Ušetříte tím přibližně ${czk(wt.saving)}.`, `We will wait until ${date(wt.date)}, when the units to be sold will have been held for more than 3 years and their sale will be tax-exempt. This saves you about ${czk(wt.saving)}.`));
+  if (c.status === 'act' && p) why.push(L(`Obchody provedeme ${date(p.date)}.`, `We will carry out the trades on ${date(p.date)}.`));
+  const after = (k) => p ? p.after.find(a => a.key === k)?.weight : null;
+  const alloc = c.rows.filter(r => r.target > 0 || r.weight > 0.05).map(r => `<tr><td>${esc(keyName(r.key))}</td><td class="r">${pct(r.weight)}</td><td class="r">${pct(r.target, 0)}</td>${p ? `<td class="r">${pct(after(r.key))}</td>` : ''}</tr>`).join('');
+  const trades = p && p.trades.length ? `<h2>${L('Navržené obchody', 'Proposed trades')}</h2><table><thead><tr><th>${L('Obchod', 'Trade')}</th><th>${L('Fond', 'Fund')}</th><th class="r">${L('Kusy', 'Units')}</th><th class="r">${L('Přibližná částka', 'Approx. amount')}</th></tr></thead><tbody>`
+    + p.trades.map(t => `<tr><td>${t.side === 'buy' ? L('Nákup', 'Buy') : L('Prodej', 'Sell')}</td><td>${esc(t.ticker)}</td><td class="r">${nf(t.qty)}</td><td class="r">${czk(t.valueCZK)}</td></tr>`).join('')
+    + `</tbody></table><p>${L(`Náklady úpravy: poplatky a převod měn ${czk(p.costs.fees + p.costs.fx)}, daň ${czk(p.costs.tax)}.`, `Cost of the adjustment: fees and currency conversion ${czk(p.costs.fees + p.costs.fx)}, tax ${czk(p.costs.tax)}.`)}</p>` : '';
+  const upcoming = c.flows.slice(0, 6).map(f => `<li>${date(f.date)} – ${f.amount > 0 ? L('vklad', 'deposit') : L('výběr', 'withdrawal')} ${czk(Math.abs(f.amount))}</li>`).join('');
+  return `<!doctype html><html lang="${LANG}"><head><meta charset="utf-8"><title>${esc(L('Zpráva o portfoliu', 'Portfolio report'))} – ${esc(name)}</title>
+<style>
+  body { font-family: Calibri, "Segoe UI", Arial, sans-serif; color: #13233a; max-width: 46rem; margin: 2.5rem auto; padding: 0 1.5rem; line-height: 1.55; font-size: 11pt; }
+  h1 { font-size: 20pt; font-weight: 600; margin: 0 0 0.2rem; } h2 { font-size: 13pt; color: #1f56c4; margin: 1.6rem 0 0.5rem; }
+  .muted { color: #55667e; } table { width: 100%; border-collapse: collapse; margin: 0.4rem 0; }
+  th, td { text-align: left; padding: 0.35rem 0.5rem; border-bottom: 1px solid #d5dde8; } th { font-weight: 600; font-size: 10pt; color: #55667e; }
+  .r { text-align: right; } ul { padding-left: 1.2rem; } .sign { margin-top: 2.5rem; }
+  @media print { body { margin: 0 auto; } }
+</style></head><body>
+<h1>${esc(L('Zpráva o portfoliu', 'Portfolio report'))}</h1>
+<p class="muted">${esc(name)} · ${esc(L('ocenění k', 'valuation as of'))} ${date(RES.asOf)} · ${esc(L('hodnota portfolia', 'portfolio value'))} ${czk(c.total)}</p>
+<p>${L('Dobrý den,', 'Dear client,')}</p>
+<p>${intro}</p>${why.length ? `<ul>${why.map(w => `<li>${w}</li>`).join('')}</ul>` : ''}
+<h2>${L('Rozložení majetku', 'Asset allocation')}</h2>
+<table><thead><tr><th>${L('Složka', 'Holding')}</th><th class="r">${L('Nyní', 'Now')}</th><th class="r">${L('Cíl', 'Target')}</th>${p ? `<th class="r">${L('Po úpravě', 'After')}</th>` : ''}</tr></thead><tbody>${alloc}</tbody></table>
+${trades}
+${upcoming ? `<h2>${L('Plánované vklady a výběry', 'Planned deposits and withdrawals')}</h2><ul>${upcoming}</ul>` : ''}
+<p class="sign">${L('S pozdravem', 'Kind regards')}<br>${L('Váš portfolio manažer', 'Your portfolio manager')}</p>
+<p class="muted" style="font-size:9pt;margin-top:2rem">${L('Částky jsou orientační podle cen k datu ocenění; skutečné ceny obchodů se mohou mírně lišit. Nejde o daňové poradenství.', 'Amounts are indicative, based on prices as of the valuation date; actual trade prices may differ slightly. This is not tax advice.')}</p>
+</body></html>`;
+}
+function printLetter(c) {
+  const w = window.open('', '_blank');
+  if (!w) { alert(L('Prohlížeč zablokoval nové okno – povolte vyskakovací okna pro tuto stránku.', 'The browser blocked the new window – allow pop-ups for this page.')); return; }
+  w.document.write(letterHtml(c)); w.document.close();
+  w.focus(); setTimeout(() => w.print(), 300); // tisk → „Uložit jako PDF“
+}
+
 // Export příkazů: rozbalovací nabídka – jen obchody k provedení teď, nebo všechny včetně plánovaných
 const menu = $('csvMenu'), csvBtn = $('csv');
 function openMenu(open) {
@@ -937,7 +1124,7 @@ function openMenu(open) {
   menu.querySelectorAll('button').forEach(b => b.addEventListener('click', () => { download(b.dataset.scope); openMenu(false); csvBtn.focus(); }));
   menu.querySelector('button:not(:disabled)')?.focus();
 }
-csvBtn.addEventListener('click', (e) => { e.stopPropagation(); openValMenu(false); openMenu(menu.hidden); });
+csvBtn.addEventListener('click', (e) => { e.stopPropagation(); openValMenu(false); openRepMenu(false); openMenu(menu.hidden); });
 document.addEventListener('click', (e) => { if (!menu.hidden && !menu.contains(e.target)) openMenu(false); });
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !menu.hidden) { openMenu(false); csvBtn.focus(); } });
 

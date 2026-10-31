@@ -18,6 +18,7 @@ export const DEFAULTS = {
   taxFO: 15,             // daň z příjmů FO (§ 10 ZDP) v %
   taxPO: 21,             // daň z příjmů PO v %
   valueTestLimit: 100000,   // hodnotový test FO: úhrn hrubých příjmů ze všech prodejů CP za rok
+  valueTestMonth: 12,       // … počítá se s ním až v prosinci – dřív není jisté, co se v roce ještě prodá
   timeTestYears: 3,
   lotMethod: 'fifo',     // 'fifo' = nejstarší první (nejlépe doložitelné pro časový test), 'tax' = výběr konkrétních lotů
   taxableBandMult: 2,    // zdanitelné loty se ziskem prodávat jen nad 2× pásmem, a to jen ten přesah (0 = vypnuto)
@@ -223,6 +224,22 @@ function analyzeClient(client, data, ctx) {
     }
   }
   if (p.tax.amount > 0) reasons.push({ code: 'taxDue', amount: p.tax.amount });
+  if (p.tax.valueTestPending) reasons.push({ code: 'valueTestLater', amount: p.tax.amount, proceeds: p.tax.proceedsAll });
+  // Prosinec: zdanitelný prodej nad limitem rozdělit na prosinec a leden – každá část se vejde do hodnotového testu svého roku
+  if (client.taxRegime === 'FO' && p.tax.amount > 0 && +p.date.slice(5, 7) === 12 && p.tax.proceedsAll <= 2 * S.valueTestLimit) {
+    reasons.push({ code: 'splitYear', limit: S.valueTestLimit, proceeds: p.tax.proceedsAll, saving: p.tax.amount });
+  }
+  // Využití ztrát: zdanitelný lot ve ztrátě prodaný ve stejném roce sníží daň ze zisků (u FO se po zpětném nákupu
+  // časový test počítá znovu od nuly, proto jen loty, které by se brzy stejně neosvobodily)
+  if (p.tax.amount > 0) {
+    const sold = new Set(p.trades.flatMap(t => t.lots.map(l => t.ticker + l.date)));
+    const rate = (client.taxRegime === 'PO' ? S.taxPO : S.taxFO) / 100;
+    const losers = lots.filter(l => l.gainCZK < 0 && !sold.has(l.ticker + l.date) && !(l.exemptFrom && p.date >= l.exemptFrom))
+      .map(l => ({ ticker: l.ticker, date: l.date, qty: l.qty, loss: -l.gainCZK, exemptFrom: l.exemptFrom }));
+    const loss = sum(losers, l => l.loss);
+    const saving = Math.min(loss, p.tax.base) * rate;
+    if (saving >= 1000) reasons.push({ code: 'harvest', lots: losers, loss, saving, regime: client.taxRegime });
+  }
   if (client.taxRegime === 'PO' && p.trades.some(t => t.side === 'sell')) reasons.push({ code: 'poSellTaxable' });
 
   let status = date > now ? 'wait' : 'act';
@@ -428,13 +445,13 @@ function planAt(date, cl, ctx) {
     gainCZK: l.gainCZK - fee(tr.qty * inst[tr.ticker].pCZK, ctx) * l.qty / tr.qty }));
   for (const tr of finalTrades) if (tr.side === 'sell') tr.lots = pieces(tr, tr.lots);
   const soldLots = finalTrades.flatMap(tr => tr.lots);
-  const tax = taxOf(soldLots, client.taxRegime, S);
+  const tax = taxOf(soldLots, client.taxRegime, S, date);
   for (const tr of finalTrades) tr.gainCZK = sum(tr.lots, l => l.gainCZK);
   // Ušetřená daň u zadržených lotů = daň plánu s plným prodejem dané pozice − skutečná daň plánu
   for (const h of heldBack) {
     const fullTr = { ticker: h.ticker, qty: h.wanted };
     const others = soldLots.filter(l => l.ticker !== h.ticker);
-    h.taxAvoided = Math.max(0, taxOf([...others, ...pieces(fullTr, take(h.ticker, h.wanted))], client.taxRegime, S).amount - tax.amount);
+    h.taxAvoided = Math.max(0, taxOf([...others, ...pieces(fullTr, take(h.ticker, h.wanted))], client.taxRegime, S, date).amount - tax.amount);
   }
 
   const heldAfter = { ...cl.held };
@@ -453,7 +470,7 @@ function planAt(date, cl, ctx) {
   };
 }
 
-export function taxOf(soldLots, regime, S) {
+export function taxOf(soldLots, regime, S, date = null) {
   if (regime === 'PO') {
     const net = sum(soldLots, l => l.gainCZK);
     return { regime, net, base: Math.max(0, net), amount: Math.max(0, net) * S.taxPO / 100 };
@@ -464,9 +481,13 @@ export function taxOf(soldLots, regime, S) {
   const taxable = soldLots.filter(l => !l.exempt);
   const proceedsAll = sum(soldLots, l => l.proceedsCZK);
   const net = sum(taxable, l => l.gainCZK);
-  const valueTest = taxable.length > 0 && proceedsAll <= S.valueTestLimit;
+  // Osvobození platí jen tehdy, když za celý rok nebudou další prodeje – s jistotou to jde říct až v prosinci.
+  // Dřív se daň počítá bez něj a nástroj jen upozorní, že by se v prosinci mohlo uplatnit.
+  const fits = taxable.length > 0 && proceedsAll <= S.valueTestLimit;
+  const yearEnd = !date || +date.slice(5, 7) >= S.valueTestMonth;
+  const valueTest = fits && yearEnd;
   const base = valueTest ? 0 : Math.max(0, net);
-  return { regime, net, base, proceedsAll, valueTest, amount: base * S.taxFO / 100 };
+  return { regime, net, base, proceedsAll, valueTest, valueTestPending: fits && !yearEnd && net > 0, amount: base * S.taxFO / 100 };
 }
 
 // Upozornění, která nejsou pravidlem rebalancování, ale manažer je má vidět
@@ -481,7 +502,8 @@ function clientWarnings(client, flows, state, ctx) {
     const yearly = sum(recurring) * 12;
     const oneOff = -sum(outs.filter(f => !recurring.includes(-f.amount)), f => f.amount);
     const rate = (yearly / (state.total - oneOff)) * 100;
-    if (rate > ctx.S.withdrawalWarnPct) w.push({ code: 'withdrawalRate', rate, yearly });
+    // výdrž bez započtení výnosů: majetek po jednorázových výběrech / roční renta
+    if (rate > ctx.S.withdrawalWarnPct) w.push({ code: 'withdrawalRate', rate, yearly, years: (state.total - oneOff) / yearly });
   }
   if (outs.length) {
     const total = -sum(outs, f => f.amount);

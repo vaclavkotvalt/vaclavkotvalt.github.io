@@ -212,3 +212,28 @@ test('ETF bez ceny s nulovým cílem nevadí', async () => {
   const r = analyze(d);
   assert.deepEqual(r.clients.map(c => c.status), res.clients.map(c => c.status));
 });
+
+test('hodnotový test až v prosinci, rozdělení přes přelom roku, využití ztrát, výdrž renty', () => {
+  const lot = { exempt: false, proceedsCZK: 80000, gainCZK: 20000 };
+  assert.equal(taxOf([lot], 'FO', DEFAULTS, '2026-11-10').amount, 3000);       // listopad: ještě nejisté → daň
+  assert.ok(taxOf([lot], 'FO', DEFAULTS, '2026-11-10').valueTestPending);
+  assert.equal(taxOf([lot], 'FO', DEFAULTS, '2026-12-10').amount, 0);          // prosinec: osvobozeno
+  // klient se zdanitelným ziskem ve VWCE a lotem AVWS ve ztrátě, který se v plánu neprodává
+  const d = structuredClone(data);
+  d.clients = [{ id: 'X', profile: '', taxRegime: 'FO', targets: { VWCE: 35, AVWS: 15, EUNA: 50, IGLN: 0, CASH: 0 }, note: '' }];
+  d.lots = [{ client: 'X', ticker: 'VWCE', date: '2025-06-02', qty: 1000, cost: 120 },
+            { client: 'X', ticker: 'AVWS', date: '2025-06-02', qty: 2000, cost: 15 }];   // AVWS 12,6 < 15 → ztráta
+  d.cash = []; d.flows = [];
+  const x = analyze({ ...d, asOf: '2026-11-02' }).clients[0];
+  const h = x.decision.reasons.find(r => r.code === 'harvest');
+  assert.ok(h && h.lots[0].ticker === 'AVWS' && h.saving > 1000);
+  // malý zdanitelný prodej (100–200 tis. Kč) v prosinci → návrh rozdělit na prosinec a leden
+  const d2 = { ...d, clients: [{ ...d.clients[0], targets: { VWCE: 94.5, AVWS: 0, EUNA: 5.5, IGLN: 0, CASH: 0 } }], lots: [d.lots[0]] };
+  const dec = analyze({ ...d2, asOf: '2026-12-01' }, { taxableBandMult: 0 }).clients[0];
+  assert.ok(dec.plan.tax.proceedsAll > 100000 && dec.plan.tax.proceedsAll <= 200000);
+  assert.ok(dec.decision.reasons.some(r => r.code === 'splitYear'));
+  assert.ok(!analyze({ ...d2, asOf: '2026-11-02' }, { taxableBandMult: 0 }).clients[0].decision.reasons.some(r => r.code === 'splitYear'));
+  const b = res.clients.find(x => x.id === 'Klient B').warnings.find(w => w.code === 'withdrawalRate');
+  near(b.years, (b.yearly / (b.rate / 100)) / b.yearly, 0.01);
+  assert.ok(b.years > 17 && b.years < 19);
+});
