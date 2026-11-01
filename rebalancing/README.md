@@ -69,6 +69,8 @@ console.table(orders(result));                               // plochý seznam p
 | `alt`, `altFollow` | co by stál zásah hned (pro srovnání „proč počkat“) |
 | `warnings` | upozornění pro manažera (např. výše renty, prošlé pohyby) |
 
+Na úrovni celého výsledku je navíc `checks` – podezřelá, ale ne chybná data (zdvojený nákup, nákup v budoucnu, záporná hotovost, klient bez pozic); výpočet kvůli nim neskončí.
+
 Výsledky neobsahují texty, jen kódy a čísla – jazyk a formulace jsou věcí zobrazení.
 Všechna pravidla mají parametr v `DEFAULTS` (tolerance, horizonty, poplatky, sazby daně, metoda lotů).
 

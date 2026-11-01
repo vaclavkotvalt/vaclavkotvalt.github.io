@@ -84,15 +84,35 @@ export function validate(data) {
   return issues;
 }
 
+// Kontrola podezřelých, ale ne chybných dat: výpočet běží dál, manažer jen dostane upozornění
+export function checkData(data, asOf) {
+  const checks = [], seen = new Map(), ids = new Map();
+  for (const c of data.clients) ids.set(c.id, (ids.get(c.id) || 0) + 1);
+  for (const [id, n] of ids) if (n > 1) checks.push({ code: 'duplicateClient', client: id, count: n });
+  for (const l of data.lots) {
+    const k = [l.client, l.ticker, l.date, l.qty, l.cost].join('|');
+    seen.set(k, (seen.get(k) || 0) + 1);
+    if (asOf && l.date > asOf) checks.push({ code: 'futureLot', client: l.client, ticker: l.ticker, date: l.date });
+  }
+  for (const [k, n] of seen) if (n > 1) { const [client, ticker, date, qty] = k.split('|'); checks.push({ code: 'duplicateLot', client, ticker, date, qty: +qty, count: n }); }
+  for (const c of data.cash) if (c.amount < 0) checks.push({ code: 'negativeCash', client: c.client, currency: c.currency, amount: c.amount });
+  for (const c of data.clients) {
+    const own = (x) => x.client === c.id;
+    if (!data.lots.some(own) && !data.cash.some(x => own(x) && x.amount)) checks.push({ code: 'emptyClient', client: c.id });
+  }
+  return checks;
+}
+
 // ---------- hlavní funkce ----------
 export function analyze(data, settings = {}) {
   const S = { ...DEFAULTS, ...settings };
   const asOf = settings.asOf || data.asOf;
   const issues = validate(data);
+  const checks = checkData(data, asOf);
   // Chybějící cena nebo kurz u jednoho ETF zastaví jen klienty, kteří ho drží nebo mají v cílech
   const badTickers = new Set(issues.filter(i => i.ticker && ['badPrice', 'missingFx'].includes(i.code)).map(i => i.ticker));
   const fatal = issues.filter(i => i.code === 'badLot' || i.code === 'unknownTicker' || (i.code === 'missingFx' && !i.ticker));
-  if (fatal.length) return { asOf, settings: S, issues, clients: [], summary: null };
+  if (fatal.length) return { asOf, settings: S, issues, checks, clients: [], summary: null };
 
   const inst = Object.fromEntries(data.instruments.filter(i => !badTickers.has(i.ticker)).map(i => [i.ticker, { ...i, pCZK: i.price * data.fx[i.currency] }]));
   const fxAt = historicFx(data.fxHistory);
@@ -106,7 +126,7 @@ export function analyze(data, settings = {}) {
     taxSaved: sum(clients, c => c.decision.taxSaved || 0),
   };
   for (const c of clients) summary.count[c.status]++;
-  return { asOf, settings: S, issues, clients, summary, instruments: Object.values(inst), fx: data.fx };
+  return { asOf, settings: S, issues, checks, clients, summary, instruments: Object.values(inst), fx: data.fx };
 }
 
 function analyzeClient(client, data, ctx) {

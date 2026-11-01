@@ -237,3 +237,17 @@ test('hodnotový test až v prosinci, rozdělení přes přelom roku, využití 
   near(b.years, (b.yearly / (b.rate / 100)) / b.yearly, 0.01);
   assert.ok(b.years > 17 && b.years < 19);
 });
+
+test('kontrola dat: zdvojený nákup, nákup v budoucnu, záporná hotovost, prázdný klient', () => {
+  assert.deepEqual(res.checks, []); // data ze zadání jsou v pořádku
+  const d = structuredClone(data);
+  d.lots.push({ ...d.lots[0] });                                              // stejný řádek dvakrát
+  d.lots.push({ client: 'Klient C', ticker: 'VWCE', date: '2026-12-01', qty: 10, cost: 140 });
+  d.cash.push({ client: 'Klient D', currency: 'CZK', amount: -5000 });
+  d.clients.push({ id: 'Klient F', profile: '', taxRegime: 'FO', targets: { VWCE: 100 }, note: '' });
+  const r = analyze(d);
+  const codes = r.checks.map(c => c.code).sort();
+  assert.deepEqual(codes, ['duplicateLot', 'emptyClient', 'futureLot', 'negativeCash']);
+  assert.equal(r.checks.find(c => c.code === 'duplicateLot').client, d.lots[0].client);
+  assert.ok(r.summary); // výpočet běží dál
+});

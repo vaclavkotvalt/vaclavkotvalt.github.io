@@ -123,6 +123,19 @@
   #clients tbody tr:hover { background: rgba(138, 184, 255, 0.06); }
   #clients tbody tr.sel { background: rgba(138, 184, 255, 0.12); }
   tfoot td { font-weight: 500; border-bottom: 0; }
+  .filters { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 0 0 0.9rem; }
+  .filters button { font: inherit; font-size: 0.85rem; color: var(--muted); background: transparent; border: 1px solid var(--line); border-radius: 999px; padding: 0.3rem 0.8rem; cursor: pointer; transition: border-color 0.2s ease, color 0.2s ease; }
+  .filters button:disabled { opacity: 0.4; cursor: default; }
+  .filters button:hover:not(:disabled) { border-color: var(--muted); color: var(--text); }
+  .filters button[aria-pressed="true"] { color: var(--text); border-color: var(--accent); background: rgba(138, 184, 255, 0.1); }
+  .filters button .n { color: var(--muted); margin-left: 0.3rem; }
+  th button.sort { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; display: inline-flex; gap: 0.25rem; align-items: center; }
+  th button.sort:hover, th[aria-sort] button.sort { color: var(--text); }
+  th button.sort .ar { opacity: 0.35; font-size: 0.7rem; }
+  th[aria-sort] button.sort .ar { opacity: 1; color: var(--accent); }
+  .checks { border: 1px solid var(--line); border-left: 3px solid var(--st-act); border-radius: 8px; padding: 0.75rem 1rem; margin: 1rem 0 0; font-size: 0.88rem; max-width: 52rem; }
+  .checks b { font-weight: 500; }
+  .checks ul { margin: 0.35rem 0 0; padding-left: 1.1rem; color: var(--muted); }
 
   .chip { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.8rem; font-weight: 500; padding: 0.1rem 0.55rem; border-radius: 999px; border: 1px solid currentColor; }
   .chip.act { color: var(--st-act); } .chip.wait { color: var(--st-wait); } .chip.ok { color: var(--st-ok); }
@@ -296,17 +309,19 @@
     <section class="panel reveal" aria-labelledby="ovH">
       <h2 id="ovH"><span class="cs">Přehled klientů</span><span class="en">Client overview</span></h2>
       <p class="muted small" id="ovNote"></p>
+      <div class="checks" id="checks" role="note" hidden></div>
       <div class="summary num" id="tiles"></div>
+      <div class="filters" id="filters" role="group" aria-label="Filtr / Filter"></div>
       <div class="tbl-wrap">
         <table class="num" id="clients">
           <thead><tr>
-            <th><span class="cs">Klient</span><span class="en">Client</span></th>
-            <th><span class="cs">Stav</span><span class="en">Status</span></th>
-            <th><span class="cs">Kdy</span><span class="en">When</span></th>
-            <th class="r"><span class="cs">Majetek</span><span class="en">Assets</span></th>
-            <th class="r"><span class="cs">Max. odchylka</span><span class="en">Max drift</span></th>
+            <th><button type="button" class="sort" data-sort="name"><span class="cs">Klient</span><span class="en">Client</span><span class="ar" aria-hidden="true">↕</span></button></th>
+            <th><button type="button" class="sort" data-sort="status"><span class="cs">Stav</span><span class="en">Status</span><span class="ar" aria-hidden="true">↕</span></button></th>
+            <th><button type="button" class="sort" data-sort="date"><span class="cs">Kdy</span><span class="en">When</span><span class="ar" aria-hidden="true">↕</span></button></th>
+            <th class="r"><button type="button" class="sort" data-sort="total"><span class="cs">Majetek</span><span class="en">Assets</span><span class="ar" aria-hidden="true">↕</span></button></th>
+            <th class="r"><button type="button" class="sort" data-sort="drift"><span class="cs">Max. odchylka</span><span class="en">Max drift</span><span class="ar" aria-hidden="true">↕</span></button></th>
             <th><span class="cs">Obchody</span><span class="en">Trades</span></th>
-            <th class="r"><span class="cs">Náklady</span><span class="en">Costs</span></th>
+            <th class="r"><button type="button" class="sort" data-sort="costs"><span class="cs">Náklady</span><span class="en">Costs</span><span class="ar" aria-hidden="true">↕</span></button></th>
           </tr></thead>
           <tbody id="cRows"></tbody>
         </table>
@@ -417,7 +432,7 @@
       </ul>
       <h3>Co nástroj neumí</h3>
       <ul>
-        <li>Nenapojuje se na brokera – pozice, hotovost a plánované pohyby bere z nahraného Excelu, který je potřeba udržovat aktuální. Ceny ETF se hledají podle ISIN: zhruba 40 běžných fondů a kurzy ČNB se stahují každý pracovní den večer, ostatní ISINy z nahraného Excelu dohledá služba na Cloudflare (odesílají se jí jen ISINy). Jde o závěrečné ceny z Yahoo Finance, ne o ceny v okamžiku obchodu; kotace v jiné měně se přepočte kurzem ČNB do měny nákupních cen.</li>
+        <li>Nenapojuje se na brokera – pozice, hotovost a plánované pohyby bere z nahraného Excelu, který je potřeba udržovat aktuální. Při nahrání nástroj upozorní na podezřelé údaje (zdvojený řádek nákupu, nákup s budoucím datem, záporná hotovost, klient bez pozic), opravit je ale musí manažer. Ceny ETF se hledají podle ISIN: zhruba 40 běžných fondů a kurzy ČNB se stahují každý pracovní den večer, ostatní ISINy z nahraného Excelu dohledá služba na Cloudflare (odesílají se jí jen ISINy). Jde o závěrečné ceny z Yahoo Finance, ne o ceny v okamžiku obchodu; kotace v jiné měně se přepočte kurzem ČNB do měny nákupních cen.</li>
         <li>Nepočítá se sazbou 23 % pro část základu daně nad 36násobkem průměrné mzdy ani s dalšími příjmy klienta. U s.r.o. je daň jen odhad dopadu na základ daně (účetní ocenění cenných papírů nástroj neřeší).</li>
         <li>Neověří, jestli jsou historické údaje o pozicích převedených od jiného brokera správné – to musí udělat manažer.</li>
       </ul>
@@ -446,7 +461,7 @@
       </ul>
       <h3>What the tool doesn’t do</h3>
       <ul>
-        <li>It doesn’t connect to a broker – holdings, cash and planned flows come from the uploaded Excel file, which has to be kept up to date. ETF prices are looked up by ISIN: about 40 common funds and CNB rates are fetched every business day in the evening, other ISINs from the uploaded Excel file are looked up by a service on Cloudflare (only the ISINs are sent). They are closing prices from Yahoo Finance, not prices at the moment of the trade; a quote in another currency is converted at the CNB rate into the currency of the purchase prices.</li>
+        <li>It doesn’t connect to a broker – holdings, cash and planned flows come from the uploaded Excel file, which has to be kept up to date. On upload the tool flags suspicious entries (a duplicated purchase row, a purchase dated in the future, negative cash, a client with no holdings), but the manager has to fix them. ETF prices are looked up by ISIN: about 40 common funds and CNB rates are fetched every business day in the evening, other ISINs from the uploaded Excel file are looked up by a service on Cloudflare (only the ISINs are sent). They are closing prices from Yahoo Finance, not prices at the moment of the trade; a quote in another currency is converted at the CNB rate into the currency of the purchase prices.</li>
         <li>It ignores the 23% rate on the part of the tax base above 36 times the average wage and the client’s other income. For companies the tax is only an estimate of the impact on the tax base (the tool doesn’t handle accounting valuation of securities).</li>
         <li>It can’t verify historical records of positions transferred from another broker – the manager has to.</li>
       </ul>
@@ -675,10 +690,29 @@ function render() {
   } else {
     $('ovNote').textContent = L('Klikněte na klienta pro detail.', 'Click a client for details.');
   }
-  if (!RES.summary) { $('tiles').innerHTML = ''; $('cRows').innerHTML = ''; $('detail').hidden = true; return; }
+  renderChecks();
+  if (!RES.summary) { $('tiles').innerHTML = ''; $('cRows').innerHTML = ''; $('filters').innerHTML = ''; $('detail').hidden = true; return; }
   renderOverview(); renderDetail();
 }
 
+
+// Podezřelá (ne chybná) data z nahraného Excelu – výpočet běží dál, jen upozornění
+function checkText(k) {
+  const who = clientName(k.client);
+  switch (k.code) {
+    case 'duplicateLot': return L(`${who}: nákup ${nf(k.qty)} ks ${k.ticker} z ${date(k.date)} je v listu Pozice ${k.count}× – nejde o omylem zkopírovaný řádek?`, `${who}: the purchase of ${nf(k.qty)} ${k.ticker} on ${date(k.date)} appears ${k.count}× in the Pozice sheet – an accidentally copied row?`);
+    case 'futureLot': return L(`${who}: nákup ${k.ticker} má datum v budoucnu (${date(k.date)}) – překlep v datu?`, `${who}: the ${k.ticker} purchase is dated in the future (${date(k.date)}) – a typo in the date?`);
+    case 'negativeCash': return L(`${who}: záporná hotovost ${nf(k.amount)} ${k.currency} – debet u brokera, nebo chyba ve znaménku?`, `${who}: negative cash of ${nf(k.amount)} ${k.currency} – an overdraft at the broker, or a sign error?`);
+    case 'emptyClient': return L(`${who}: nemá žádné pozice ani hotovost.`, `${who}: has no holdings and no cash.`);
+    case 'duplicateClient': return L(`${who}: klient je v listu Klienti ${k.count}× – cílové váhy se vezmou z obou řádků zvlášť.`, `${who}: the client appears ${k.count}× in the Klienti sheet – each row is treated separately.`);
+    default: return k.code;
+  }
+}
+function renderChecks() {
+  const ks = RES.checks || [];
+  $('checks').hidden = !ks.length;
+  $('checks').innerHTML = ks.length ? `<b>${L('Kontrola dat – zkontrolujte v Excelu', 'Data check – please verify in the Excel file')}</b><ul>${ks.map(k => `<li>${esc(checkText(k))}</li>`).join('')}</ul>` : '';
+}
 
 function issueText(i) {
   switch (i.code) {
@@ -705,6 +739,26 @@ const STATUS = {
 };
 const chip = (s) => { const [c, i, t] = STATUS[s](); return `<span class="chip ${c}"><span aria-hidden="true">${i}</span>${t}</span>`; };
 
+// Filtr podle stavu a řazení podle sloupců (výchozí pořadí = pořadí v Excelu)
+let FILTER = 'all', SORT = { key: null, dir: 1 };
+const SORT_KEYS = {
+  name: (c) => clientName(c.id),
+  status: (c) => ({ act: 0, wait: 1, ok: 2 })[c.status] * 1e9 + (c.decision.date ? Date.parse(c.decision.date) / 864e5 : 0),
+  date: (c) => c.decision.date || null,
+  total: (c) => c.total,
+  drift: (c) => c.rows.length ? Math.max(...c.rows.map(r => Math.abs(r.diff))) : null,
+  costs: (c) => c.plan ? c.plan.costs.total : null,
+};
+document.querySelectorAll('#clients button.sort').forEach(b => b.addEventListener('click', () => {
+  const k = b.dataset.sort;
+  // první klik: text vzestupně, čísla sestupně (největší odchylka / náklady nahoře); druhý obrátí; třetí vrátí pořadí z Excelu
+  const first = ['name', 'status', 'date'].includes(k) ? 1 : -1;
+  if (SORT.key !== k) SORT = { key: k, dir: first };
+  else if (SORT.dir === first) SORT.dir = -first;
+  else SORT = { key: null, dir: 1 };
+  if (RES?.summary) renderOverview();
+}));
+
 function renderOverview() {
   const s = RES.summary;
   let ti = 0;
@@ -716,7 +770,26 @@ function renderOverview() {
     tile(czk(s.costs), L('náklady navržených zásahů', 'cost of proposed trades')),
     tile(czk(s.taxSaved), L('daň ušetřená čekáním', 'tax saved by waiting')),
   ].join('');
-  $('cRows').innerHTML = RES.clients.map((c, ci) => {
+  const n = (st) => RES.clients.filter(c => st === 'all' || c.status === st).length;
+  if (FILTER !== 'all' && !n(FILTER)) FILTER = 'all';
+  const fb = (st, label) => `<button type="button" data-f="${st}" aria-pressed="${FILTER === st}"${n(st) ? '' : ' disabled'}>${label}<span class="n">${n(st)}</span></button>`;
+  $('filters').innerHTML = fb('all', L('Vše', 'All')) + fb('act', L('Zasáhnout', 'Act now')) + fb('wait', L('Počkat', 'Wait')) + fb('ok', L('V pořádku', 'Fine'));
+  $('filters').querySelectorAll('button').forEach(b => b.addEventListener('click', () => { FILTER = b.dataset.f; renderOverview(); $('filters').querySelector(`[data-f="${FILTER}"]`).focus(); }));
+  document.querySelectorAll('#clients th').forEach(th => {
+    const k = th.querySelector('button.sort')?.dataset.sort;
+    if (k && k === SORT.key) th.setAttribute('aria-sort', SORT.dir > 0 ? 'ascending' : 'descending'); else th.removeAttribute('aria-sort');
+    const ar = th.querySelector('.ar'); if (ar) ar.textContent = k === SORT.key ? (SORT.dir > 0 ? '▲' : '▼') : '↕';
+  });
+  const list = RES.clients.filter(c => FILTER === 'all' || c.status === FILTER);
+  if (SORT.key) {
+    const val = SORT_KEYS[SORT.key];
+    list.sort((a, b) => {
+      const x = val(a), y = val(b);
+      if (x == null && y == null) return 0; if (x == null) return 1; if (y == null) return -1; // prázdné vždy na konec
+      return (typeof x === 'string' ? x.localeCompare(y, LANG, { numeric: true }) : x - y) * SORT.dir;
+    });
+  }
+  $('cRows').innerHTML = list.map((c, ci) => {
     const trades = c.plan ? c.plan.trades.map(t => `<span class="side-${t.side}">${t.side === 'buy' ? '+' : '−'}${nf(t.qty)}</span> ${t.ticker}`).join(', ') : '–';
     return `<tr data-id="${esc(c.id)}" tabindex="0" class="${c.id === selected ? 'sel' : ''}" style="--i:${ci + 3}">
       <td><b style="font-weight:500">${esc(clientName(c.id))}</b><br><span class="muted small">${c.taxRegime === 'FO' ? L('FO', 'individual') : L('s.r.o.', 'company')}</span></td>
@@ -790,6 +863,7 @@ function recoItems(c) {
     if (w.code === 'pastFlows') warn.push(L(`${w.flows.map(f => `${f.amount > 0 ? 'Vklad' : 'Výběr'} ${czk(Math.abs(f.amount))} (${date(f.date)})`).join(', ')} už měl proběhnout. Nástroj ho nezapočítá – zkontrolujte, že je v hotovosti, a nahrajte aktuální stav účtu.`, `${w.flows.map(f => `${f.amount > 0 ? 'Deposit' : 'Withdrawal'} of ${czk(Math.abs(f.amount))} (${date(f.date)})`).join(', ')} should already have happened. The tool ignores it – check that cash reflects it and upload the current account state.`));
     if (w.code === 'outflowsExceed') warn.push(L(`Plánované výběry (${czk(w.total)}) jsou vyšší než celý majetek.`, `Planned withdrawals (${czk(w.total)}) exceed total assets.`));
   }
+  for (const k of (RES.checks || []).filter(k => k.client === c.id)) warn.push(checkText(k));
   if (c.plan?.error) warn.push(L('Majetek nestačí na plánované výběry – nelze navrhnout obchody.', 'Assets don’t cover planned withdrawals – no trades can be proposed.'));
   return { items, warn };
 }
@@ -1051,6 +1125,8 @@ const TOUR = [
     en: ['Upload Excel', 'Upload the filled-in template. The file stays in your browser only and loads automatically next time.'] },
   { el: () => $('clients').closest('.tbl-wrap'), cs: ['Přehled klientů', 'U každého klienta stav – zasáhnout, počkat (s datem), nebo v pořádku – a navržené obchody s náklady. Kliknutím na řádek otevřete detail.'],
     en: ['Client overview', 'Each client’s status – act now, wait (with a date) or fine – plus proposed trades and costs. Click a row to open the details.'] },
+  { el: () => $('filters'), cs: ['Filtr a řazení', 'Zobrazte jen klienty, u kterých je potřeba zasáhnout nebo počkat. Kliknutím na záhlaví sloupce seřadíte tabulku – třeba podle největší odchylky nebo nákladů.'],
+    en: ['Filter and sort', 'Show only clients who need action or waiting. Click a column header to sort the table – for example by the largest drift or by cost.'] },
   { el: () => $('reco'), cs: ['Doporučení', 'Co přesně udělat a proč: odchylky od cíle, daně, kdy se vyplatí počkat. Níž jsou obchody, rozložení majetku, daňové pozice a časová osa.'],
     en: ['Recommendation', 'Exactly what to do and why: drift from target, taxes, when waiting pays off. Below are the trades, allocation, tax lots and a timeline.'] },
   { el: () => $('csv'), cs: ['Příkazy pro brokera', 'Stáhne navržené obchody jako CSV – jen dnešní, nebo i ty naplánované na později.'],
