@@ -61,9 +61,6 @@
   .toolbar { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 0.6rem; }
   .toolbar .btn { font-size: 0.86rem; padding: 0.55rem 0.6rem; }
   .menu-right { left: auto; right: 0; }
-  .seg { display: inline-flex; gap: 4px; padding: 4px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); }
-  .seg button { font: inherit; font-size: 0.92rem; padding: 0.4rem 0.9rem; border: 0; border-radius: 7px; background: transparent; color: var(--muted); cursor: pointer; }
-  .seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
   .toolbar > .btn, .toolbar .dl > .btn { width: 100%; text-align: center; text-decoration: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   @media (max-width: 1100px) { .toolbar { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
   @media (max-width: 860px) { .toolbar { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
@@ -218,6 +215,21 @@
     .js .reveal.in { transition: none; }
     .intro .reveal.in .tile, .intro .reveal.in #cRows tr { animation: none; }
   }
+  /* průvodce: ztmavená stránka, zvýrazněný prvek a karta s vysvětlením */
+  .tour-btn { font: inherit; font-size: 0.85rem; padding: 0.3rem 0.75rem; border: 1px solid var(--line); border-radius: 999px; background: transparent; color: var(--muted); cursor: pointer; }
+  .tour-btn:hover { color: var(--text); border-color: var(--muted); }
+  #tourBlock { position: fixed; inset: 0; z-index: 90; }
+  #tourHole { position: fixed; z-index: 91; pointer-events: none; border-radius: 10px; box-shadow: 0 0 0 2px var(--accent), 0 0 0 200vmax rgba(4, 10, 20, 0.74);
+    transition: top 0.35s ease, left 0.35s ease, width 0.35s ease, height 0.35s ease; }
+  #tourCard { position: fixed; z-index: 92; width: min(22rem, calc(100vw - 32px)); background: var(--surface); border: 1px solid var(--line); border-radius: 12px;
+    padding: 1.1rem 1.2rem 1rem; box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5); transition: top 0.35s ease, left 0.35s ease; }
+  #tourCard h3 { margin: 0 0 0.4rem; font-size: 1.05rem; }
+  #tourCard p { margin: 0; font-size: 0.92rem; line-height: 1.55; color: var(--muted); }
+  #tourCard .tour-step { font-size: 0.78rem; letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 0.35rem; color: var(--accent); }
+  .tour-nav { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; margin-top: 1rem; }
+  .tour-nav .btn { font-size: 0.86rem; padding: 0.45rem 0.85rem; }
+  .tour-nav .btn[hidden] { display: none; }
+  @media (prefers-reduced-motion: reduce) { #tourHole, #tourCard { transition: none; } }
   footer { max-width: 72rem; margin: 0 auto; padding: 1.5rem 16px 3rem; border-top: 1px solid var(--line); color: var(--muted); font-size: 0.85rem; }
 </style>
 <script>
@@ -236,6 +248,7 @@
   <a class="name" href="/">Václav Kotvalt</a>
   <div class="bar-right">
     <a href="/#projekty"><span class="cs">← Zpět<span class="back-long"> na hlavní stránku</span></span><span class="en">← Back<span class="back-long"> to main page</span></span></a>
+    <button type="button" class="tour-btn" id="tourStart"><span class="cs">Průvodce</span><span class="en">Guide</span></button>
     <div class="lang" role="group" aria-label="Jazyk / Language">
       <button type="button" data-set="cs" aria-pressed="true">CZ</button>
       <button type="button" data-set="en" aria-pressed="false">EN</button>
@@ -378,20 +391,6 @@
       </div>
     </section>
   </div>
-
-  <section class="panel reveal" id="stress" aria-labelledby="sH">
-    <h2 id="sH"><span class="cs">Co když trh spadne</span><span class="en">What if the market falls</span></h2>
-    <p class="muted small"><span class="cs">Kteří klienti by se po poklesu akcií dostali mimo toleranci. Ostatní složky (dluhopisy, zlato) se nemění; akcie se poznají podle třídy aktiv nebo názvu v Excelu.</span><span class="en">Which clients would end up out of band after an equity fall. Other holdings (bonds, gold) stay unchanged; equities are recognised by the asset class or name in the Excel file.</span></p>
-    <div class="seg" id="shock" role="group">
-      <button type="button" data-s="10" aria-pressed="true">−10 %</button><button type="button" data-s="20" aria-pressed="false">−20 %</button><button type="button" data-s="30" aria-pressed="false">−30 %</button>
-    </div>
-    <div class="tbl-wrap" style="margin-top:1rem">
-      <table class="num">
-        <thead><tr><th><span class="cs">Klient</span><span class="en">Client</span></th><th><span class="cs">Dnes</span><span class="en">Today</span></th><th><span class="cs">Po poklesu</span><span class="en">After the fall</span></th><th class="r"><span class="cs">Majetek po poklesu</span><span class="en">Assets after</span></th><th><span class="cs">Mimo toleranci</span><span class="en">Out of band</span></th></tr></thead>
-        <tbody id="shockRows"></tbody>
-      </table>
-    </div>
-  </section>
 
   <section class="panel method reveal" aria-labelledby="mH">
     <h2 id="mH"><span class="cs">Jak nástroj rozhoduje</span><span class="en">How the tool decides</span></h2>
@@ -570,6 +569,10 @@ Promise.all([SAMPLE, MARKET_P, HISTORY_P, ISIN_P]).then(([sample, market, histor
   document.addEventListener('keydown', endIntro, { once: true, capture: true });
   setMode(STORED && MARKET ? 'market' : 'brief');
   renderSettings();
+  // průvodce se ukáže jen při první návštěvě (pamatuje si to prohlížeč), po doběhnutí úvodní animace
+  let seen = false;
+  try { seen = localStorage.getItem('rb-tour-done') === '1'; } catch (e) {}
+  if (!seen) setTimeout(() => startTour(), 1900);
 }).catch(() => { $('status').textContent = L('Data se nepodařilo načíst. Zkuste stránku obnovit.', 'Could not load the data. Please reload the page.'); $('status').hidden = false; });
 
 function setMode(mode, keepSelected = false) {
@@ -672,33 +675,10 @@ function render() {
   } else {
     $('ovNote').textContent = L('Klikněte na klienta pro detail.', 'Click a client for details.');
   }
-  if (!RES.summary) { $('tiles').innerHTML = ''; $('cRows').innerHTML = ''; $('detail').hidden = true; $('stress').hidden = true; return; }
-  renderOverview(); renderDetail(); renderStress();
+  if (!RES.summary) { $('tiles').innerHTML = ''; $('cRows').innerHTML = ''; $('detail').hidden = true; return; }
+  renderOverview(); renderDetail();
 }
 
-// Co když trh spadne: akcie (podle třídy aktiv nebo názvu) o X % níž, ostatní beze změny
-let SHOCK = 10;
-// rozhoduje třída aktiv z Excelu; bez ní název (pozor: „iShares … Bond“ akcie nejsou)
-const isEquity = (i) => {
-  const eq = /akci|equit|stock/i, other = /dluhop|bond|zlat|gold|komod|commod|reit|nemovit|money|peněž/i;
-  if (i.assetClass) return eq.test(i.assetClass) && !other.test(i.assetClass);
-  return eq.test(i.name || '') && !other.test(i.name || '');
-};
-function renderStress() {
-  $('stress').hidden = false;
-  document.querySelectorAll('#shock button').forEach(b => b.setAttribute('aria-pressed', String(+b.dataset.s === SHOCK)));
-  const shocked = { ...DATA, instruments: DATA.instruments.map(i => isEquity(i) && i.price > 0 ? { ...i, price: i.price * (1 - SHOCK / 100) } : i) };
-  const after = analyze(shocked, { ...SETTINGS, asOf: RES.asOf });
-  const state = (c) => !c.rows.length ? '–' : c.rows.some(r => r.out)
-    ? `<span class="chip act"><span aria-hidden="true">●</span>${L('mimo toleranci', 'out of band')}</span>`
-    : `<span class="chip ok"><span aria-hidden="true">✓</span>${L('v toleranci', 'within band')}</span>`;
-  $('shockRows').innerHTML = RES.clients.map(c => {
-    const c2 = after.clients.find(x => x.id === c.id) || c;
-    const out = c2.rows.filter(r => r.out).map(r => `${esc(keyName(r.key))} ${pp(r.diff)}`).join(', ') || '–';
-    return `<tr><td>${esc(clientName(c.id))}</td><td>${state(c)}</td><td>${state(c2)}</td><td class="r">${c2.total == null ? '–' : mczk(c2.total)}</td><td class="wrap">${out}</td></tr>`;
-  }).join('');
-}
-document.querySelectorAll('#shock button').forEach(b => b.addEventListener('click', () => { SHOCK = +b.dataset.s; renderStress(); }));
 
 function issueText(i) {
   switch (i.code) {
@@ -1061,6 +1041,76 @@ $('file').addEventListener('change', async () => {
   $('file').value = '';
 });
 
+// Průvodce ovládáním: postupně zvýrazní ovládací prvky a krátce je vysvětlí
+const TOUR = [
+  { el: () => $('val'), cs: ['Ocenění', 'Ze zadání = data a ceny z case study. Aktuální trh = vaše vlastní pozice z Excelu oceněné dnešními cenami a kurzy ČNB.'],
+    en: ['Valuation', 'From the brief = the case study’s data and prices. Current market = your own holdings from Excel valued at today’s prices and CNB rates.'] },
+  { el: () => document.querySelector('.toolbar a.btn[download]'), cs: ['Šablona Excelu', 'Prázdná šablona pro vlastní klienty: cílové váhy, nákupy, hotovost a plánované vklady či výběry. Ceny se vyplňovat nemusí.'],
+    en: ['Excel template', 'An empty template for your own clients: target weights, purchases, cash and planned deposits or withdrawals. No prices needed.'] },
+  { el: () => $('upload'), cs: ['Nahrání Excelu', 'Nahrajte vyplněnou šablonu. Soubor zůstane jen ve vašem prohlížeči a příště se načte sám.'],
+    en: ['Upload Excel', 'Upload the filled-in template. The file stays in your browser only and loads automatically next time.'] },
+  { el: () => $('clients').closest('.tbl-wrap'), cs: ['Přehled klientů', 'U každého klienta stav – zasáhnout, počkat (s datem), nebo v pořádku – a navržené obchody s náklady. Kliknutím na řádek otevřete detail.'],
+    en: ['Client overview', 'Each client’s status – act now, wait (with a date) or fine – plus proposed trades and costs. Click a row to open the details.'] },
+  { el: () => $('reco'), cs: ['Doporučení', 'Co přesně udělat a proč: odchylky od cíle, daně, kdy se vyplatí počkat. Níž jsou obchody, rozložení majetku, daňové pozice a časová osa.'],
+    en: ['Recommendation', 'Exactly what to do and why: drift from target, taxes, when waiting pays off. Below are the trades, allocation, tax lots and a timeline.'] },
+  { el: () => $('csv'), cs: ['Příkazy pro brokera', 'Stáhne navržené obchody jako CSV – jen dnešní, nebo i ty naplánované na později.'],
+    en: ['Orders for the broker', 'Downloads the proposed trades as CSV – today’s only, or including those planned for later.'] },
+  { el: () => $('rep'), cs: ['Zpráva pro klienta', 'Srozumitelná zpráva pro vybraného klienta k vytištění nebo uložení do PDF.'],
+    en: ['Client report', 'A plain-language report for the selected client to print or save as PDF.'] },
+  { el: () => document.querySelector('details.more > summary'), cs: ['Data, pravidla a parametry', 'Odkud jsou ceny a kurzy a všechna pravidla nástroje – tolerance, poplatky, daně, čekání. Dají se upravit.'],
+    en: ['Data, rules and parameters', 'Where prices and rates come from, and all of the tool’s rules – bands, fees, taxes, waiting. All adjustable.'] },
+];
+let tourAt = -1;
+function startTour() {
+  if ($('app').hidden) return;
+  document.body.classList.remove('intro');
+  tourAt = 0;
+  ['tourBlock', 'tourHole', 'tourCard'].forEach(id => { $(id).hidden = false; });
+  showTourStep();
+}
+function endTour() {
+  tourAt = -1;
+  ['tourBlock', 'tourHole', 'tourCard'].forEach(id => { $(id).hidden = true; });
+  try { localStorage.setItem('rb-tour-done', '1'); } catch (e) {}
+  $('tourStart').focus();
+}
+function placeTour() {
+  if (tourAt < 0) return;
+  const el = TOUR[tourAt].el(); if (!el) return;
+  const r = el.getBoundingClientRect(), pad = 6;
+  Object.assign($('tourHole').style, { top: `${r.top - pad}px`, left: `${r.left - pad}px`, width: `${r.width + 2 * pad}px`, height: `${r.height + 2 * pad}px` });
+  const card = $('tourCard'), ch = card.offsetHeight, cw = card.offsetWidth, gap = 14;
+  // pod prvek, jinak nad něj; když se nevejde ani jedno, ke spodnímu okraji okna
+  const below = r.bottom + pad + gap + ch < innerHeight, above = r.top - pad - gap - ch > 8;
+  const top = below ? r.bottom + pad + gap : above ? r.top - pad - gap - ch : innerHeight - ch - 16;
+  const left = Math.min(Math.max(16, r.left + r.width / 2 - cw / 2), innerWidth - cw - 16);
+  Object.assign(card.style, { top: `${top}px`, left: `${left}px` });
+}
+function showTourStep() {
+  const st = TOUR[tourAt], [title, text] = st[LANG] || st.cs;
+  $('tourStep').textContent = `${tourAt + 1} / ${TOUR.length}`;
+  $('tourTitle').textContent = title; $('tourText').textContent = text;
+  $('tourSkip').textContent = L('Přeskočit', 'Skip');
+  $('tourPrev').textContent = L('Zpět', 'Back'); $('tourPrev').hidden = tourAt === 0;
+  $('tourNext').textContent = tourAt === TOUR.length - 1 ? L('Hotovo', 'Done') : L('Další', 'Next');
+  const el = st.el();
+  if (el) el.scrollIntoView({ block: 'center', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+  placeTour(); setTimeout(placeTour, 450);
+  $('tourNext').focus();
+}
+$('tourStart').addEventListener('click', startTour);
+$('tourNext').addEventListener('click', () => { if (tourAt >= TOUR.length - 1) endTour(); else { tourAt++; showTourStep(); } });
+$('tourPrev').addEventListener('click', () => { if (tourAt > 0) { tourAt--; showTourStep(); } });
+$('tourSkip').addEventListener('click', endTour);
+document.addEventListener('keydown', (e) => {
+  if (tourAt < 0) return;
+  if (e.key === 'Escape') endTour();
+  else if (e.key === 'ArrowRight') $('tourNext').click();
+  else if (e.key === 'ArrowLeft') $('tourPrev').click();
+});
+addEventListener('resize', placeTour);
+addEventListener('scroll', placeTour, { passive: true });
+
 // Zpráva pro klienta: vybrat klienta → nové okno se zprávou k tisku / uložení do PDF
 const repMenu = $('repMenu'), repBtn = $('rep');
 function openRepMenu(open) {
@@ -1155,5 +1205,19 @@ function download(scope) {
   a.click(); URL.revokeObjectURL(a.href);
 }
 </script>
+<div id="tourBlock" hidden></div>
+<div id="tourHole" hidden></div>
+<div id="tourCard" role="dialog" aria-modal="true" aria-labelledby="tourTitle" hidden>
+  <p class="tour-step" id="tourStep"></p>
+  <h3 id="tourTitle"></h3>
+  <p id="tourText"></p>
+  <div class="tour-nav">
+    <button type="button" class="lnk" id="tourSkip"></button>
+    <span>
+      <button type="button" class="btn" id="tourPrev"></button>
+      <button type="button" class="btn primary" id="tourNext"></button>
+    </span>
+  </div>
+</div>
 </body>
 </html>
