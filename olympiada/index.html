@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="cs" data-lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ekonomická olympiáda – Václav Kotvalt</title>
+<meta name="description" content="Můj příběh s Ekonomickou olympiádou: vítězství v národním kole, zlatá medaile v mezinárodním kole a práce v týmu, který olympiádu připravuje.">
+<meta name="author" content="Václav Kotvalt">
+<link rel="canonical" href="https://vaclavkotvalt.cz/olympiada/">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ctext y=%22.9em%22 font-size=%2290%22%3E%F0%9F%93%88%3C/text%3E%3C/svg%3E">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://vaclavkotvalt.cz/olympiada/">
+<meta property="og:title" content="Ekonomická olympiáda – Václav Kotvalt">
+<meta property="og:description" content="Od vítězství v národním kole po zlatou medaili v mezinárodním kole a práci v týmu olympiády.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,300;6..72,400&family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    /* Písma: velké nadpisy stránek (h1) patkové, veškerý ostatní text Montserrat */
+    --font-heading: "Newsreader", Georgia, serif;
+    --font-text: "Montserrat", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --bg: #0d1a2b; --surface: #132339; --line: #23364f; --text: #e6ecf4;
+    --muted: #92a3ba; --accent: #8ab8ff; --accent-ink: #0d1a2b;
+    color-scheme: dark;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) { color-scheme: dark; }
+  }
+  :root[data-theme="dark"] { color-scheme: dark; }
+  *, *::before, *::after { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font-family: var(--font-text);
+    font-size: 1.0625rem; line-height: 1.6; -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--accent); text-underline-offset: 0.2em; }
+  a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+  html[data-lang="cs"] .en, html[data-lang="en"] .cs { display: none !important; }
+
+  .bar { position: sticky; top: 0; z-index: 5; background: var(--bg); border-bottom: 1px solid var(--line); }
+  .bar-in { max-width: 68rem; margin: 0 auto; padding: 0.85rem 16px; display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
+  .bar a { color: var(--muted); text-decoration: none; font-size: 0.95rem; }
+  .bar a:hover { color: var(--text); }
+  .bar .name { font-size: 1.15rem; color: var(--text); }
+  .bar-right { display: flex; align-items: center; gap: 1rem; }
+  .lang { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; overflow: hidden; }
+  .lang button {
+    font: inherit; font-size: 0.85rem; padding: 0.3rem 0.7rem; border: 0; cursor: pointer;
+    background: transparent; color: var(--muted);
+  }
+  .lang button[aria-pressed="true"] { background: var(--text); color: var(--bg); }
+
+  main { max-width: 68rem; margin: 0 auto; padding: 0 16px 4rem; }
+  h1 { font-family: var(--font-heading); font-weight: 300; font-size: clamp(2.6rem, 8vw, 5rem); line-height: 1; letter-spacing: -0.02em; margin: 3.5rem 0 1.25rem; }
+  .lead { color: var(--muted); max-width: 40rem; font-size: 1.2rem; margin: 0 0 3rem; }
+  h2 { font-weight: 400; font-size: 1.6rem; line-height: 1.2; margin: 0; }
+
+  section.block { padding: 3rem 0; border-top: 1px solid var(--line); display: grid; gap: 1.25rem 3rem; grid-template-columns: 1fr; }
+  @media (min-width: 860px) { section.block { grid-template-columns: 14rem 1fr; } }
+  .prose { max-width: 40rem; }
+  .prose p { margin: 0 0 1rem; }
+
+  .steps { list-style: none; margin: 0; padding: 0; max-width: 42rem; }
+  .steps li { display: grid; grid-template-columns: 5.5rem 1fr; gap: 1rem; padding: 1rem 0; border-bottom: 1px solid var(--line); }
+  .steps li:first-child { border-top: 1px solid var(--line); }
+  .steps .place { font-size: 2.1rem; line-height: 1; color: var(--accent); }
+  .steps .place small { display: block; font-size: 0.85rem; color: var(--muted); margin-top: 0.35rem; }
+  .steps .what { font-weight: 500; }
+  .steps .detail { color: var(--muted); font-size: 0.95rem; margin-top: 0.2rem; }
+
+  .media { list-style: none; margin: 0; padding: 0; max-width: 42rem; }
+  .media li { padding: 0.9rem 0; border-bottom: 1px solid var(--line); }
+  .media li:first-child { border-top: 1px solid var(--line); }
+  .media a { font-size: 1.15rem; text-decoration: none; color: var(--text); }
+  .media a:hover { color: var(--accent); text-decoration: underline; }
+  .media p { margin: 0.25rem 0 0; color: var(--muted); font-size: 0.95rem; }
+
+  .btn {
+    display: inline-block; padding: 0.7rem 1.25rem; border-radius: 6px; text-decoration: none;
+    font-weight: 500; font-size: 0.98rem; border: 1px solid var(--line); color: var(--text); background: var(--surface);
+  }
+  .btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  .actions { display: flex; flex-wrap: wrap; gap: 0.75rem; }
+  footer { max-width: 68rem; margin: 0 auto; padding: 1.5rem 16px 3rem; border-top: 1px solid var(--line); color: var(--muted); font-size: 0.85rem; }
+</style>
+<script>
+  (function () {
+    var l = null;
+    try { l = localStorage.getItem('lang'); } catch (e) {}
+    l = l || ((navigator.language || 'cs').toLowerCase().indexOf('cs') === 0 ? 'cs' : 'en');
+    document.documentElement.setAttribute('data-lang', l);
+    document.documentElement.setAttribute('lang', l);
+  })();
+</script>
+</head>
+<body>
+<header class="bar"><div class="bar-in">
+  <a class="name" href="/">Václav Kotvalt</a>
+  <div class="bar-right">
+    <a href="/"><span class="cs">← Zpět</span><span class="en">← Back</span></a>
+    <div class="lang" role="group" aria-label="Jazyk / Language">
+      <button type="button" data-set="cs" aria-pressed="true">CZ</button>
+      <button type="button" data-set="en" aria-pressed="false">EN</button>
+    </div>
+  </div>
+</div></header>
+
+<main>
+  <h1><span class="cs">Ekonomická olympiáda</span><span class="en">Economics Olympiad</span></h1>
+  <p class="lead"><span class="cs">Můj příběh s Ekonomickou olympiádou – od soutěžícího v národním kole přes zlatou medaili v mezinárodním kole až po práci v týmu, který olympiádu připravuje.</span><span class="en">My story with the Economics Olympiad – from a contestant in the national round, to a gold medal in the international round, to working in the team that prepares the competition.</span></p>
+
+  <section class="block" aria-labelledby="h-results">
+    <h2 id="h-results"><span class="cs">Soutěžní cesta</span><span class="en">The competition</span></h2>
+    <ul class="steps">
+      <li>
+        <div class="place">1.<small>2026</small></div>
+        <div>
+          <div class="what"><span class="cs">Národní kolo</span><span class="en">National round</span></div>
+          <div class="detail"><span class="cs">Z více než 30 000 účastníků jsem vyhrál národní kolo, byl první i v ústním kole a postoupil do mezinárodního kola.</span><span class="en">Out of more than 30,000 participants I won the national round, also came first in the oral round and advanced to the international round.</span></div>
+        </div>
+      </li>
+      <li>
+        <div class="place">3.<small>2026</small></div>
+        <div>
+          <div class="what"><span class="cs">Mezinárodní kolo</span><span class="en">International round</span></div>
+          <div class="detail"><span class="cs">Mezinárodní finále se konalo v řecké Olympii a soutěžili v něm finalisté z 32 zemí, do jejichž národních kol se zapojilo přes 160 000 účastníků. Dostal jsem se mezi deset nejlepších do ústního kola, skončil v něm druhý a celkově třetí se zlatou medailí.</span><span class="en">The international final took place in Olympia, Greece, with finalists from 32 countries whose national rounds drew more than 160,000 participants. I made the top ten in the oral round, placed second in it and third overall with a gold medal.</span></div>
+        </div>
+      </li>
+    </ul>
+  </section>
+
+  <section class="block" aria-labelledby="h-team">
+    <h2 id="h-team"><span class="cs">Na druhé straně</span><span class="en">On the other side</span></h2>
+    <div class="prose">
+      <p><span class="cs">Od roku 2026 olympiádu pomáhám připravovat jako <strong>Test Master</strong>. Připravuji a kontroluji soutěžní materiály pro mezinárodní kola, spravuji a ověřuji data a výsledky a řeším provozní otázky s národními organizátory.</span><span class="en">Since 2026 I have been helping to prepare the olympiad as a <strong>Test Master</strong>. I prepare and quality-check test materials for the international rounds, manage and validate competition data and results, and work with national organisers on operational issues.</span></p>
+      <p><span class="cs">Soutěž teď vidím z obou stran – jako někdo, kdo ji sám zažil, i jako člen týmu, který ji pro další ročníky tvoří.</span><span class="en">I now see the competition from both sides – as someone who went through it, and as part of the team that builds it for the next years.</span></p>
+    </div>
+  </section>
+
+  <section class="block" aria-labelledby="h-president">
+    <h2 id="h-president"><span class="cs">Setkání s prezidentem</span><span class="en">Meeting the President</span></h2>
+    <div class="prose">
+      <p><span class="cs">Díky výsledku v olympiádě jsem byl pozván na Setkání mladých talentů s prezidentem republiky. Jako jeden z nejlepších studentů v Česku jsem v Kanceláři prezidenta republiky diskutoval o potřebách studentů a o tom, jak je podporovat.</span><span class="en">Thanks to my result in the olympiad I was invited to the President’s meeting with young talents. As one of the top students in the Czech Republic I discussed students’ needs and how they could be supported at the Office of the President.</span></p>
+    </div>
+  </section>
+
+  <!-- Síň slávy: až vyjde stránka na webu olympiády, přidat sem sekci s odkazem -->
+
+  <section class="block" aria-labelledby="h-media">
+    <h2 id="h-media"><span class="cs">V médiích</span><span class="en">In the media</span></h2>
+    <ul class="media">
+      <li>
+        <a href="https://www.rudnamesto.cz/file/4665701" target="_blank" rel="noopener">Václav Kotvalt uspěl mezi nejlepšími mladými ekonomy světa</a>
+        <p><span class="cs">Život v Rudné, měsíčník města Rudná, číslo 11/2026, s. 4–5. Článek o mém úspěchu v olympiádě, který vyšel v Rudné, kde jsem chodil na základní školu.</span><span class="en">Život v Rudné, the monthly of the town of Rudná, issue 11/2026, pp. 4–5 (in Czech). An article about my olympiad result, published in Rudná, where I went to primary school.</span></p>
+      </li>
+      <!-- Sem přidej další článek nebo rozhovor -->
+    </ul>
+  </section>
+
+  <section class="block" aria-labelledby="h-more">
+    <h2 id="h-more"><span class="cs">Dál</span><span class="en">More</span></h2>
+    <div class="actions">
+      <a class="btn primary" href="/"><span class="cs">Zpět na hlavní stránku</span><span class="en">Back to the main page</span></a>
+      <a class="btn" href="/#kontakt"><span class="cs">Kontakt</span><span class="en">Contact</span></a>
+    </div>
+  </section>
+</main>
+
+<footer>© 2026 Václav Kotvalt</footer>
+
+<script>
+  (function () {
+    var root = document.documentElement;
+    var buttons = document.querySelectorAll('.lang button');
+    function setLang(l) {
+      root.setAttribute('data-lang', l);
+      root.setAttribute('lang', l);
+      buttons.forEach(function (b) { b.setAttribute('aria-pressed', b.dataset.set === l ? 'true' : 'false'); });
+      document.title = l === 'en' ? 'Economics Olympiad – Václav Kotvalt' : 'Ekonomická olympiáda – Václav Kotvalt';
+      try { localStorage.setItem('lang', l); } catch (e) {}
+    }
+    setLang(root.getAttribute('data-lang') === 'en' ? 'en' : 'cs');
+    buttons.forEach(function (b) { b.addEventListener('click', function () { setLang(b.dataset.set); }); });
+  })();
+</script>
+</body>
+</html>
