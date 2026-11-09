@@ -30,6 +30,12 @@ přeskočené – web se aktualizuje až dalším commitem do `main`.
 - `sitemap.xml` + `robots.txt` pro Google Search Console: novou stránku přidej do sitemapy
   a u změněných stránek aktualizuj `<lastmod>`.
 
+## Logo
+- Monogram VK se sdíleným svislým tahem: v horní liště každé stránky jako inline SVG `.logo` (jednobarevné,
+  `stroke: currentColor`), samostatně `logo.svg`.
+- Ikona: `favicon.svg` (VK v modrém čtverci) + `favicon-32.png` a `apple-touch-icon.png`; na nové stránce
+  použij stejné tři `<link>` jako v `index.html`. `hudba/` má vlastní ikonu.
+
 ## Písma
 - Velké nadpisy stránek (`h1`, např. „Václav Kotvalt“, „Podobné kvartály“): **Newsreader** – `var(--font-heading)`.
 - Veškerý ostatní text včetně menu, nadpisů sekcí (`h2`, `h3`) a jména v horní liště: **Montserrat** – `var(--font-text)`.
