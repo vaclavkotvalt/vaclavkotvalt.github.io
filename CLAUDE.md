@@ -1,6 +1,8 @@
 # Osobní web vaclavkotvalt.cz
 
 Statický web na GitHub Pages (větev `main`), bez build kroku.
+Když nasazení „pages build and deployment“ selže, opakovaný běh znovu spustí jen sestavení a nasazení zůstane
+přeskočené – web se aktualizuje až dalším commitem do `main`.
 
 - `index.html` – hlavní stránka (CZ/EN přepínač přes `.cs` / `.en`)
 - `kvartaly/` – nástroj Podobné kvartály; data `kvartaly/data.json` generuje
