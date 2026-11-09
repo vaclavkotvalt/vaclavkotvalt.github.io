@@ -5,6 +5,9 @@ Statický web na GitHub Pages (větev `main`), bez build kroku.
 - `index.html` – hlavní stránka (CZ/EN přepínač přes `.cs` / `.en`)
 - `kvartaly/` – nástroj Podobné kvartály; data `kvartaly/data.json` generuje
   `.github/workflows/update-macro-data.yml` přes FRED API (secret `FRED_API_KEY`)
+- `olympiada/` – stránka o Ekonomické olympiádě (výsledky, Test Master, setkání s prezidentem, média).
+  Odkazy na ni vedou z Úspěchů, od Test Mastera a z upoutávky nad Kontaktem; je v sitemapě.
+  Až vyjde síň slávy na webu olympiády, doplnit sekci (místo je označené komentářem).
 - `hudba/` – skrytý hudební přehrávač (PWA, čte složku s hudbou v telefonu, ovládání z notifikační lišty).
   Odkaz jen nenápadně v patičce hlavní stránky, `noindex` a záměrně **není** v sitemapě.
   Funguje offline: písma má v `hudba/fonts/` (ne z Google Fonts) a `hudba/sw.js` drží všechny soubory v cache.
