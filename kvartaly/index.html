@@ -7,7 +7,9 @@
 <meta name="description" content="Vyberte čtvrtletí z historie a najděte nejpodobnější kvartály podle makroekonomických dat – úrovní i trendů růstu, inflace, nezaměstnanosti, sazeb a spreadů.">
 <meta name="author" content="Václav Kotvalt">
 <link rel="canonical" href="https://vaclavkotvalt.cz/kvartaly/">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ctext y=%22.9em%22 font-size=%2290%22%3E%F0%9F%93%88%3C/text%3E%3C/svg%3E">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <meta property="og:title" content="Podobné kvartály – Václav Kotvalt">
 <meta property="og:description" content="Který kvartál v historii se nejvíc podobá tomu, který vás zajímá?">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -39,6 +41,8 @@
   .bar-in { max-width: 72rem; margin: 0 auto; padding: 0.85rem 16px; display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
   .bar a { color: var(--muted); text-decoration: none; font-size: 0.95rem; }
   .bar a:hover { color: var(--text); }
+  .logo { width: 1.5em; height: 1.5em; flex: none; fill: none; stroke: currentColor; stroke-width: 7; stroke-linecap: round; stroke-linejoin: round; }
+  .brand { display: inline-flex; align-items: center; gap: 0.55rem; }
   .bar .name { font-family: var(--font-text); font-size: 1.15rem; color: var(--text); }
   main { max-width: 72rem; margin: 0 auto; padding: 0 16px 4rem; }
   h1 { font-family: var(--font-heading); font-weight: 300; font-size: clamp(2.3rem, 7vw, 4rem); line-height: 1; letter-spacing: -0.02em; margin: 3rem 0 1rem; }
@@ -208,7 +212,7 @@
 </head>
 <body>
 <header class="bar"><div class="bar-in">
-  <a class="name" href="/">Václav Kotvalt</a>
+  <a class="name brand" href="/"><svg class="logo" viewBox="0 0 100 100" aria-hidden="true"><path d="M16 20 L50 80 L50 20"/><path d="M86 20 L50 54 L86 80"/></svg><span>Václav Kotvalt</span></a>
   <div class="bar-right">
     <a href="/"><span class="cs">← Zpět<span class="back-long"> na hlavní stránku</span></span><span class="en">← Back<span class="back-long"> to main page</span></span></a>
     <div class="lang" role="group" aria-label="Jazyk / Language">
