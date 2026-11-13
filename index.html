@@ -138,21 +138,21 @@
     position: absolute; right: -1rem; bottom: 2rem; width: min(42rem, 95%); height: auto;
     pointer-events: none; overflow: visible;
   }
-  /* Logo VK se vykreslí tah po tahu, nohy „K“ pak pokračují jako dvě stoupající čáry grafu */
+  /* Logo VK se vykreslí tah po tahu, spodní noha „K“ pak pokračuje jako stoupající čára grafu */
   .curve path, .curve line { fill: none; stroke-linecap: round; stroke-linejoin: round; }
   .curve .grid { stroke: var(--line); stroke-width: 1; }
   .curve .mono, .curve .leg, .curve .run { stroke-width: 3; stroke-dasharray: 1; stroke-dashoffset: 1; }
   .curve .mono, .curve .leg { stroke: var(--text); }
   .curve .run { stroke: url(#runGrad); filter: drop-shadow(0 0 6px rgba(138, 184, 255, 0.45)); }
-  .curve .run.b { stroke: url(#runGradB); }
   .curve .mono { animation: draw 0.9s 0.35s cubic-bezier(.5,0,.3,1) forwards; }
-  .curve .leg { animation: draw 0.45s 1.2s cubic-bezier(.3,0,.4,1) forwards; }
-  .curve .run { animation: draw 2.1s 1.7s cubic-bezier(.45,0,.2,1) forwards; }
-  .curve .area { fill: url(#areaGrad); stroke: none; opacity: 0; animation: fade 1.2s 3.1s ease forwards; }
+  .curve .leg { animation: draw 0.4s 1.4s cubic-bezier(.3,0,.4,1) forwards; }
+  .curve .leg.up { animation-delay: 1.15s; } /* horní noha o kousek dřív než spodní */
+  .curve .run { animation: draw 2.1s 1.8s cubic-bezier(.45,0,.2,1) forwards; }
+  .curve .area { fill: url(#areaGrad); stroke: none; opacity: 0; animation: fade 1.2s 3.2s ease forwards; }
   .curve .grid { opacity: 0; animation: fade 0.8s 0.1s ease forwards; }
-  .curve .end { fill: var(--bg); stroke: var(--curve); stroke-width: 2.5; opacity: 0; animation: fade 0.3s 3.75s forwards; }
+  .curve .end { fill: var(--bg); stroke: var(--curve); stroke-width: 2.5; opacity: 0; animation: fade 0.3s 3.85s forwards; }
   .curve .ring { fill: none; stroke: var(--curve); stroke-width: 1.5; opacity: 0; transform-box: fill-box; transform-origin: center;
-    animation: ring 2.6s 4s ease-out infinite; }
+    animation: ring 2.6s 4.1s ease-out infinite; }
   @keyframes draw { to { stroke-dashoffset: 0; } }
   @keyframes fade { to { opacity: 1; } }
   @keyframes ring { 0% { opacity: 0.7; transform: scale(1); } 80%, 100% { opacity: 0; transform: scale(3.2); } }
@@ -273,24 +273,19 @@
         <linearGradient id="runGrad" gradientUnits="userSpaceOnUse" x1="159" y1="0" x2="620" y2="0">
           <stop offset="0" style="stop-color: var(--text)"/><stop offset="0.35" style="stop-color: var(--curve)"/><stop offset="1" style="stop-color: var(--curve)"/>
         </linearGradient>
-        <linearGradient id="runGradB" gradientUnits="userSpaceOnUse" x1="159" y1="0" x2="620" y2="0">
-          <stop offset="0" style="stop-color: var(--text)"/><stop offset="0.35" style="stop-color: var(--curve); stop-opacity: 0.6"/><stop offset="1" style="stop-color: var(--curve); stop-opacity: 0.6"/>
-        </linearGradient>
         <linearGradient id="areaGrad" gradientUnits="userSpaceOnUse" x1="159" y1="0" x2="620" y2="0">
-          <stop offset="0" style="stop-color: var(--curve); stop-opacity: 0"/><stop offset="1" style="stop-color: var(--curve); stop-opacity: 0.2"/>
+          <stop offset="0" style="stop-color: var(--curve); stop-opacity: 0"/><stop offset="1" style="stop-color: var(--curve); stop-opacity: 0.18"/>
         </linearGradient>
       </defs>
       <line class="grid" x1="20" y1="310" x2="620" y2="310"/>
       <line class="grid" x1="20" y1="20" x2="20" y2="310"/>
-      <path class="area" d="M159 195 C 185 170, 215 158, 250 162 S 310 150, 352 124 S 432 102, 474 82 S 562 48, 620 36 L620 66 C 570 82, 532 88, 482 124 C 432 160, 404 180, 352 204 C 300 228, 269 259, 238 280 C 207 301, 175 300, 159 285 Z"/>
+      <path class="area" d="M159 285 C 175 300, 207 301, 238 280 S 300 228, 352 204 S 432 150, 482 112 S 570 52, 620 40 L620 310 L159 310 Z"/>
       <path class="mono" pathLength="1" d="M54 195 L105 285 L105 195"/>
-      <path class="leg" pathLength="1" d="M105 246 L159 195"/>
+      <path class="leg up" pathLength="1" d="M105 246 L159 195"/>
       <path class="leg" pathLength="1" d="M105 246 L159 285"/>
-      <path class="run" pathLength="1" d="M159 195 C 185 170, 215 158, 250 162 S 310 150, 352 124 S 432 102, 474 82 S 562 48, 620 36"/>
-      <path class="run b" pathLength="1" d="M159 285 C 175 300, 207 301, 238 280 S 300 228, 352 204 S 432 160, 482 124 S 570 82, 620 66"/>
-      <circle class="ring" cx="620" cy="36" r="6"/>
-      <circle class="end" cx="620" cy="36" r="6"/>
-      <circle class="end" cx="620" cy="66" r="5"/>
+      <path class="run" pathLength="1" d="M159 285 C 175 300, 207 301, 238 280 S 300 228, 352 204 S 432 150, 482 112 S 570 52, 620 40"/>
+      <circle class="ring" cx="620" cy="40" r="6"/>
+      <circle class="end" cx="620" cy="40" r="6"/>
     </svg>
 
     <h1>Václav<br>Kotvalt</h1>
