@@ -37,8 +37,9 @@ přeskočené – web se aktualizuje až dalším commitem do `main`.
 ## Logo
 - Monogram VK se sdíleným svislým tahem: v horní liště každé stránky jako inline SVG `.logo` (jednobarevné,
   `stroke: currentColor`), samostatně `logo.svg`.
-- Ikona: `favicon.svg` (VK v modrém čtverci) + `favicon-32.png` a `apple-touch-icon.png`; na nové stránce
-  použij stejné tři `<link>` jako v `index.html`. `hudba/` má vlastní ikonu.
+- Ikona: `favicon.svg` (VK v modrém čtverci) + `favicon-32.png`, `favicon-48.png`, `favicon-192.png`,
+  `favicon.ico` (16/32/48, pro Google) a `apple-touch-icon.png`; na nové stránce použij stejné `<link>` jako v `index.html`.
+  Google ve výsledcích hledání chce ikonu o velikosti násobku 48 px. `hudba/` má vlastní ikonu.
 
 ## Písma
 - Velké nadpisy stránek (`h1`, např. „Václav Kotvalt“, „Podobné kvartály“): **Newsreader** – `var(--font-heading)`.

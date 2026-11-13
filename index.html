@@ -10,6 +10,8 @@
 <link rel="canonical" href="https://vaclavkotvalt.cz/">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32">
+<link rel="icon" href="/favicon-48.png" type="image/png" sizes="48x48">
+<link rel="icon" href="/favicon-192.png" type="image/png" sizes="192x192">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 
 <!-- Náhled při sdílení odkazu (LinkedIn, Messenger, WhatsApp…) -->
@@ -136,14 +138,14 @@
   .hero { position: relative; padding: 4.5rem 0 4rem; min-height: 72vh; display: flex; flex-direction: column; justify-content: center; }
   .hero svg.curve {
     position: absolute; right: -1rem; bottom: 2rem; width: min(42rem, 95%); height: auto;
-    pointer-events: none; overflow: visible;
+    pointer-events: none; overflow: visible; opacity: 0.6; /* tlumeně, ať graf nepřebíjí text */
   }
   /* Logo VK se vykreslí tah po tahu, spodní noha „K“ pak pokračuje jako stoupající čára grafu */
   .curve path, .curve line { fill: none; stroke-linecap: round; stroke-linejoin: round; }
   .curve .grid { stroke: var(--line); stroke-width: 1; }
   /* mezera 2 (ne 1): jinak by kulaté zakončení nulové čárky ukázalo tečku na konci ještě nenakreslené čáry */
   .curve .mono, .curve .leg, .curve .run { stroke-width: 2.5; stroke-dasharray: 1 2; stroke-dashoffset: 1; }
-  .curve .mono, .curve .leg { stroke: var(--text); }
+  .curve .mono, .curve .leg { stroke: var(--muted); }
   .curve .run { stroke: url(#runGrad); }
   .curve .mono { animation: draw 0.9s 0.35s cubic-bezier(.5,0,.3,1) forwards; }
   .curve .leg { animation: draw 0.4s 1.4s cubic-bezier(.3,0,.4,1) forwards; }
@@ -269,7 +271,7 @@
       <defs>
         <!-- čára plynule přechází z bílé barvy loga do modré -->
         <linearGradient id="runGrad" gradientUnits="userSpaceOnUse" x1="159" y1="0" x2="440" y2="0">
-          <stop offset="0" style="stop-color: var(--text)"/><stop offset="1" style="stop-color: var(--curve)"/>
+          <stop offset="0" style="stop-color: var(--muted)"/><stop offset="1" style="stop-color: var(--curve)"/>
         </linearGradient>
       </defs>
       <line class="grid" x1="20" y1="310" x2="620" y2="310"/>
