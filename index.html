@@ -148,9 +148,9 @@
   .curve .mono, .curve .leg { stroke: var(--muted); }
   .curve .run { stroke: url(#runGrad); }
   .curve .mono { animation: draw 0.9s 0.35s cubic-bezier(.5,0,.3,1) forwards; }
-  .curve .leg { animation: draw 0.4s 1.4s cubic-bezier(.3,0,.4,1) forwards; }
-  .curve .leg.up { animation-delay: 1.15s; } /* horní noha o kousek dřív než spodní */
-  .curve .run { animation: draw 2.8s 1.8s cubic-bezier(.3,0,.5,1) forwards; }
+  .curve .leg { animation: draw 0.45s 1.05s cubic-bezier(.3,0,.4,1) forwards; } /* horní noha o kousek dřív než spodní */
+  /* spodní noha K a čára grafu jsou jedna cesta kreslená stálou rychlostí */
+  .curve .run { animation: draw 3.8s 1.4s linear forwards; }
   .curve .grid { opacity: 0; animation: fade 0.8s 0.1s ease forwards; }
   .curve circle { fill: var(--bg); stroke: var(--curve); stroke-width: 2; }
   .curve .pt { opacity: 0; animation: fade 0.4s forwards; }
@@ -270,20 +270,19 @@
     <svg class="curve" viewBox="0 0 640 320" aria-hidden="true">
       <defs>
         <!-- čára plynule přechází z bílé barvy loga do modré -->
-        <linearGradient id="runGrad" gradientUnits="userSpaceOnUse" x1="159" y1="0" x2="440" y2="0">
+        <linearGradient id="runGrad" gradientUnits="userSpaceOnUse" x1="140" y1="0" x2="440" y2="0">
           <stop offset="0" style="stop-color: var(--muted)"/><stop offset="1" style="stop-color: var(--curve)"/>
         </linearGradient>
       </defs>
       <line class="grid" x1="20" y1="310" x2="620" y2="310"/>
       <line class="grid" x1="20" y1="20" x2="20" y2="310"/>
       <path class="mono" pathLength="1" d="M54 195 L105 285 L105 195"/>
-      <path class="leg up" pathLength="1" d="M105 246 L159 195"/>
-      <path class="leg" pathLength="1" d="M105 246 L159 285"/>
-      <path class="run" pathLength="1" d="M159 285 C 174.3 296.1, 192.7 303.2, 211.6 302 C 231 300.8, 250.5 299.2, 270 297.1 C 290 295, 310 292.2, 330 288.5 C 350 284.9, 370 280.2, 390 273.9 C 408.3 268, 426.7 260.8, 445 251.3 C 461.7 242.6, 478.3 232.1, 495 218.5 C 510 206.2, 525 191.6, 540 173.2 C 553.3 156.9, 566.7 137.7, 580 114.4 C 593.3 91, 606.7 63.5, 620 30"/>
-      <circle class="pt" cx="330" cy="288.5" r="5" style="animation-delay:2.71s"/>
-      <circle class="pt" cx="445" cy="251.3" r="5" style="animation-delay:3.05s"/>
-      <circle class="pt" cx="540" cy="173.2" r="5" style="animation-delay:3.44s"/>
-      <circle class="pt" cx="620" cy="30" r="6" style="animation-delay:4.65s"/>
+      <path class="leg" pathLength="1" d="M105 246 L159 195"/>
+      <path class="run" pathLength="1" d="M105 246 L159 285 C 174.3 296.1, 192.7 303.2, 211.6 302 C 231 300.8, 250.5 299.2, 270 297.1 C 290 295, 310 292.2, 330 288.5 C 350 284.9, 370 280.2, 390 273.9 C 408.3 268, 426.7 260.8, 445 251.3 C 461.7 242.6, 478.3 232.1, 495 218.5 C 510 206.2, 525 191.6, 540 173.2 C 553.3 156.9, 566.7 137.7, 580 114.4 C 593.3 91, 606.7 63.5, 620 30"/>
+      <circle class="pt" cx="330" cy="288.5" r="5" style="animation-delay:2.81s"/>
+      <circle class="pt" cx="445" cy="251.3" r="5" style="animation-delay:3.52s"/>
+      <circle class="pt" cx="540" cy="173.2" r="5" style="animation-delay:4.24s"/>
+      <circle class="pt" cx="620" cy="30" r="6" style="animation-delay:5.2s"/>
     </svg>
 
     <h1>Václav<br>Kotvalt</h1>
