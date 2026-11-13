@@ -1,8 +1,8 @@
 {
- "updated": "2026-11-13T13:47:25.547Z",
+ "updated": "2026-11-13T18:27:38.808Z",
  "prices": {
   "IE00B5BMR087": {
-   "price": 745.18,
+   "price": 737.03,
    "currency": "EUR",
    "date": "2026-11-13",
    "symbol": "CSPX.AS",
@@ -11,7 +11,7 @@
    "source": "Yahoo Finance"
   },
   "IE00BFMXXD54": {
-   "price": 133.7,
+   "price": 132.2,
    "currency": "EUR",
    "date": "2026-11-13",
    "symbol": "VUAA.MI",
@@ -20,7 +20,7 @@
    "source": "Yahoo Finance"
   },
   "IE00B53SZB19": {
-   "price": 1473.2,
+   "price": 1447.8,
    "currency": "EUR",
    "date": "2026-11-13",
    "symbol": "CNDX.AS",
@@ -29,7 +29,7 @@
    "source": "Yahoo Finance"
   },
   "IE00B4L5Y983": {
-   "price": 131.64,
+   "price": 130.49,
    "currency": "EUR",
    "date": "2026-11-13",
    "symbol": "IWDA.AS",
@@ -38,7 +38,7 @@
    "source": "Yahoo Finance"
   },
   "IE00BKM4GZ66": {
-   "price": 45.4,
+   "price": 45.02,
    "currency": "EUR",
    "date": "2026-11-13",
    "symbol": "EMIM.AS",
@@ -47,7 +47,7 @@
    "source": "Yahoo Finance"
   },
   "IE00B3RBWM25": {
-   "price": 165.56,
+   "price": 164.1,
    "currency": "EUR",
    "date": "2026-11-13",
    "symbol": "VWRL.AS",
@@ -56,7 +56,7 @@
    "source": "Yahoo Finance"
   },
   "IE00B3XXRP09": {
-   "price": 130.9,
+   "price": 129.425,
    "currency": "EUR",
    "date": "2026-11-13",
    "symbol": "VUSA.AS",
@@ -65,7 +65,7 @@
    "source": "Yahoo Finance"
   },
   "IE00BK5BQT80": {
-   "price": 171.456,
+   "price": 169.874,
    "currency": "EUR",
    "date": "2026-11-13",
    "symbol": "VWCE.AS",
@@ -83,7 +83,7 @@
    "source": "Yahoo Finance"
   },
   "IE00BJ0KDQ92": {
-   "price": 144,
+   "price": 142.81,
    "currency": "EUR",
    "date": "2026-11-13",
    "symbol": "XDWD.MI",
@@ -92,7 +92,7 @@
    "source": "Yahoo Finance"
   },
   "IE00B579F325": {
-   "price": 338.56,
+   "price": 338.66,
    "currency": "EUR",
    "date": "2026-11-13",
    "symbol": "8PSG.DE",
@@ -101,7 +101,7 @@
    "source": "Yahoo Finance"
   },
   "IE00BF4RFH31": {
-   "price": 10.268,
+   "price": 10.174,
    "currency": "USD",
    "date": "2026-11-13",
    "symbol": "WSML.L",
@@ -110,7 +110,7 @@
    "source": "Yahoo Finance"
   },
   "IE00BDBRDM35": {
-   "price": 4.847,
+   "price": 4.8508,
    "currency": "EUR",
    "date": "2026-11-13",
    "symbol": "0GGH.L",
@@ -119,7 +119,7 @@
    "source": "Yahoo Finance"
   },
   "IE0003R87OG3": {
-   "price": 28.52,
+   "price": 28.455,
    "currency": "USD",
    "date": "2026-11-13",
    "symbol": "AVGS.L",
@@ -128,7 +128,7 @@
    "source": "Yahoo Finance"
   },
   "IE00BKX55T58": {
-   "price": 128.78,
+   "price": 127.78,
    "currency": "EUR",
    "date": "2026-11-13",
    "symbol": "VEVE.AS",
@@ -137,7 +137,7 @@
    "source": "Yahoo Finance"
   },
   "IE00B4ND3602": {
-   "price": 75.5,
+   "price": 75.3475,
    "currency": "USD",
    "date": "2026-11-13",
    "symbol": "IGLN.L",
@@ -146,7 +146,7 @@
    "source": "Yahoo Finance"
   },
   "IE00BL25JP72": {
-   "price": 81.09,
+   "price": 79.41,
    "currency": "EUR",
    "date": "2026-11-13",
    "symbol": "XDEM.MI",
@@ -155,7 +155,7 @@
    "source": "Yahoo Finance"
   },
   "IE00BP3QZ825": {
-   "price": 96.37,
+   "price": 94.27,
    "currency": "EUR",
    "date": "2026-11-13",
    "symbol": "IWMO.MI",
@@ -164,7 +164,7 @@
    "source": "Yahoo Finance"
   },
   "LU0274208692": {
-   "price": 140.67,
+   "price": 139.74,
    "currency": "EUR",
    "date": "2026-11-13",
    "symbol": "XMWO.MI",
@@ -173,7 +173,7 @@
    "source": "Yahoo Finance"
   },
   "IE00B4K48X80": {
-   "price": 108.085,
+   "price": 108.25,
    "currency": "EUR",
    "date": "2026-11-13",
    "symbol": "IMAE.AS",
@@ -182,7 +182,7 @@
    "source": "Yahoo Finance"
   },
   "IE00B1XNHC34": {
-   "price": 8.28,
+   "price": 8.215,
    "currency": "EUR",
    "date": "2026-11-13",
    "symbol": "INRG.MI",
@@ -191,7 +191,7 @@
    "source": "Yahoo Finance"
   },
   "IE00B4L5YC18": {
-   "price": 53.24,
+   "price": 52.87,
    "currency": "EUR",
    "date": "2026-11-13",
    "symbol": "IEMA.AS",
@@ -200,7 +200,7 @@
    "source": "Yahoo Finance"
   },
   "IE00B945VV12": {
-   "price": 51.386,
+   "price": 51.442,
    "currency": "EUR",
    "date": "2026-11-13",
    "symbol": "VEUR.AS",
@@ -209,7 +209,7 @@
    "source": "Yahoo Finance"
   },
   "IE00BYZK4552": {
-   "price": 18.15,
+   "price": 17.796,
    "currency": "EUR",
    "date": "2026-11-13",
    "symbol": "RBOE.AS",
@@ -227,7 +227,7 @@
    "source": "Yahoo Finance"
   },
   "LU1681043599": {
-   "price": 715.09,
+   "price": 709.05,
    "currency": "EUR",
    "date": "2026-11-13",
    "symbol": "CW8.MI",
@@ -236,7 +236,7 @@
    "source": "Yahoo Finance"
   },
   "IE00B6R52259": {
-   "price": 109.7,
+   "price": 108.85,
    "currency": "EUR",
    "date": "2026-11-13",
    "symbol": "SSAC.AS",
@@ -245,7 +245,7 @@
    "source": "Yahoo Finance"
   },
   "IE00B4WXJJ64": {
-   "price": 105.48,
+   "price": 105.4,
    "currency": "EUR",
    "date": "2026-11-13",
    "symbol": "IEGA.AS",
@@ -254,7 +254,7 @@
    "source": "Yahoo Finance"
   },
   "IE00B3F81R35": {
-   "price": 116.83,
+   "price": 116.84,
    "currency": "EUR",
    "date": "2026-11-13",
    "symbol": "IEAC.L",
@@ -263,7 +263,7 @@
    "source": "Yahoo Finance"
   },
   "IE00B3YLTY66": {
-   "price": 11.78,
+   "price": 11.7,
    "currency": "EUR",
    "date": "2026-11-13",
    "symbol": "IMIE.MI",
@@ -272,7 +272,7 @@
    "source": "Yahoo Finance"
   },
   "IE00B0M62Q58": {
-   "price": 94.3,
+   "price": 93.45,
    "currency": "EUR",
    "date": "2026-11-13",
    "symbol": "IWRD.AS",
@@ -281,7 +281,7 @@
    "source": "Yahoo Finance"
   },
   "IE00BG47KH54": {
-   "price": 23.257,
+   "price": 23.2448,
    "currency": "EUR",
    "date": "2026-11-13",
    "symbol": "0ACD.L",
@@ -290,7 +290,7 @@
    "source": "Yahoo Finance"
   },
   "DE0005933931": {
-   "price": 220.8,
+   "price": 220.4,
    "currency": "EUR",
    "date": "2026-11-13",
    "symbol": "EXS1.DE",
@@ -299,7 +299,7 @@
    "source": "Yahoo Finance"
   },
   "IE000BI8OT95": {
-   "price": 164.87,
+   "price": 163.86,
    "currency": "EUR",
    "date": "2026-11-13",
    "symbol": "MWRD.MI",
@@ -308,7 +308,7 @@
    "source": "Yahoo Finance"
   },
   "IE00BGV5VN51": {
-   "price": 203.49,
+   "price": 199.94,
    "currency": "EUR",
    "date": "2026-11-13",
    "symbol": "XAIX.MI",
@@ -317,7 +317,7 @@
    "source": "Yahoo Finance"
   },
   "IE00BMC38736": {
-   "price": 85.17,
+   "price": 81.75,
    "currency": "EUR",
    "date": "2026-11-13",
    "symbol": "SMH.MI",

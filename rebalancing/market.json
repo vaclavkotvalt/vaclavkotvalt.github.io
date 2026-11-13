@@ -1,5 +1,5 @@
 {
- "updated": "2026-11-13T13:47+00:00",
+ "updated": "2026-11-13T18:27+00:00",
  "fx": {
   "EUR": {
    "rate": 24.425,
@@ -24,7 +24,7 @@
  },
  "prices": {
   "VWCE": {
-   "price": 171.38,
+   "price": 169.86,
    "currency": "EUR",
    "date": "2026-11-13",
    "source": "Yahoo Finance (VWCE.DE)",
@@ -39,7 +39,7 @@
    }
   },
   "AVWS": {
-   "price": 25.835,
+   "price": 25.79,
    "currency": "EUR",
    "date": "2026-11-13",
    "source": "Yahoo Finance (AVWS.DE)",
@@ -54,7 +54,7 @@
    }
   },
   "EUNA": {
-   "price": 4.847,
+   "price": 4.851,
    "currency": "EUR",
    "date": "2026-11-13",
    "source": "Yahoo Finance (EUNA.DE)",
@@ -68,7 +68,7 @@
    }
   },
   "IGLN": {
-   "price": 75.5525,
+   "price": 75.3475,
    "currency": "USD",
    "date": "2026-11-13",
    "source": "Yahoo Finance (IGLN.L)",
