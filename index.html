@@ -128,7 +128,7 @@
     background: transparent; color: var(--muted);
   }
   .lang button[aria-pressed="true"] { background: var(--text); color: var(--bg); }
-  @media (max-width: 640px) { .bar nav .navlink { display: none; } }
+  @media (max-width: 960px) { .bar nav .navlink { display: none; } } /* jinak se lišta s celým jménem nevejde */
 
   main { max-width: 68rem; margin: 0 auto; padding: 0 1.25rem; }
 
@@ -246,7 +246,7 @@
 
 <header class="bar">
   <div class="bar-in">
-    <a class="mono-name brand" href="#top"><svg class="logo" viewBox="0 0 100 100" aria-hidden="true"><path d="M16 20 L50 80 L50 20"/><path d="M86 20 L50 54 L86 80"/></svg><span>V. Kotvalt</span></a>
+    <a class="mono-name brand" href="#top"><svg class="logo" viewBox="0 0 100 100" aria-hidden="true"><path d="M16 20 L50 80 L50 20"/><path d="M86 20 L50 54 L86 80"/></svg><span>Václav Kotvalt</span></a>
     <nav aria-label="Navigace">
       <a class="navlink" href="#o-mne"><span class="cs">O mně</span><span class="en">About</span></a>
       <a class="navlink" href="#uspechy"><span class="cs">Úspěchy</span><span class="en">Achievements</span></a>

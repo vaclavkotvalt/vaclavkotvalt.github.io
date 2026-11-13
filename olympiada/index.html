@@ -48,6 +48,7 @@
   .brand { display: inline-flex; align-items: center; gap: 0.55rem; }
   .bar .name { font-size: 1.15rem; color: var(--text); }
   .bar-right { display: flex; align-items: center; gap: 1rem; }
+  @media (max-width: 560px) { .bar .back-long { display: none; } } /* na úzkém telefonu by se lišta nevešla */
   .lang { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; overflow: hidden; }
   .lang button {
     font: inherit; font-size: 0.85rem; padding: 0.3rem 0.7rem; border: 0; cursor: pointer;
@@ -102,7 +103,7 @@
 <header class="bar"><div class="bar-in">
   <a class="name brand" href="/"><svg class="logo" viewBox="0 0 100 100" aria-hidden="true"><path d="M16 20 L50 80 L50 20"/><path d="M86 20 L50 54 L86 80"/></svg><span>Václav Kotvalt</span></a>
   <div class="bar-right">
-    <a href="/"><span class="cs">← Zpět</span><span class="en">← Back</span></a>
+    <a href="/"><span class="cs">← Zpět<span class="back-long"> na hlavní stránku</span></span><span class="en">← Back<span class="back-long"> to main page</span></span></a>
     <div class="lang" role="group" aria-label="Jazyk / Language">
       <button type="button" data-set="cs" aria-pressed="true">CZ</button>
       <button type="button" data-set="en" aria-pressed="false">EN</button>
