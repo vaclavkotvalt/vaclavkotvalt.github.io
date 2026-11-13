@@ -10,6 +10,11 @@ přeskočené – web se aktualizuje až dalším commitem do `main`.
 - `olympiada/` – stránka o Ekonomické olympiádě (výsledky, Test Master, setkání s prezidentem, média).
   Odkazy na ni vedou z Úspěchů, od Test Mastera a z upoutávky nad Kontaktem; je v sitemapě.
   Až vyjde síň slávy na webu olympiády, doplnit sekci (místo je označené komentářem).
+- `rebalancing/` – nástroj Rebalancování portfolií (řešení case study Dvořák & Zedník, smyšlená data).
+  Výpočet v `rebalancing/engine.js` (testy `node --test rebalancing/test.mjs`), čtení Excelu `io.js`, zobrazení
+  `index.html`. Ceny ETF a kurzy ČNB stahuje každý pracovní den `.github/workflows/update-market-data.yml`;
+  ostatní ISINy dohledává Cloudflare Worker (`rebalancing/worker/`, nasazený ručně, adresa ve `WORKER_URL`).
+  Je v sitemapě.
 - `hudba/` – skrytý hudební přehrávač (PWA, čte složku s hudbou v telefonu, ovládání z notifikační lišty).
   Odkaz jen nenápadně v patičce hlavní stránky, `noindex` a záměrně **není** v sitemapě.
   Funguje offline: písma má v `hudba/fonts/` (ne z Google Fonts) a `hudba/sw.js` drží všechny soubory v cache.

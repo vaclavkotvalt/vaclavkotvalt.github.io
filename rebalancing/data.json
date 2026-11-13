@@ -1,0 +1,479 @@
+{
+ "source": "DZ_case_study_rebalancing_data.xlsx",
+ "sheets": {
+  "Čti mě": [
+   [
+    "Case study: rebalancování klientských portfolií"
+   ],
+   [
+    "Dvořák & Zedník Wealth Management"
+   ],
+   [
+    "Všechna data jsou smyšlená. Klienti, pozice, ceny i kurzy slouží jen pro účely zadání a nemusí odpovídat trhu."
+   ],
+   [
+    "Ocenění k datu: 23. 10. 2026"
+   ],
+   [
+    "Listy:"
+   ],
+   [
+    "Instrumenty: čtyři ETF/ETC, ve kterých klienti investují, včetně aktuální ceny v měně instrumentu."
+   ],
+   [
+    "Kurzy: kurzy měn vůči CZK k datu ocenění."
+   ],
+   [
+    "Klienti: profil, daňový režim (FO = fyzická osoba, s.r.o. = právnická osoba) a cílové váhy v % celkového majetku včetně hotovosti."
+   ],
+   [
+    "Pozice: jednotlivé nákupy (daňové pozice) s datem nákupu, počtem kusů a nákupní cenou v měně instrumentu."
+   ],
+   [
+    "Hotovost: zůstatky hotovosti na účtech klientů podle měny."
+   ],
+   [
+    "Cash flow: plánované vklady a výběry v CZK (kladné = vklad, záporné = výběr)."
+   ],
+   [
+    "Zjednodušení:"
+   ],
+   [
+    "Všichni klienti mají účet u stejného brokera. Poplatek za obchod si zvolte a popište sami."
+   ],
+   [
+    "Nákupní cenu v CZK u daňových výpočtů můžete pro jednoduchost přepočítat dnešním kurzem. Pokud chcete, zvolte přesnější postup a popište ho."
+   ],
+   [
+    "Data můžete rozšířit nebo upravit, pokud to vašemu řešení pomůže. Napište, co jste změnili."
+   ]
+  ],
+  "Instrumenty": [
+   [
+    "Ticker",
+    "Název",
+    "ISIN",
+    "Měna",
+    "Třída aktiv",
+    "Cena (v měně instrumentu)"
+   ],
+   [
+    "VWCE",
+    "Vanguard FTSE All-World UCITS ETF (Acc)",
+    "IE00BK5BQT80",
+    "EUR",
+    "Akcie (globální)",
+    142.5
+   ],
+   [
+    "AVWS",
+    "Avantis Global Small Cap Value UCITS ETF (Acc)",
+    "IE0003R87OG3",
+    "EUR",
+    "Akcie (small cap value)",
+    12.6
+   ],
+   [
+    "EUNA",
+    "iShares Core Global Aggregate Bond UCITS ETF EUR Hedged (Acc)",
+    "IE00BDBRDM35",
+    "EUR",
+    "Dluhopisy",
+    4.62
+   ],
+   [
+    "IGLN",
+    "iShares Physical Gold ETC",
+    "IE00B4ND3602",
+    "USD",
+    "Zlato",
+    78.4
+   ]
+  ],
+  "Kurzy": [
+   [
+    "Měnový pár",
+    "Kurz (CZK za 1 jednotku)"
+   ],
+   [
+    "EUR/CZK",
+    24.3
+   ],
+   [
+    "USD/CZK",
+    21
+   ]
+  ],
+  "Klienti": [
+   [
+    "Klient",
+    "Profil",
+    "Daňový režim",
+    "Cíl VWCE %",
+    "Cíl AVWS %",
+    "Cíl EUNA %",
+    "Cíl IGLN %",
+    "Cíl hotovost %",
+    "Poznámka"
+   ],
+   [
+    "Klient A",
+    "Růstový, investiční horizont 15+ let",
+    "FO",
+    60,
+    20,
+    20,
+    0,
+    0,
+    "V listopadu plánuje dovklad."
+   ],
+   [
+    "Klient B",
+    "Rentiér, žije z portfolia",
+    "FO",
+    35,
+    10,
+    40,
+    10,
+    5,
+    "Pravidelná měsíční renta a v lednu jednorázový výběr na bydlení pro dceru."
+   ],
+   [
+    "Klient C",
+    "Vyvážený, bez plánovaných pohybů",
+    "FO",
+    50,
+    10,
+    30,
+    10,
+    0,
+    "Klient se ptá, jestli je potřeba něco dělat."
+   ],
+   [
+    "Klient D",
+    "Firemní rezerva, horizont 10 let",
+    "s.r.o.",
+    55,
+    15,
+    30,
+    0,
+    0,
+    "Firma 20. 10. 2026 převedla volné prostředky na účet. V únoru plánuje další převod."
+   ],
+   [
+    "Klient E",
+    "Růstově vyvážený",
+    "FO",
+    45,
+    15,
+    30,
+    10,
+    0,
+    "Dlouholetý klient, část pozic nakoupena před přechodem k D&Z."
+   ]
+  ],
+  "Pozice": [
+   [
+    "Klient",
+    "Ticker",
+    "Datum nákupu",
+    "Počet kusů",
+    "Nákupní cena (v měně instrumentu)"
+   ],
+   [
+    "Klient A",
+    "VWCE",
+    "2021-03-15",
+    1500,
+    92.1
+   ],
+   [
+    "Klient A",
+    "VWCE",
+    "2024-06-12",
+    600,
+    118.4
+   ],
+   [
+    "Klient A",
+    "AVWS",
+    "2024-10-08",
+    6300,
+    10.2
+   ],
+   [
+    "Klient A",
+    "EUNA",
+    "2022-05-20",
+    8700,
+    4.21
+   ],
+   [
+    "Klient B",
+    "VWCE",
+    "2019-09-02",
+    1300,
+    74.3
+   ],
+   [
+    "Klient B",
+    "VWCE",
+    "2022-11-07",
+    900,
+    88.6
+   ],
+   [
+    "Klient B",
+    "AVWS",
+    "2024-11-18",
+    5800,
+    11.1
+   ],
+   [
+    "Klient B",
+    "EUNA",
+    "2021-02-10",
+    40000,
+    4.88
+   ],
+   [
+    "Klient B",
+    "EUNA",
+    "2023-10-16",
+    30500,
+    4.19
+   ],
+   [
+    "Klient B",
+    "IGLN",
+    "2021-06-21",
+    650,
+    34.8
+   ],
+   [
+    "Klient B",
+    "IGLN",
+    "2024-02-05",
+    450,
+    38.9
+   ],
+   [
+    "Klient C",
+    "VWCE",
+    "2020-04-14",
+    880,
+    71.5
+   ],
+   [
+    "Klient C",
+    "AVWS",
+    "2024-09-26",
+    1900,
+    10
+   ],
+   [
+    "Klient C",
+    "EUNA",
+    "2021-08-30",
+    16000,
+    4.95
+   ],
+   [
+    "Klient C",
+    "IGLN",
+    "2022-03-09",
+    360,
+    37.2
+   ],
+   [
+    "Klient D",
+    "VWCE",
+    "2025-01-22",
+    950,
+    121.3
+   ],
+   [
+    "Klient D",
+    "AVWS",
+    "2025-01-22",
+    3000,
+    11.4
+   ],
+   [
+    "Klient D",
+    "EUNA",
+    "2025-01-22",
+    16500,
+    4.45
+   ],
+   [
+    "Klient E",
+    "VWCE",
+    "2020-01-13",
+    180,
+    82.4
+   ],
+   [
+    "Klient E",
+    "VWCE",
+    "2023-11-20",
+    3200,
+    98.7
+   ],
+   [
+    "Klient E",
+    "VWCE",
+    "2025-04-09",
+    260,
+    117.8
+   ],
+   [
+    "Klient E",
+    "AVWS",
+    "2024-12-03",
+    10800,
+    11.6
+   ],
+   [
+    "Klient E",
+    "EUNA",
+    "2022-09-12",
+    40000,
+    4.15
+   ],
+   [
+    "Klient E",
+    "IGLN",
+    "2023-03-06",
+    1000,
+    37.5
+   ]
+  ],
+  "Hotovost": [
+   [
+    "Klient",
+    "Měna",
+    "Zůstatek"
+   ],
+   [
+    "Klient A",
+    "CZK",
+    60000
+   ],
+   [
+    "Klient A",
+    "EUR",
+    1250
+   ],
+   [
+    "Klient B",
+    "CZK",
+    640000
+   ],
+   [
+    "Klient B",
+    "EUR",
+    4100
+   ],
+   [
+    "Klient C",
+    "CZK",
+    18000
+   ],
+   [
+    "Klient D",
+    "CZK",
+    4500000
+   ],
+   [
+    "Klient E",
+    "CZK",
+    35000
+   ],
+   [
+    "Klient E",
+    "USD",
+    820
+   ]
+  ],
+  "Cash flow": [
+   [
+    "Klient",
+    "Datum",
+    "Typ",
+    "Částka CZK",
+    "Poznámka"
+   ],
+   [
+    "Klient A",
+    "2026-11-10",
+    "Vklad",
+    600000,
+    "Dovklad z bonusu"
+   ],
+   [
+    "Klient B",
+    "2026-11-01",
+    "Výběr",
+    -85000,
+    "Měsíční renta"
+   ],
+   [
+    "Klient B",
+    "2026-12-01",
+    "Výběr",
+    -85000,
+    "Měsíční renta"
+   ],
+   [
+    "Klient B",
+    "2027-01-01",
+    "Výběr",
+    -85000,
+    "Měsíční renta"
+   ],
+   [
+    "Klient B",
+    "2027-01-15",
+    "Výběr",
+    -1500000,
+    "Jednorázový výběr, bydlení pro dceru"
+   ],
+   [
+    "Klient B",
+    "2027-02-01",
+    "Výběr",
+    -85000,
+    "Měsíční renta"
+   ],
+   [
+    "Klient B",
+    "2027-03-01",
+    "Výběr",
+    -85000,
+    "Měsíční renta"
+   ],
+   [
+    "Klient B",
+    "2027-04-01",
+    "Výběr",
+    -85000,
+    "Měsíční renta"
+   ],
+   [
+    "Klient D",
+    "2027-02-15",
+    "Vklad",
+    3000000,
+    "Další převod volných prostředků firmy"
+   ],
+   [
+    "Klient E",
+    "2026-12-15",
+    "Výběr",
+    -250000,
+    "Jednorázový výběr"
+   ]
+  ]
+ }
+}

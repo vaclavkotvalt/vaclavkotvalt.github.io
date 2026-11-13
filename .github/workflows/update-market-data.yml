@@ -1,0 +1,47 @@
+name: Aktualizace cen a kurzů (rebalancování)
+
+on:
+  schedule:
+    - cron: "41 17 * * 1-5"   # každý pracovní den večer (po uzávěrce Xetry a kurzech ČNB)
+  workflow_dispatch:
+  push:
+    paths:
+      - "rebalancing/scripts/update_market.py"
+      - "rebalancing/worker/**"
+      - ".github/workflows/update-market-data.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: market-data-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Stáhnout ceny ETF a kurzy ČNB
+        run: python rebalancing/scripts/update_market.py
+      - name: Testy Workeru (bez internetu)
+        run: node --test rebalancing/worker/worker.test.mjs
+      - name: Ceny běžných ETF podle ISIN (stejný kód jako Worker)
+        run: node rebalancing/worker/prefetch.mjs
+      - name: Uložit změny
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add rebalancing/market.json rebalancing/fx_history.json rebalancing/isin_prices.json
+          if git diff --cached --quiet; then
+            echo "Žádné nové údaje."
+          else
+            git commit -m "Aktualizace cen a kurzů pro rebalancování"
+            git push
+          fi

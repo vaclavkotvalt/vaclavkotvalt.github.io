@@ -1,0 +1,85 @@
+{
+ "updated": "2026-10-30T23:01+00:00",
+ "fx": {
+  "EUR": {
+   "rate": 24.36,
+   "date": "2026-10-30",
+   "source": "ČNB"
+  },
+  "USD": {
+   "rate": 21.814,
+   "date": "2026-10-30",
+   "source": "ČNB"
+  },
+  "CHF": {
+   "rate": 26.495,
+   "date": "2026-10-30",
+   "source": "ČNB"
+  },
+  "GBP": {
+   "rate": 29.229,
+   "date": "2026-10-30",
+   "source": "ČNB"
+  }
+ },
+ "prices": {
+  "VWCE": {
+   "price": 171.44,
+   "currency": "EUR",
+   "date": "2026-10-29",
+   "source": "Yahoo Finance (VWCE.DE)",
+   "isinCheck": {
+    "isin": "IE00BK5BQT80",
+    "ok": false,
+    "name": null,
+    "symbols": [
+     "VWRA.L",
+     "IE00BK5BQT80.SG"
+    ]
+   }
+  },
+  "AVWS": {
+   "price": 25.98,
+   "currency": "EUR",
+   "date": "2026-10-29",
+   "source": "Yahoo Finance (AVWS.DE)",
+   "isinCheck": {
+    "isin": "IE0003R87OG3",
+    "ok": true,
+    "name": "Avantis Global Small Cap Value UCITS ETF USD Acc",
+    "symbols": [
+     "AVWS.DE",
+     "IE0003R87OG3.SG"
+    ]
+   }
+  },
+  "EUNA": {
+   "price": 4.8652,
+   "currency": "EUR",
+   "date": "2026-10-29",
+   "source": "Yahoo Finance (EUNA.DE)",
+   "isinCheck": {
+    "isin": "IE00BDBRDM35",
+    "ok": false,
+    "name": null,
+    "symbols": [
+     "0GGH.L"
+    ]
+   }
+  },
+  "IGLN": {
+   "price": 75.6375,
+   "currency": "USD",
+   "date": "2026-10-30",
+   "source": "Yahoo Finance (IGLN.L)",
+   "isinCheck": {
+    "isin": "IE00B4ND3602",
+    "ok": true,
+    "name": "iShares Physical Gold ETC",
+    "symbols": [
+     "IGLN.L"
+    ]
+   }
+  }
+ }
+}
