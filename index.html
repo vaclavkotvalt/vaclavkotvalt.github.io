@@ -141,7 +141,8 @@
   /* Logo VK se vykreslí tah po tahu, spodní noha „K“ pak pokračuje jako stoupající čára grafu */
   .curve path, .curve line { fill: none; stroke-linecap: round; stroke-linejoin: round; }
   .curve .grid { stroke: var(--line); stroke-width: 1; }
-  .curve .mono, .curve .leg, .curve .run { stroke-width: 2.5; stroke-dasharray: 1; stroke-dashoffset: 1; }
+  /* mezera 2 (ne 1): jinak by kulaté zakončení nulové čárky ukázalo tečku na konci ještě nenakreslené čáry */
+  .curve .mono, .curve .leg, .curve .run { stroke-width: 2.5; stroke-dasharray: 1 2; stroke-dashoffset: 1; }
   .curve .mono, .curve .leg { stroke: var(--text); }
   .curve .run { stroke: url(#runGrad); }
   .curve .mono { animation: draw 0.9s 0.35s cubic-bezier(.5,0,.3,1) forwards; }
