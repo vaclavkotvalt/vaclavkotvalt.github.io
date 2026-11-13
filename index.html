@@ -264,7 +264,7 @@
 
     <h1>Václav<br>Kotvalt</h1>
     <p class="lead">
-      <span class="cs">Studuji <strong>ekonomii a finance</strong> na Institutu ekonomických studií Univerzity Karlovy. O tento obor se zajímám od svých 14 let, nejvíc o makroekonomii a finanční trhy.</span>
+      <span class="cs">Studuji <strong>ekonomii a finance</strong> na Institutu ekonomických studií Univerzity Karlovy. O tento obor se zajímám od svých 14 let, nejvíce o makroekonomii a finanční trhy.</span>
       <span class="en">I study <strong>economics and finance</strong> at the Institute of Economic Studies, Charles University. I’ve been interested in the field since I was 14, above all in macroeconomics and financial markets.</span>
     </p>
     <div class="actions">
@@ -493,6 +493,10 @@
 <footer>© 2026 Václav Kotvalt<a class="quiet" href="/hudba/" aria-label="Hudba / Music">♪</a></footer>
 
 <script>
+// Návrat na hlavní stránku (odkaz i tlačítko Zpět v prohlížeči) vždy začíná nahoře,
+// pokud adresa nemíří na konkrétní sekci (#…)
+if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+addEventListener('pageshow', () => { if (!location.hash) window.scrollTo({ top: 0, left: 0, behavior: 'instant' }); });
   (function () {
     var root = document.documentElement;
     var buttons = document.querySelectorAll('.lang button');
