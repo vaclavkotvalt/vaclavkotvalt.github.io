@@ -7,9 +7,8 @@ přeskočené – web se aktualizuje až dalším commitem do `main`.
 - `index.html` – hlavní stránka (CZ/EN přepínač přes `.cs` / `.en`)
 - `kvartaly/` – nástroj Podobné kvartály; data `kvartaly/data.json` generuje
   `.github/workflows/update-macro-data.yml` přes FRED API (secret `FRED_API_KEY`)
-- `olympiada/` – stránka o Ekonomické olympiádě (výsledky, Test Master, setkání s prezidentem, média).
+- `olympiada/` – stránka o Ekonomické olympiádě (výsledky, Test Master, setkání s prezidentem, síň slávy, média).
   Odkazy na ni vedou z Úspěchů, od Test Mastera a z upoutávky nad Kontaktem; je v sitemapě.
-  Až vyjde síň slávy na webu olympiády, doplnit sekci (místo je označené komentářem).
 - `rebalancing/` – nástroj Rebalancování portfolií (řešení case study Dvořák & Zedník, smyšlená data).
   Výpočet v `rebalancing/engine.js` (testy `node --test rebalancing/test.mjs`), čtení Excelu `io.js`, zobrazení
   `index.html`. Ceny ETF a kurzy ČNB stahuje každý pracovní den `.github/workflows/update-market-data.yml`;
