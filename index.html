@@ -239,6 +239,26 @@
     font-size: clamp(1.6rem, 6vw, 3rem); line-height: 1.1; margin: 0 0 1.5rem; word-break: break-word;
   }
   .contact-big a { color: var(--text); text-decoration-color: var(--accent); text-decoration-thickness: 2px; }
+  .contact-form { max-width: 40rem; display: grid; gap: 1rem; margin: 0 0 1.75rem; }
+  .contact-form .row2 { display: grid; gap: 1rem; grid-template-columns: 1fr; }
+  @media (min-width: 640px) { .contact-form .row2 { grid-template-columns: 1fr 1fr; } }
+  .contact-form label { display: flex; flex-direction: column; gap: 0.35rem; }
+  .contact-form .lbl { font-size: 0.85rem; color: var(--muted); }
+  .contact-form input, .contact-form textarea {
+    font: inherit; font-size: 1rem; color: var(--text); background: var(--surface);
+    border: 1px solid var(--line); border-radius: 6px; padding: 0.65rem 0.75rem; width: 100%;
+    transition: border-color 0.2s ease;
+  }
+  .contact-form textarea { resize: vertical; min-height: 8rem; }
+  .contact-form input:focus, .contact-form textarea:focus { outline: none; border-color: var(--accent); }
+  .contact-form .hp { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
+  .contact-form button { font: inherit; font-weight: 500; cursor: pointer; }
+  .contact-form button:disabled { opacity: 0.6; cursor: default; }
+  .form-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 1rem; }
+  .form-status { margin: 0; font-size: 0.95rem; color: var(--muted); }
+  .form-status.ok { color: #7fd1a8; }
+  .form-status.err { color: #f0a3a3; }
+  .form-status a { color: inherit; }
   footer { max-width: 68rem; margin: 0 auto; padding: 2rem 1.25rem 3rem; color: var(--muted); font-size: 0.9rem; border-top: 1px solid var(--line); display: flex; justify-content: space-between; }
   /* Nenápadný odkaz na /hudba/ */
   footer .quiet { color: var(--line); text-decoration: none; padding: 0 0.25rem; }
@@ -291,7 +311,7 @@
       <span class="en">I study <strong>economics and finance</strong> at the Institute of Economic Studies, Charles University. I’ve been interested in the field since I was 14, above all in macroeconomics and financial markets.</span>
     </p>
     <div class="actions">
-      <a class="btn primary" href="mailto:vaclav.kotvalt@gmail.com"><span class="cs">Napište mi</span><span class="en">Email me</span></a>
+      <a class="btn primary" href="#kontakt"><span class="cs">Napište mi</span><span class="en">Contact me</span></a>
       <a class="btn" href="https://www.linkedin.com/in/vaclavkotvalt" target="_blank" rel="noopener">LinkedIn</a>
     </div>
   </section>
@@ -507,13 +527,66 @@
   <section class="block" id="kontakt">
     <h2><span class="cs">Kontakt</span><span class="en">Contact</span></h2>
     <div>
-      <p class="contact-big"><a href="mailto:vaclav.kotvalt@gmail.com">vaclav.kotvalt@gmail.com</a></p>
+      <form class="contact-form" id="contactForm" action="https://formsubmit.co/vaclav.kotvalt@gmail.com" method="POST">
+        <input type="hidden" name="_subject" value="Zpráva z vaclavkotvalt.cz">
+        <input type="hidden" name="_template" value="table">
+        <input type="hidden" name="_captcha" value="false">
+        <input type="hidden" name="_next" value="https://vaclavkotvalt.cz/#kontakt">
+        <input type="text" name="_honey" class="hp" tabindex="-1" autocomplete="off" aria-hidden="true">
+        <div class="row2">
+          <label><span class="lbl"><span class="cs">Jméno</span><span class="en">Name</span></span>
+            <input type="text" name="name" required autocomplete="name"></label>
+          <label><span class="lbl">E-mail</span>
+            <input type="email" name="email" required autocomplete="email"></label>
+        </div>
+        <label><span class="lbl"><span class="cs">Zpráva</span><span class="en">Message</span></span>
+          <textarea name="message" rows="6" required></textarea></label>
+        <div class="form-foot">
+          <button class="btn primary" type="submit"><span class="cs">Odeslat zprávu</span><span class="en">Send message</span></button>
+          <p class="form-status" id="formStatus" role="status" aria-live="polite"></p>
+        </div>
+      </form>
       <div class="actions">
         <a class="btn" href="https://www.linkedin.com/in/vaclavkotvalt" target="_blank" rel="noopener">LinkedIn</a>
       </div>
     </div>
   </section>
 </main>
+<script>
+  // Kontaktní formulář: odeslání přes FormSubmit (AJAX), bez JS funguje jako běžný POST
+  (function () {
+    var form = document.getElementById('contactForm'), status = document.getElementById('formStatus');
+    if (!form || !window.fetch) return;
+    function say(cls, cs, en) {
+      status.className = 'form-status ' + cls;
+      status.innerHTML = '<span class="cs">' + cs + '</span><span class="en">' + en + '</span>';
+    }
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var btn = form.querySelector('button[type="submit"]');
+      var data = {};
+      new FormData(form).forEach(function (v, k) { data[k] = v; });
+      if (data._honey) return;
+      btn.disabled = true;
+      say('', 'Odesílám…', 'Sending…');
+      fetch('https://formsubmit.co/ajax/vaclav.kotvalt@gmail.com', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify(data)
+      }).then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
+        .then(function (res) {
+          if (!res.ok || String(res.j.success) !== 'true') throw new Error(res.j && res.j.message);
+          form.reset();
+          say('ok', 'Díky, zpráva odešla. Ozvu se co nejdřív.', 'Thank you, your message has been sent. I’ll get back to you soon.');
+        })
+        .catch(function () {
+          say('err', 'Zprávu se nepodařilo odeslat. Napište mi prosím na <a href="mailto:vaclav.kotvalt@gmail.com">vaclav.kotvalt@gmail.com</a>.',
+                     'The message could not be sent. Please email me at <a href="mailto:vaclav.kotvalt@gmail.com">vaclav.kotvalt@gmail.com</a>.');
+        })
+        .then(function () { btn.disabled = false; });
+    });
+  })();
+</script>
 
 <footer>© 2026 Václav Kotvalt<a class="quiet" href="/hudba/" aria-label="Hudba / Music">♪</a></footer>
 

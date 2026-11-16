@@ -5,6 +5,8 @@ Když nasazení „pages build and deployment“ selže, opakovaný běh znovu s
 přeskočené – web se aktualizuje až dalším commitem do `main`.
 
 - `index.html` – hlavní stránka (CZ/EN přepínač přes `.cs` / `.en`)
+  Kontaktní formulář posílá přes FormSubmit (`formsubmit.co/ajax/<e-mail>`) na vaclav.kotvalt@gmail.com;
+  služba se aktivuje potvrzovacím e-mailem po prvním odeslání.
 - `kvartaly/` – nástroj Podobné kvartály; data `kvartaly/data.json` generuje
   `.github/workflows/update-macro-data.yml` přes FRED API (secret `FRED_API_KEY`)
 - `olympiada/` – stránka o Ekonomické olympiádě (výsledky, Test Master, setkání s prezidentem, na webu (síň slávy EO), na sociálních sítích, média).
