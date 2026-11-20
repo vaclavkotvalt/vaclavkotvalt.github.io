@@ -1,5 +1,5 @@
 {
- "updated": "2026-11-19T18:33:34.851Z",
+ "updated": "2026-11-20T23:20:26.777Z",
  "prices": {
   "IE00B5BMR087": {
    "price": 718.78,
@@ -101,27 +101,27 @@
    "source": "Yahoo Finance"
   },
   "IE00BF4RFH31": {
-   "price": 9.828,
+   "price": 9.591,
    "currency": "USD",
-   "date": "2026-11-19",
+   "date": "2026-11-20",
    "symbol": "WSML.L",
    "exchange": "LSE",
    "name": "ISHARES MSCI WLD SMALL CAP",
    "source": "Yahoo Finance"
   },
   "IE00BDBRDM35": {
-   "price": 4.8577,
+   "price": 4.8831,
    "currency": "EUR",
-   "date": "2026-11-19",
+   "date": "2026-11-20",
    "symbol": "0GGH.L",
    "exchange": "LSE",
    "name": "ISHARES GLB AGG EUR-H ACC",
    "source": "Yahoo Finance"
   },
   "IE0003R87OG3": {
-   "price": 27.375,
+   "price": 26.865,
    "currency": "USD",
-   "date": "2026-11-19",
+   "date": "2026-11-20",
    "symbol": "AVGS.L",
    "exchange": "LSE",
    "name": "AVANTIS GBSMCAPVAL UCITS ETF",
@@ -137,9 +137,9 @@
    "source": "Yahoo Finance"
   },
   "IE00B4ND3602": {
-   "price": 71.47,
+   "price": 68.7475,
    "currency": "USD",
-   "date": "2026-11-19",
+   "date": "2026-11-20",
    "symbol": "IGLN.L",
    "exchange": "LSE",
    "name": "ISHARES PHYSICAL GOLD ETC",
@@ -254,9 +254,9 @@
    "source": "Yahoo Finance"
   },
   "IE00B3F81R35": {
-   "price": 116.35,
+   "price": 116.76,
    "currency": "EUR",
-   "date": "2026-11-19",
+   "date": "2026-11-20",
    "symbol": "IEAC.L",
    "exchange": "LSE",
    "name": "ISHARES CORE EURO CORP BOND",
@@ -281,29 +281,29 @@
    "source": "Yahoo Finance"
   },
   "IE00BG47KH54": {
-   "price": 23.286,
+   "price": 23.421,
    "currency": "EUR",
-   "date": "2026-11-19",
+   "date": "2026-11-20",
    "symbol": "0ACD.L",
    "exchange": "LSE",
    "name": "VANG GLBAGG ETF EUR H ACC",
    "source": "Yahoo Finance"
   },
   "DE0005933931": {
-   "price": 209.95,
+   "price": 209.9,
    "currency": "EUR",
    "date": "2026-11-19",
-   "symbol": "EXS1.AS",
-   "exchange": "AMS",
-   "name": "ISHARES CORE DAX DE EUR ACC",
+   "symbol": "EXS1.DE",
+   "exchange": "GER",
+   "name": "iShares Core DAX UCITS ETF (DE) EUR (Acc)",
    "source": "Yahoo Finance"
   },
   "IE000BI8OT95": {
-   "price": 159.19,
-   "currency": "EUR",
-   "date": "2026-11-19",
-   "symbol": "MWRD.MI",
-   "exchange": "MIL",
+   "price": 169.34,
+   "currency": "USD",
+   "date": "2026-11-20",
+   "symbol": "MWRU.L",
+   "exchange": "LSE",
    "name": "AM CORE MSCI WORLD U ETF ACC",
    "source": "Yahoo Finance"
   },

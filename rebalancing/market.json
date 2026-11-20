@@ -1,24 +1,24 @@
 {
- "updated": "2026-11-19T18:33+00:00",
+ "updated": "2026-11-20T23:20+00:00",
  "fx": {
   "EUR": {
-   "rate": 24.425,
-   "date": "2026-11-19",
+   "rate": 24.47,
+   "date": "2026-11-20",
    "source": "ČNB"
   },
   "USD": {
-   "rate": 22.219,
-   "date": "2026-11-19",
+   "rate": 22.262,
+   "date": "2026-11-20",
    "source": "ČNB"
   },
   "CHF": {
-   "rate": 26.374,
-   "date": "2026-11-19",
+   "rate": 26.546,
+   "date": "2026-11-20",
    "source": "ČNB"
   },
   "GBP": {
-   "rate": 29.216,
-   "date": "2026-11-19",
+   "rate": 29.211,
+   "date": "2026-11-20",
    "source": "ČNB"
   }
  },
@@ -68,16 +68,16 @@
    }
   },
   "IGLN": {
-   "price": 71.47,
+   "price": 68.7475,
    "currency": "USD",
-   "date": "2026-11-19",
+   "date": "2026-11-20",
    "source": "Yahoo Finance (IGLN.L)",
    "isinCheck": {
     "isin": "IE00B4ND3602",
-    "ok": false,
-    "name": null,
+    "ok": true,
+    "name": "iShares Physical Gold ETC",
     "symbols": [
-     "PHYMF"
+     "IGLN.L"
     ]
    }
   }
