@@ -251,7 +251,6 @@
   }
   .contact-form textarea { resize: vertical; min-height: 8rem; }
   .contact-form input:focus, .contact-form textarea:focus { outline: none; border-color: var(--accent); }
-  .contact-form .hp { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
   .contact-form button { font: inherit; font-weight: 500; cursor: pointer; }
   .contact-form button:disabled { opacity: 0.6; cursor: default; }
   .form-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 1rem; }
@@ -532,7 +531,7 @@
         <input type="hidden" name="_template" value="table">
         <input type="hidden" name="_captcha" value="false">
         <input type="hidden" name="_next" value="https://vaclavkotvalt.cz/#kontakt">
-        <input type="text" name="_honey" class="hp" tabindex="-1" autocomplete="off" aria-hidden="true">
+        <input type="text" name="_honey" style="display:none" tabindex="-1" autocomplete="off" aria-hidden="true">
         <div class="row2">
           <label><span class="lbl"><span class="cs">Jméno</span><span class="en">Name</span></span>
             <input type="text" name="name" required autocomplete="name"></label>
@@ -567,7 +566,6 @@
       var btn = form.querySelector('button[type="submit"]');
       var data = {};
       new FormData(form).forEach(function (v, k) { data[k] = v; });
-      if (data._honey) return;
       btn.disabled = true;
       say('', 'Odesílám…', 'Sending…');
       fetch('https://formsubmit.co/ajax/vaclav.kotvalt@gmail.com', {
@@ -576,11 +574,16 @@
         body: JSON.stringify(data)
       }).then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
         .then(function (res) {
-          if (!res.ok || String(res.j.success) !== 'true') throw new Error(res.j && res.j.message);
+          if (!res.ok || String(res.j.success) !== 'true') throw new Error((res.j && res.j.message) || '');
           form.reset();
           say('ok', 'Díky, zpráva odešla. Ozvu se co nejdřív.', 'Thank you, your message has been sent. I’ll get back to you soon.');
         })
-        .catch(function () {
+        .catch(function (err) {
+          if (/activat/i.test(err && err.message)) {
+            say('err', 'Formulář ještě čeká na aktivaci. Zkuste to prosím později, nebo mi napište na <a href="mailto:vaclav.kotvalt@gmail.com">vaclav.kotvalt@gmail.com</a>.',
+                       'The form is still awaiting activation. Please try again later or email me at <a href="mailto:vaclav.kotvalt@gmail.com">vaclav.kotvalt@gmail.com</a>.');
+            return;
+          }
           say('err', 'Zprávu se nepodařilo odeslat. Napište mi prosím na <a href="mailto:vaclav.kotvalt@gmail.com">vaclav.kotvalt@gmail.com</a>.',
                      'The message could not be sent. Please email me at <a href="mailto:vaclav.kotvalt@gmail.com">vaclav.kotvalt@gmail.com</a>.');
         })
