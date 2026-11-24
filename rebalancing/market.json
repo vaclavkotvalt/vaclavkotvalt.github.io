@@ -1,32 +1,32 @@
 {
- "updated": "2026-11-20T23:20+00:00",
+ "updated": "2026-11-24T03:28+00:00",
  "fx": {
   "EUR": {
-   "rate": 24.47,
-   "date": "2026-11-20",
+   "rate": 24.455,
+   "date": "2026-11-23",
    "source": "ČNB"
   },
   "USD": {
-   "rate": 22.262,
-   "date": "2026-11-20",
+   "rate": 22.358,
+   "date": "2026-11-23",
    "source": "ČNB"
   },
   "CHF": {
-   "rate": 26.546,
-   "date": "2026-11-20",
+   "rate": 26.618,
+   "date": "2026-11-23",
    "source": "ČNB"
   },
   "GBP": {
-   "rate": 29.211,
-   "date": "2026-11-20",
+   "rate": 29.226,
+   "date": "2026-11-23",
    "source": "ČNB"
   }
  },
  "prices": {
   "VWCE": {
-   "price": 164.86,
+   "price": 159.34,
    "currency": "EUR",
-   "date": "2026-11-19",
+   "date": "2026-11-20",
    "source": "Yahoo Finance (VWCE.DE)",
    "isinCheck": {
     "isin": "IE00BK5BQT80",
@@ -39,9 +39,9 @@
    }
   },
   "AVWS": {
-   "price": 24.93,
+   "price": 24.455,
    "currency": "EUR",
-   "date": "2026-11-19",
+   "date": "2026-11-20",
    "source": "Yahoo Finance (AVWS.DE)",
    "isinCheck": {
     "isin": "IE0003R87OG3",
@@ -54,9 +54,9 @@
    }
   },
   "EUNA": {
-   "price": 4.8577,
+   "price": 4.8831,
    "currency": "EUR",
-   "date": "2026-11-19",
+   "date": "2026-11-20",
    "source": "Yahoo Finance (EUNA.DE)",
    "isinCheck": {
     "isin": "IE00BDBRDM35",
@@ -74,10 +74,10 @@
    "source": "Yahoo Finance (IGLN.L)",
    "isinCheck": {
     "isin": "IE00B4ND3602",
-    "ok": true,
-    "name": "iShares Physical Gold ETC",
+    "ok": false,
+    "name": null,
     "symbols": [
-     "IGLN.L"
+     "PHYMF"
     ]
    }
   }
